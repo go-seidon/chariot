@@ -1,0 +1,9 @@
+type: object
+required:
+- app_name
+- app_version
+properties:
+  app_name:
+    type: string
+  app_version:
+    type: string

@@ -1,0 +1,4 @@
+package: rest_v1
+generate:
+  - gorilla
+output: generated/rest-v1/server.gen.go

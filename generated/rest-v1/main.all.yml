@@ -1,0 +1,99 @@
+openapi: 3.0.0
+info:
+  title: Chariot Specification
+  version: 0.0.1-$REVISION
+  description: Chariot server for goseidon
+  contact:
+    name: Support
+    url: 'https://github.com/go-seidon/'
+    email: raka.suryaardi@gmail.com
+  license:
+    name: MIT
+    url: 'https://opensource.org/licenses/MIT'
+servers:
+  - url: 'http://localhost:3000/'
+    description: local
+paths:
+  /:
+    get:
+      operationId: GetAppInfo
+      summary: get app info
+      description: get app info
+      tags:
+        - app
+      parameters:
+        - $ref: '#/components/parameters/correlationId'
+      responses:
+        '200':
+          description: success get app info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAppInfoResponse'
+              examples:
+                Success:
+                  value:
+                    code: 1000
+                    message: success
+                    data:
+                      app_name: chariot
+                      app_version: 1.0.0
+      security:
+        - basicAuth: []
+components:
+  parameters:
+    objectId:
+      name: id
+      in: path
+      required: true
+      description: object id
+      schema:
+        type: string
+    correlationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      description: correlation id for tracing purposes
+      schema:
+        type: string
+  schemas:
+    ResponseBodyInfo:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+    GetAppInfoResponse:
+      type: object
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/GetAppInfoData'
+    GetAppInfoData:
+      type: object
+      required:
+        - app_name
+        - app_version
+      properties:
+        app_name:
+          type: string
+        app_version:
+          type: string
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+

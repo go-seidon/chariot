@@ -1,0 +1,13 @@
+type: object
+required:
+- code
+- message
+- data
+properties:
+  code:
+    type: integer
+    format: int32
+  message:
+    type: string
+  data:
+    $ref: "./schema_data.yml"

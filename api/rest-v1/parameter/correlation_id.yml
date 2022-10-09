@@ -1,0 +1,7 @@
+
+name: X-Correlation-Id
+in: header
+required: false
+description: correlation id for tracing purposes
+schema:
+  type: string

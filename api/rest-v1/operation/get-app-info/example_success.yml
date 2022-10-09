@@ -1,0 +1,6 @@
+value:
+  code: 1000
+  message: success
+  data:
+    app_name: chariot
+    app_version: '1.0.0'
