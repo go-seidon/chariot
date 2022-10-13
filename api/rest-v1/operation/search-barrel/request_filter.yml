@@ -1,0 +1,20 @@
+type: object
+properties:
+  status_in:
+    type: array
+    items:
+      type: string
+      enum:
+      - active
+      - inactive
+      description: barrel status
+  provider_in:
+    type: array
+    items:
+      type: string
+      enum:
+      - goseidon_hippo
+      - aws_s3
+      - gcloud_stroage
+      - alicloud_oss
+      description: barrel provider

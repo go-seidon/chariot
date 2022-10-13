@@ -1,0 +1,17 @@
+value:
+  code: 1000
+  message: success
+  data: 
+    - id: 2EvNFKm97MjLU0JNSOYnoyMFv9i
+      code: hippo-1
+      name: 'Hippo 1'
+      provider: goseidon_hippo
+      status: inactive
+      created_at: 1664803257299
+    - id: 2EvNFKm97MjLU0JNSOYnoyMFv9i
+      code: hippo-2
+      name: 'Hippo 2'
+      provider: goseidon_hippo
+      status: active
+      created_at: 1664803257299
+      updated_at: 1664803257300

@@ -1,0 +1,16 @@
+
+type: object
+required:
+- code
+- name
+- provider
+- status
+properties:
+  code:
+    type: string
+  name:
+    type: string
+  provider:
+    type: string
+  status:
+    type: string

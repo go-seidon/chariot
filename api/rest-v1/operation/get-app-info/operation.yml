@@ -12,7 +12,7 @@ responses:
     content: 
       application/json:
         schema:
-          $ref: "./schema_response.yml"
+          $ref: "./response_body.yml"
         examples:
           'Success':
             $ref: "./example_success.yml"

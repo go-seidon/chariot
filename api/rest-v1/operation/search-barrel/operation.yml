@@ -1,0 +1,78 @@
+
+operationId: SearchBarrel
+summary: search barrel
+description: search barrel
+tags:
+  - barrel
+parameters:
+  - $ref: "./../../parameter/correlation_id.yml"
+requestBody:
+  description: search parameter
+  required: false
+  content:
+    application/json:
+      schema:
+        $ref: "./request_body.yml"
+      examples:
+        'All Parameter':
+          value:
+            keyword: hip
+            pagination:
+              total_items: 25
+              page: 1
+            filter:
+              status_in: ['active', 'inactive']
+              provider_in: ['goseidon_hippo', 'aws_s3', 'gcloud_stroage', 'alicloud_oss']
+        'Keyword':
+          value:
+            keyword: hip
+        'Pagination':
+          value:
+            pagination:
+              total_items: 25
+              page: 1
+        'Some Filter':
+          value:
+            filter:
+              status_in: ['active']
+        'All Filter':
+          value:
+            filter:
+              status_in: ['active', 'inactive']
+              provider_in: ['goseidon_hippo', 'aws_s3', 'gcloud_stroage', 'alicloud_oss']
+responses:
+  '200':
+    description: success search barrel
+    content: 
+      application/json:
+        schema:
+          $ref: "./response_body.yml"
+        examples:
+          'Empty Result':
+            $ref: "./example_empty.yml"
+          'Some Result':
+            $ref: "./example_some.yml"
+          'Max Result':
+            $ref: "./example_max.yml"
+  '400':
+    description: failed search barrel
+    content: 
+      application/json:
+        schema:
+          $ref: "./../../schema/response_body_info.yml"
+        examples:
+          'General Error':
+            $ref: "./../../response/example_general_error.yml"
+          'Invalid Param':
+            $ref: "./../../response/example_invalid_param.yml"
+  '401':
+    description: unauthenticated access
+    content: 
+      application/json:
+        schema:
+          $ref: "./../../schema/response_body_info.yml"
+        examples:
+          'Invalid Credential':
+            $ref: "./../../response/example_invalid_credential.yml"
+security:
+  - basicAuth: []

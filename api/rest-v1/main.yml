@@ -11,11 +11,17 @@ info:
     name: MIT
     url: https://opensource.org/licenses/MIT
 servers:
-  - url: http://localhost:3000/
+  - url: http://localhost:3030/
     description: local
 paths:
   /:
     $ref: "./path/info.yml"
+  /v1/barrel:
+    $ref: "./path/barrel.yml"
+  /v1/barrel/search:
+    $ref: "./path/barrel_search.yml"
+  /v1/barrel/{id}:
+    $ref: "./path/barrel_id.yml"
 components:
   parameters:
     objectId: 
@@ -27,9 +33,39 @@ components:
       $ref: "./schema/response_body_info.yml"
 
     GetAppInfoResponse:
-      $ref: "./operation/get-app-info/schema_response.yml"
+      $ref: "./operation/get-app-info/response_body.yml"
     GetAppInfoData:
-      $ref: "./operation/get-app-info/schema_data.yml"
+      $ref: "./operation/get-app-info/response_data.yml"
+
+    CreateBarrelRequest:
+      $ref: "./operation/create-barrel/request_body.yml"
+    CreateBarrelResponse:
+      $ref: "./operation/create-barrel/response_body.yml"
+    CreateBarrelData:
+      $ref: "./operation/create-barrel/response_data.yml"
+
+    UpdateBarrelByIdRequest:
+      $ref: "./operation/update-barrel-by-id/request_body.yml"
+    UpdateBarrelByIdResponse:
+      $ref: "./operation/update-barrel-by-id/response_body.yml"
+    UpdateBarrelByIdData:
+      $ref: "./operation/update-barrel-by-id/response_data.yml"
+
+    GetBarrelByIdResponse:
+      $ref: "./operation/get-barrel-by-id/response_body.yml"
+    GetBarrelByIdData:
+      $ref: "./operation/get-barrel-by-id/response_data.yml"
+
+    SearchBarrelRequest:
+      $ref: "./operation/search-barrel/request_body.yml"
+    SearchBarrelPagination:
+      $ref: "./operation/search-barrel/request_pagination.yml"
+    SearchBarrelFilter:
+      $ref: "./operation/search-barrel/request_filter.yml"
+    SearchBarrelResponse:
+      $ref: "./operation/search-barrel/response_body.yml"
+    SearchBarrelItem:
+      $ref: "./operation/search-barrel/response_item.yml"
 
   securitySchemes:
     basicAuth:

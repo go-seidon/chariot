@@ -11,7 +11,7 @@ info:
     name: MIT
     url: 'https://opensource.org/licenses/MIT'
 servers:
-  - url: 'http://localhost:3000/'
+  - url: 'http://localhost:3030/'
     description: local
 paths:
   /:
@@ -38,6 +38,312 @@ paths:
                     data:
                       app_name: chariot
                       app_version: 1.0.0
+      security:
+        - basicAuth: []
+  /v1/barrel:
+    post:
+      operationId: CreateBarrel
+      summary: create barrel
+      description: create barrel
+      tags:
+        - barrel
+      parameters:
+        - $ref: '#/components/parameters/correlationId'
+      requestBody:
+        description: barrel information
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBarrelRequest'
+      responses:
+        '201':
+          description: success create barrel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateBarrelResponse'
+              examples:
+                Success:
+                  value:
+                    code: 1000
+                    message: success
+                    data:
+                      id: 2EvNFKm97MjLU0JNSOYnoyMFv9i
+                      code: hippo-1
+                      name: Hippo 1
+                      provider: goseidon_hippo
+                      status: inactive
+                      created_at: 1664803257299
+        '400':
+          description: failed create barrel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseBodyInfo'
+              examples:
+                General Error:
+                  value:
+                    code: 1001
+                    message: database error
+                Invalid Param:
+                  value:
+                    code: 1002
+                    message: property must be at least 5 characters in length
+        '401':
+          description: unauthenticated access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseBodyInfo'
+              examples:
+                Invalid Credential:
+                  value:
+                    code: 1003
+                    message: credential is invalid
+      security:
+        - basicAuth: []
+  /v1/barrel/search:
+    post:
+      operationId: SearchBarrel
+      summary: search barrel
+      description: search barrel
+      tags:
+        - barrel
+      parameters:
+        - $ref: '#/components/parameters/correlationId'
+      requestBody:
+        description: search parameter
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchBarrelRequest'
+            examples:
+              All Parameter:
+                value:
+                  keyword: hip
+                  pagination:
+                    total_items: 25
+                    page: 1
+                  filter:
+                    status_in:
+                      - active
+                      - inactive
+                    provider_in:
+                      - goseidon_hippo
+                      - aws_s3
+                      - gcloud_stroage
+                      - alicloud_oss
+              Keyword:
+                value:
+                  keyword: hip
+              Pagination:
+                value:
+                  pagination:
+                    total_items: 25
+                    page: 1
+              Some Filter:
+                value:
+                  filter:
+                    status_in:
+                      - active
+              All Filter:
+                value:
+                  filter:
+                    status_in:
+                      - active
+                      - inactive
+                    provider_in:
+                      - goseidon_hippo
+                      - aws_s3
+                      - gcloud_stroage
+                      - alicloud_oss
+      responses:
+        '200':
+          description: success search barrel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchBarrelResponse'
+              examples:
+                Empty Result:
+                  value:
+                    code: 1000
+                    message: success
+                    data: []
+                Some Result:
+                  value:
+                    code: 1000
+                    message: success
+                    data:
+                      - id: 2EvNFKm97MjLU0JNSOYnoyMFv9i
+                        code: hippo-1
+                        name: Hippo 1
+                        provider: goseidon_hippo
+                        status: inactive
+                        created_at: 1664803257299
+                Max Result:
+                  value:
+                    code: 1000
+                    message: success
+                    data:
+                      - id: 2EvNFKm97MjLU0JNSOYnoyMFv9i
+                        code: hippo-1
+                        name: Hippo 1
+                        provider: goseidon_hippo
+                        status: inactive
+                        created_at: 1664803257299
+                      - id: 2EvNFKm97MjLU0JNSOYnoyMFv9i
+                        code: hippo-2
+                        name: Hippo 2
+                        provider: goseidon_hippo
+                        status: active
+                        created_at: 1664803257299
+                        updated_at: 1664803257300
+        '400':
+          description: failed search barrel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseBodyInfo'
+              examples:
+                General Error:
+                  $ref: '#/paths/~1v1~1barrel/post/responses/400/content/application~1json/examples/General%20Error'
+                Invalid Param:
+                  $ref: '#/paths/~1v1~1barrel/post/responses/400/content/application~1json/examples/Invalid%20Param'
+        '401':
+          description: unauthenticated access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseBodyInfo'
+              examples:
+                Invalid Credential:
+                  $ref: '#/paths/~1v1~1barrel/post/responses/401/content/application~1json/examples/Invalid%20Credential'
+      security:
+        - basicAuth: []
+  '/v1/barrel/{id}':
+    put:
+      operationId: UpdateBarrelById
+      summary: update barrel
+      description: update barrel
+      tags:
+        - barrel
+      parameters:
+        - $ref: '#/components/parameters/objectId'
+        - $ref: '#/components/parameters/correlationId'
+      requestBody:
+        description: barrel information
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBarrelByIdRequest'
+      responses:
+        '200':
+          description: success update barrel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateBarrelByIdResponse'
+              examples:
+                Success:
+                  value:
+                    code: 1000
+                    message: success
+                    data:
+                      id: 2EvNFKm97MjLU0JNSOYnoyMFv9i
+                      code: hippo-1
+                      name: Hippo 1
+                      provider: goseidon_hippo
+                      status: inactive
+                      created_at: 1664803257299
+                      updated_at: 1664803257300
+        '400':
+          description: failed update barrel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseBodyInfo'
+              examples:
+                General Error:
+                  $ref: '#/paths/~1v1~1barrel/post/responses/400/content/application~1json/examples/General%20Error'
+                Invalid Param:
+                  $ref: '#/paths/~1v1~1barrel/post/responses/400/content/application~1json/examples/Invalid%20Param'
+        '401':
+          description: unauthenticated access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseBodyInfo'
+              examples:
+                Invalid Credential:
+                  $ref: '#/paths/~1v1~1barrel/post/responses/401/content/application~1json/examples/Invalid%20Credential'
+        '404':
+          description: resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseBodyInfo'
+              examples:
+                Not Found:
+                  value:
+                    code: 1004
+                    message: not found
+      security:
+        - basicAuth: []
+    get:
+      operationId: GetBarrelById
+      summary: get barrel
+      description: get barrel
+      tags:
+        - barrel
+      parameters:
+        - $ref: '#/components/parameters/objectId'
+        - $ref: '#/components/parameters/correlationId'
+      responses:
+        '200':
+          description: success get barrel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetBarrelByIdResponse'
+              examples:
+                Success:
+                  value:
+                    code: 1000
+                    message: success
+                    data:
+                      id: 2EvNFKm97MjLU0JNSOYnoyMFv9i
+                      code: hippo-1
+                      name: Hippo 1
+                      provider: goseidon_hippo
+                      status: inactive
+                      created_at: 1664803257299
+                      updated_at: 1664803257300
+        '400':
+          description: failed get barrel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseBodyInfo'
+              examples:
+                General Error:
+                  $ref: '#/paths/~1v1~1barrel/post/responses/400/content/application~1json/examples/General%20Error'
+                Invalid Param:
+                  $ref: '#/paths/~1v1~1barrel/post/responses/400/content/application~1json/examples/Invalid%20Param'
+        '401':
+          description: unauthenticated access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseBodyInfo'
+              examples:
+                Invalid Credential:
+                  $ref: '#/paths/~1v1~1barrel/post/responses/401/content/application~1json/examples/Invalid%20Credential'
+        '404':
+          $ref: '#/paths/~1v1~1barrel~1%7Bid%7D/put/responses/404'
       security:
         - basicAuth: []
 components:
@@ -92,6 +398,242 @@ components:
           type: string
         app_version:
           type: string
+    CreateBarrelRequest:
+      type: object
+      required:
+        - code
+        - name
+        - provider
+        - status
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        provider:
+          type: string
+        status:
+          type: string
+    CreateBarrelResponse:
+      type: object
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CreateBarrelData'
+    CreateBarrelData:
+      type: object
+      required:
+        - id
+        - code
+        - name
+        - provider
+        - status
+        - created_at
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        provider:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+    UpdateBarrelByIdRequest:
+      type: object
+      required:
+        - code
+        - name
+        - provider
+        - status
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        provider:
+          type: string
+        status:
+          type: string
+    UpdateBarrelByIdResponse:
+      type: object
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/UpdateBarrelByIdData'
+    UpdateBarrelByIdData:
+      type: object
+      required:
+        - id
+        - code
+        - name
+        - provider
+        - status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        provider:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+        updated_at:
+          type: integer
+          format: int64
+    GetBarrelByIdResponse:
+      type: object
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/GetBarrelByIdData'
+    GetBarrelByIdData:
+      type: object
+      required:
+        - id
+        - code
+        - name
+        - provider
+        - status
+        - created_at
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        provider:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+        updated_at:
+          type: integer
+          format: int64
+    SearchBarrelRequest:
+      type: object
+      properties:
+        keyword:
+          type: string
+          description: min = 2 character
+        pagination:
+          $ref: '#/components/schemas/SearchBarrelPagination'
+        filter:
+          $ref: '#/components/schemas/SearchBarrelFilter'
+    SearchBarrelPagination:
+      type: object
+      required:
+        - total_items
+        - page
+      properties:
+        total_items:
+          type: integer
+          description: 'min = 1, max = 200'
+        page:
+          type: integer
+          format: int64
+          description: min = 1
+    SearchBarrelFilter:
+      type: object
+      properties:
+        status_in:
+          type: array
+          items:
+            type: string
+            enum:
+              - active
+              - inactive
+            description: barrel status
+        provider_in:
+          type: array
+          items:
+            type: string
+            enum:
+              - goseidon_hippo
+              - aws_s3
+              - gcloud_stroage
+              - alicloud_oss
+            description: barrel provider
+    SearchBarrelResponse:
+      type: object
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchBarrelItem'
+    SearchBarrelItem:
+      type: object
+      required:
+        - id
+        - code
+        - name
+        - provider
+        - status
+        - created_at
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        provider:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+        updated_at:
+          type: integer
+          format: int64
   securitySchemes:
     basicAuth:
       type: http

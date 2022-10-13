@@ -7,6 +7,45 @@ const (
 	BasicAuthScopes = "basicAuth.Scopes"
 )
 
+// Defines values for SearchBarrelFilterProviderIn.
+const (
+	AlicloudOss   SearchBarrelFilterProviderIn = "alicloud_oss"
+	AwsS3         SearchBarrelFilterProviderIn = "aws_s3"
+	GcloudStroage SearchBarrelFilterProviderIn = "gcloud_stroage"
+	GoseidonHippo SearchBarrelFilterProviderIn = "goseidon_hippo"
+)
+
+// Defines values for SearchBarrelFilterStatusIn.
+const (
+	Active   SearchBarrelFilterStatusIn = "active"
+	Inactive SearchBarrelFilterStatusIn = "inactive"
+)
+
+// CreateBarrelData defines model for CreateBarrelData.
+type CreateBarrelData struct {
+	Code      string `json:"code"`
+	CreatedAt int64  `json:"created_at"`
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Provider  string `json:"provider"`
+	Status    string `json:"status"`
+}
+
+// CreateBarrelRequest defines model for CreateBarrelRequest.
+type CreateBarrelRequest struct {
+	Code     string `json:"code"`
+	Name     string `json:"name"`
+	Provider string `json:"provider"`
+	Status   string `json:"status"`
+}
+
+// CreateBarrelResponse defines model for CreateBarrelResponse.
+type CreateBarrelResponse struct {
+	Code    int32            `json:"code"`
+	Data    CreateBarrelData `json:"data"`
+	Message string           `json:"message"`
+}
+
 // GetAppInfoData defines model for GetAppInfoData.
 type GetAppInfoData struct {
 	AppName    string `json:"app_name"`
@@ -20,11 +59,154 @@ type GetAppInfoResponse struct {
 	Message string         `json:"message"`
 }
 
+// GetBarrelByIdData defines model for GetBarrelByIdData.
+type GetBarrelByIdData struct {
+	Code      string `json:"code"`
+	CreatedAt int64  `json:"created_at"`
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Provider  string `json:"provider"`
+	Status    string `json:"status"`
+	UpdatedAt *int64 `json:"updated_at,omitempty"`
+}
+
+// GetBarrelByIdResponse defines model for GetBarrelByIdResponse.
+type GetBarrelByIdResponse struct {
+	Code    int32             `json:"code"`
+	Data    GetBarrelByIdData `json:"data"`
+	Message string            `json:"message"`
+}
+
+// ResponseBodyInfo defines model for ResponseBodyInfo.
+type ResponseBodyInfo struct {
+	Code    int32  `json:"code"`
+	Message string `json:"message"`
+}
+
+// SearchBarrelFilter defines model for SearchBarrelFilter.
+type SearchBarrelFilter struct {
+	ProviderIn *[]SearchBarrelFilterProviderIn `json:"provider_in,omitempty"`
+	StatusIn   *[]SearchBarrelFilterStatusIn   `json:"status_in,omitempty"`
+}
+
+// barrel provider
+type SearchBarrelFilterProviderIn string
+
+// barrel status
+type SearchBarrelFilterStatusIn string
+
+// SearchBarrelItem defines model for SearchBarrelItem.
+type SearchBarrelItem struct {
+	Code      string `json:"code"`
+	CreatedAt int64  `json:"created_at"`
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Provider  string `json:"provider"`
+	Status    string `json:"status"`
+	UpdatedAt *int64 `json:"updated_at,omitempty"`
+}
+
+// SearchBarrelPagination defines model for SearchBarrelPagination.
+type SearchBarrelPagination struct {
+	// min = 1
+	Page int64 `json:"page"`
+
+	// min = 1, max = 200
+	TotalItems int `json:"total_items"`
+}
+
+// SearchBarrelRequest defines model for SearchBarrelRequest.
+type SearchBarrelRequest struct {
+	Filter *SearchBarrelFilter `json:"filter,omitempty"`
+
+	// min = 2 character
+	Keyword    *string                 `json:"keyword,omitempty"`
+	Pagination *SearchBarrelPagination `json:"pagination,omitempty"`
+}
+
+// SearchBarrelResponse defines model for SearchBarrelResponse.
+type SearchBarrelResponse struct {
+	Code    int32              `json:"code"`
+	Data    []SearchBarrelItem `json:"data"`
+	Message string             `json:"message"`
+}
+
+// UpdateBarrelByIdData defines model for UpdateBarrelByIdData.
+type UpdateBarrelByIdData struct {
+	Code      string `json:"code"`
+	CreatedAt int64  `json:"created_at"`
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Provider  string `json:"provider"`
+	Status    string `json:"status"`
+	UpdatedAt int64  `json:"updated_at"`
+}
+
+// UpdateBarrelByIdRequest defines model for UpdateBarrelByIdRequest.
+type UpdateBarrelByIdRequest struct {
+	Code     string `json:"code"`
+	Name     string `json:"name"`
+	Provider string `json:"provider"`
+	Status   string `json:"status"`
+}
+
+// UpdateBarrelByIdResponse defines model for UpdateBarrelByIdResponse.
+type UpdateBarrelByIdResponse struct {
+	Code    int32                `json:"code"`
+	Data    UpdateBarrelByIdData `json:"data"`
+	Message string               `json:"message"`
+}
+
 // CorrelationId defines model for correlationId.
 type CorrelationId = string
+
+// ObjectId defines model for objectId.
+type ObjectId = string
 
 // GetAppInfoParams defines parameters for GetAppInfo.
 type GetAppInfoParams struct {
 	// correlation id for tracing purposes
 	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
 }
+
+// CreateBarrelJSONBody defines parameters for CreateBarrel.
+type CreateBarrelJSONBody = CreateBarrelRequest
+
+// CreateBarrelParams defines parameters for CreateBarrel.
+type CreateBarrelParams struct {
+	// correlation id for tracing purposes
+	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
+}
+
+// SearchBarrelJSONBody defines parameters for SearchBarrel.
+type SearchBarrelJSONBody = SearchBarrelRequest
+
+// SearchBarrelParams defines parameters for SearchBarrel.
+type SearchBarrelParams struct {
+	// correlation id for tracing purposes
+	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
+}
+
+// GetBarrelByIdParams defines parameters for GetBarrelById.
+type GetBarrelByIdParams struct {
+	// correlation id for tracing purposes
+	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
+}
+
+// UpdateBarrelByIdJSONBody defines parameters for UpdateBarrelById.
+type UpdateBarrelByIdJSONBody = UpdateBarrelByIdRequest
+
+// UpdateBarrelByIdParams defines parameters for UpdateBarrelById.
+type UpdateBarrelByIdParams struct {
+	// correlation id for tracing purposes
+	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
+}
+
+// CreateBarrelJSONRequestBody defines body for CreateBarrel for application/json ContentType.
+type CreateBarrelJSONRequestBody = CreateBarrelJSONBody
+
+// SearchBarrelJSONRequestBody defines body for SearchBarrel for application/json ContentType.
+type SearchBarrelJSONRequestBody = SearchBarrelJSONBody
+
+// UpdateBarrelByIdJSONRequestBody defines body for UpdateBarrelById for application/json ContentType.
+type UpdateBarrelByIdJSONRequestBody = UpdateBarrelByIdJSONBody

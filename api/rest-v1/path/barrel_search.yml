@@ -1,0 +1,2 @@
+post:
+  $ref: "./../operation/search-barrel/operation.yml"
