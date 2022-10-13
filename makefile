@@ -77,29 +77,13 @@ generate-oapi:
 generate-oapi-type:
 	oapi-codegen -old-config-style -config api/rest-v1/type.gen.yaml generated/rest-v1/main.all.yml
 
-.PHONY: run-grpc-app
-run-grpc-app:
-	go run cmd/grpc-app/main.go
-
 .PHONY: run-rest-app
 run-rest-app:
 	go run cmd/rest-app/main.go
 
-.PHONY: run-hybrid-app
-run-hybrid-app:
-	go run cmd/hybrid-app/main.go
-
-.PHONY: build-grpc-app
-build-grpc-app:
-	go build -o ./build/grpc-app/ ./cmd/grpc-app/main.go
-
 .PHONY: build-rest-app
 build-rest-app:
 	go build -o ./build/rest-app/ ./cmd/rest-app/main.go
-
-.PHONY: build-hybrid-app
-build-hybrid-app:
-	go build -o ./build/hybrid-app/ ./cmd/hybrid-app/main.go
 
 ifeq (migrate-mysql,$(firstword $(MAKECMDGOALS)))
   # use the rest as arguments for "migrate-mysql"
