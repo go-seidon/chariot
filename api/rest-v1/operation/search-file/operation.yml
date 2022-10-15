@@ -1,0 +1,86 @@
+
+operationId: SearchFile
+summary: search file
+description: search file
+tags:
+  - file
+parameters:
+  - $ref: "./../../main.yml#/components/parameters/CorrelationId"
+requestBody:
+  description: search parameter
+  required: false
+  content:
+    application/json:
+      schema:
+        $ref: "./request_body.yml"
+      examples:
+        'All Parameter':
+          value:
+            keyword: lum
+            pagination:
+              total_items: 25
+              page: 1
+            filter:
+              status_in: ['available', 'deleted']
+              visibility_in: ['public', 'protected']
+              extension_in: ['jpg', 'jpeg', 'png']
+              size_gte: 0
+              size_lte: 100000
+              upload_date_gte: 1665590518212
+              upload_date_lte: 1665590518212
+            sort:
+              upload_date: desc
+              size: desc
+        'Keyword':
+          value:
+            keyword: lum
+        'Pagination':
+          value:
+            pagination:
+              total_items: 25
+              page: 1
+        'Some Filter':
+          value:
+            filter:
+              status_in: ['active']
+        'All Filter':
+          value:
+            filter:
+              status_in: ['active', 'inactive']
+              visibility_in: ['public', 'protected']
+              extension_in: ['jpg', 'jpeg', 'png']
+              size_gte: 0
+              size_lte: 100000
+              upload_date_gte: 1665590518212
+              upload_date_lte: 1665590518212
+        'Some Sort':
+          value:
+            sort:
+              size: desc
+        'All Sort':
+          value:
+            sort:
+              upload_date: asc
+              size: desc
+responses:
+  '200':
+    description: success search file
+    content: 
+      application/json:
+        schema:
+          $ref: "./response_body.yml"
+        examples:
+          'Empty Result':
+            $ref: "./example_empty.yml"
+          'Some Result':
+            $ref: "./example_some.yml"
+          'Max Result':
+            $ref: "./example_max.yml"
+  '400':
+    $ref: "./../../main.yml#/components/responses/BadRequest"
+  '401':
+    $ref: "./../../main.yml#/components/responses/UnauthenticatedAccess"
+  '500':
+    $ref: "./../../main.yml#/components/responses/ServerError"
+security:
+  - basicAuth: []

@@ -1,0 +1,7 @@
+type: object
+required:
+- requested_at
+properties:
+  requested_at:
+    type: integer
+    format: int64

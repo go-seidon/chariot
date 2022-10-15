@@ -19,6 +19,6 @@ properties:
   rule:
     type: string
     description: rule code
-  metadata:
+  meta:
     type: string
     description: json metadata

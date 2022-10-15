@@ -5,6 +5,6 @@ properties:
     type: string
     description: min = 2 character
   pagination:
-    $ref: "./../../schema/request_pagination.yml"
+    $ref: "./../../main.yml#/components/schemas/RequestPagination"
   filter:
     $ref: "./request_filter.yml"

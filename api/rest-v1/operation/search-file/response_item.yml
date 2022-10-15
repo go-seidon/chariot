@@ -1,0 +1,51 @@
+type: object
+required:
+- id
+- slug
+- name
+- mimetype
+- extension
+- size
+- visibility
+- status
+- created_at
+- uploaded_at
+properties:
+  id:
+    type: string
+  slug:
+    type: string
+  name:
+    type: string
+  mimetype:
+    type: string
+  extension:
+    type: string
+  size:
+    type: integer
+  visibility:
+    type: string
+    enum:
+    - public
+    - protected
+  status:
+    type: string
+    enum:
+    - available
+    - deleted
+  meta:
+    type: object
+    additionalProperties:
+      type: string
+  uploaded_at:
+    type: integer
+    format: int64
+  created_at:
+    type: integer
+    format: int64
+  updated_at:
+    type: integer
+    format: int64
+  deleted_at:
+    type: integer
+    format: int64

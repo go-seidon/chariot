@@ -1,0 +1,29 @@
+value:
+  code: 1000
+  message: success
+  data: 
+    - id: 2FfnA2ifBQDT5bMFRCvcdnIhVmg
+      slug: lumba-lumba
+      name: Lumba Lumba
+      mimetype: image/jpeg
+      extension: jpg
+      size: 41658
+      visibility: public
+      status: available
+      meta:
+        user_id: ac1fd52f-734a-456e-bd06-df71b5caadc5
+        feature: upload-profile
+      uploaded_at: 1664891858912
+      created_at: 1664891858856
+    - id: 2FfnA2ifBQDT5bMFRCvcdnIhVmg
+      slug: lumba-lumba
+      name: Lumba Lumba
+      mimetype: image/jpeg
+      extension: jpg
+      size: 41658
+      visibility: protected
+      status: deleted
+      uploaded_at: 1664891858912
+      created_at: 1664891858856
+      updated_at: 1664891858856
+      deleted_at: 1664891858856

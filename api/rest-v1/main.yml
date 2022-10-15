@@ -20,6 +20,10 @@ paths:
     $ref: "./path/file.yml"
   /file/{slug}:
     $ref: "./path/file_slug.yml"
+  /v1/file/search:
+    $ref: "./path/file_search.yml"
+  /v1/file/{id}:
+    $ref: "./path/file_id.yml"
   /v1/barrel:
     $ref: "./path/barrel.yml"
   /v1/barrel/search:
@@ -52,7 +56,7 @@ components:
     GetAppInfoData:
       $ref: "./operation/get-app-info/response_data.yml"
 
-    # barrel
+    # barrel management
     CreateBarrelRequest:
       $ref: "./operation/create-barrel/request_body.yml"
     CreateBarrelResponse:
@@ -81,7 +85,7 @@ components:
     SearchBarrelItem:
       $ref: "./operation/search-barrel/response_item.yml"
 
-    # auth client
+    # auth client management
     CreateAuthClientRequest:
       $ref: "./operation/create-auth-client/request_body.yml"
     CreateAuthClientResponse:
@@ -110,7 +114,7 @@ components:
     SearchAuthClientItem:
       $ref: "./operation/search-auth-client/response_item.yml"
 
-    # file
+    # file access
     UploadFileRequest:
       $ref: "./operation/upload-file/request_body.yml"
     UploadFileResponse:
@@ -120,6 +124,28 @@ components:
 
     RetrieveFileBySlugResponse:
       $ref: "./operation/retrieve-file-by-slug/response_body.yml"
+
+    # file management
+    GetFileByIdResponse:
+      $ref: "./operation/get-file-by-id/response_body.yml"
+    GetFileByIdData:
+      $ref: "./operation/get-file-by-id/response_data.yml"
+
+    DeleteFileByIdResponse:
+      $ref: "./operation/delete-file-by-id/response_body.yml"
+    DeleteFileByIdData:
+      $ref: "./operation/delete-file-by-id/response_data.yml"
+
+    SearchFileRequest:
+      $ref: "./operation/search-file/request_body.yml"
+    SearchFileFilter:
+      $ref: "./operation/search-file/request_filter.yml"
+    SearchFileSort:
+      $ref: "./operation/search-file/request_sort.yml"
+    SearchFileResponse:
+      $ref: "./operation/search-file/response_body.yml"
+    SearchFileItem:
+      $ref: "./operation/search-file/response_item.yml"
 
   responses:
     BadRequest:

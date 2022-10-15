@@ -1,0 +1,14 @@
+value:
+  code: 1000
+  message: success
+  data: 
+    - id: 2FfnA2ifBQDT5bMFRCvcdnIhVmg
+      slug: lumba-lumba
+      name: Lumba Lumba
+      mimetype: image/jpeg
+      extension: jpg
+      size: 41658
+      visibility: public
+      status: available
+      uploaded_at: 1664891858912
+      created_at: 1664891858856

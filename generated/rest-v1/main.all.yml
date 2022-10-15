@@ -76,6 +76,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/UnauthenticatedAccess'
+        '403':
+          $ref: '#/components/responses/ForbiddenAccess'
         '500':
           $ref: '#/components/responses/ServerError'
       security:
@@ -83,8 +85,8 @@ paths:
   '/file/{slug}':
     get:
       operationId: RetrieveFileBySlug
-      summary: retrieve file object
-      description: retrieve file object
+      summary: retrieve file
+      description: retrieve file
       tags:
         - file
       parameters:
@@ -97,32 +99,235 @@ paths:
             application/octet-stream:
               schema:
                 $ref: '#/components/schemas/RetrieveFileBySlugResponse'
-          headers:
-            X-File-Name:
-              schema:
-                type: string
-                description: file name
-                example: dolphin
-            X-File-Extension:
-              schema:
-                type: string
-                description: file extension
-                example: jpg
-            X-File-Mimetype:
-              schema:
-                type: string
-                description: file mimetype
-                example: image/jpeg
-            X-File-Size:
-              schema:
-                type: integer
-                format: int64
-                description: file size
-                example: 18934
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
           $ref: '#/components/responses/ForbiddenAccess'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - basicAuth: []
+  /v1/file/search:
+    post:
+      operationId: SearchFile
+      summary: search file
+      description: search file
+      tags:
+        - file
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        description: search parameter
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchFileRequest'
+            examples:
+              All Parameter:
+                value:
+                  keyword: lum
+                  pagination:
+                    total_items: 25
+                    page: 1
+                  filter:
+                    status_in:
+                      - available
+                      - deleted
+                    visibility_in:
+                      - public
+                      - protected
+                    extension_in:
+                      - jpg
+                      - jpeg
+                      - png
+                    size_gte: 0
+                    size_lte: 100000
+                    upload_date_gte: 1665590518212
+                    upload_date_lte: 1665590518212
+                  sort:
+                    upload_date: desc
+                    size: desc
+              Keyword:
+                value:
+                  keyword: lum
+              Pagination:
+                value:
+                  pagination:
+                    total_items: 25
+                    page: 1
+              Some Filter:
+                value:
+                  filter:
+                    status_in:
+                      - active
+              All Filter:
+                value:
+                  filter:
+                    status_in:
+                      - active
+                      - inactive
+                    visibility_in:
+                      - public
+                      - protected
+                    extension_in:
+                      - jpg
+                      - jpeg
+                      - png
+                    size_gte: 0
+                    size_lte: 100000
+                    upload_date_gte: 1665590518212
+                    upload_date_lte: 1665590518212
+              Some Sort:
+                value:
+                  sort:
+                    size: desc
+              All Sort:
+                value:
+                  sort:
+                    upload_date: asc
+                    size: desc
+      responses:
+        '200':
+          description: success search file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchFileResponse'
+              examples:
+                Empty Result:
+                  value:
+                    code: 1000
+                    message: success
+                    data: []
+                Some Result:
+                  value:
+                    code: 1000
+                    message: success
+                    data:
+                      - id: 2FfnA2ifBQDT5bMFRCvcdnIhVmg
+                        slug: lumba-lumba
+                        name: Lumba Lumba
+                        mimetype: image/jpeg
+                        extension: jpg
+                        size: 41658
+                        visibility: public
+                        status: available
+                        uploaded_at: 1664891858912
+                        created_at: 1664891858856
+                Max Result:
+                  value:
+                    code: 1000
+                    message: success
+                    data:
+                      - id: 2FfnA2ifBQDT5bMFRCvcdnIhVmg
+                        slug: lumba-lumba
+                        name: Lumba Lumba
+                        mimetype: image/jpeg
+                        extension: jpg
+                        size: 41658
+                        visibility: public
+                        status: available
+                        meta:
+                          user_id: ac1fd52f-734a-456e-bd06-df71b5caadc5
+                          feature: upload-profile
+                        uploaded_at: 1664891858912
+                        created_at: 1664891858856
+                      - id: 2FfnA2ifBQDT5bMFRCvcdnIhVmg
+                        slug: lumba-lumba
+                        name: Lumba Lumba
+                        mimetype: image/jpeg
+                        extension: jpg
+                        size: 41658
+                        visibility: protected
+                        status: deleted
+                        uploaded_at: 1664891858912
+                        created_at: 1664891858856
+                        updated_at: 1664891858856
+                        deleted_at: 1664891858856
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedAccess'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - basicAuth: []
+  '/v1/file/{id}':
+    get:
+      operationId: GetFileById
+      summary: get file
+      description: get file
+      tags:
+        - file
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/ObjectId'
+      responses:
+        '200':
+          description: success get file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetFileByIdResponse'
+              examples:
+                Success:
+                  value:
+                    code: 1000
+                    message: success
+                    data:
+                      id: 2FfnA2ifBQDT5bMFRCvcdnIhVmg
+                      slug: lumba-lumba
+                      name: Lumba Lumba
+                      mimetype: image/jpeg
+                      extension: jpg
+                      size: 41658
+                      visibility: public
+                      status: available
+                      meta:
+                        user_id: ac1fd52f-734a-456e-bd06-df71b5caadc5
+                        feature: upload-profile
+                      uploaded_at: 1664891858912
+                      created_at: 1664891858856
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedAccess'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - basicAuth: []
+    delete:
+      operationId: DeleteFileById
+      summary: delete file
+      description: delete file
+      tags:
+        - file
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/ObjectId'
+      responses:
+        '202':
+          description: processing file deletion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteFileByIdResponse'
+              examples:
+                Success:
+                  value:
+                    code: 1000
+                    message: success
+                    data:
+                      requested_at: 1664891858856
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedAccess'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1121,7 +1326,7 @@ components:
         rule:
           type: string
           description: rule code
-        metadata:
+        meta:
           type: string
           description: json metadata
     UploadFileResponse:
@@ -1154,6 +1359,219 @@ components:
     RetrieveFileBySlugResponse:
       type: string
       format: binary
+    GetFileByIdResponse:
+      type: object
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/GetFileByIdData'
+    GetFileByIdData:
+      type: object
+      required:
+        - id
+        - slug
+        - name
+        - mimetype
+        - extension
+        - size
+        - visibility
+        - status
+        - created_at
+        - uploaded_at
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        name:
+          type: string
+        mimetype:
+          type: string
+        extension:
+          type: string
+        size:
+          type: integer
+        visibility:
+          type: string
+          enum:
+            - public
+            - protected
+        status:
+          type: string
+          enum:
+            - available
+            - deleted
+        meta:
+          type: object
+          additionalProperties:
+            type: string
+        uploaded_at:
+          type: integer
+          format: int64
+        created_at:
+          type: integer
+          format: int64
+        updated_at:
+          type: integer
+          format: int64
+        deleted_at:
+          type: integer
+          format: int64
+    DeleteFileByIdResponse:
+      type: object
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/DeleteFileByIdData'
+    DeleteFileByIdData:
+      type: object
+      required:
+        - requested_at
+      properties:
+        requested_at:
+          type: integer
+          format: int64
+    SearchFileRequest:
+      type: object
+      properties:
+        keyword:
+          type: string
+          description: min = 2 character
+        pagination:
+          $ref: '#/components/schemas/RequestPagination'
+        filter:
+          $ref: '#/components/schemas/SearchFileFilter'
+    SearchFileFilter:
+      type: object
+      properties:
+        status_in:
+          type: array
+          items:
+            type: string
+            enum:
+              - active
+              - inactive
+            description: file status
+        visibility_in:
+          type: array
+          items:
+            type: string
+            enum:
+              - public
+              - protected
+            description: file visibility
+        extension_in:
+          type: array
+          items:
+            type: string
+            description: file extension
+        size_lte:
+          type: integer
+        size_gte:
+          type: integer
+        upload_date_lte:
+          type: integer
+          format: int64
+        upload_date_gte:
+          type: integer
+          format: int64
+    SearchFileSort:
+      type: object
+      properties:
+        upload_date:
+          type: string
+          enum:
+            - asc
+            - desc
+        size:
+          type: string
+          enum:
+            - asc
+            - desc
+    SearchFileResponse:
+      type: object
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchFileItem'
+    SearchFileItem:
+      type: object
+      required:
+        - id
+        - slug
+        - name
+        - mimetype
+        - extension
+        - size
+        - visibility
+        - status
+        - created_at
+        - uploaded_at
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        name:
+          type: string
+        mimetype:
+          type: string
+        extension:
+          type: string
+        size:
+          type: integer
+        visibility:
+          type: string
+          enum:
+            - public
+            - protected
+        status:
+          type: string
+          enum:
+            - available
+            - deleted
+        meta:
+          type: object
+          additionalProperties:
+            type: string
+        uploaded_at:
+          type: integer
+          format: int64
+        created_at:
+          type: integer
+          format: int64
+        updated_at:
+          type: integer
+          format: int64
+        deleted_at:
+          type: integer
+          format: int64
   responses:
     BadRequest:
       description: invalid parameter

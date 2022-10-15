@@ -1,0 +1,33 @@
+type: object
+properties:
+  status_in:
+    type: array
+    items:
+      type: string
+      enum:
+      - active
+      - inactive
+      description: file status
+  visibility_in:
+    type: array
+    items:
+      type: string
+      enum:
+      - public
+      - protected
+      description: file visibility
+  extension_in:
+    type: array
+    items:
+      type: string
+      description: file extension
+  size_lte:
+    type: integer
+  size_gte:
+    type: integer
+  upload_date_lte:
+    type: integer
+    format: int64
+  upload_date_gte:
+    type: integer
+    format: int64
