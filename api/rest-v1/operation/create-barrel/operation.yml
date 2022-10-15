@@ -24,24 +24,10 @@ responses:
           'Success':
             $ref: "./example_success.yml"
   '400':
-    description: failed create barrel
-    content: 
-      application/json:
-        schema:
-          $ref: "./../../schema/response_body_info.yml"
-        examples:
-          'General Error':
-            $ref: "./../../response/example_general_error.yml"
-          'Invalid Param':
-            $ref: "./../../response/example_invalid_param.yml"
+    $ref: "./../../response/bad_request.yml"
   '401':
-    description: unauthenticated access
-    content: 
-      application/json:
-        schema:
-          $ref: "./../../schema/response_body_info.yml"
-        examples:
-          'Invalid Credential':
-            $ref: "./../../response/example_invalid_credential.yml"
+    $ref: "./../../response/unauthenticated_access.yml"
+  '500':
+    $ref: "./../../response/internal_error.yml"
 security:
   - basicAuth: []

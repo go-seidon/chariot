@@ -1,8 +1,8 @@
-description: invalid parameter
+description: failed do action
 content: 
   application/json:
     schema:
       $ref: "./../schema/response_body_info.yml"
     examples:
-      'Bad Request':
-        $ref: "./example_invalid_param.yml"
+      'General Error':
+        $ref: "./example_general_error.yml"

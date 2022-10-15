@@ -76,17 +76,13 @@ paths:
                       status: inactive
                       created_at: 1664803257299
         '400':
-          description: failed create barrel
+          description: invalid parameter
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResponseBodyInfo'
               examples:
-                General Error:
-                  value:
-                    code: 1001
-                    message: database error
-                Invalid Param:
+                Bad Request:
                   value:
                     code: 1002
                     message: property must be at least 5 characters in length
@@ -101,6 +97,17 @@ paths:
                   value:
                     code: 1003
                     message: credential is invalid
+        '500':
+          description: failed do action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseBodyInfo'
+              examples:
+                General Error:
+                  value:
+                    code: 1001
+                    message: network error
       security:
         - basicAuth: []
   /v1/barrel/search:
@@ -202,25 +209,11 @@ paths:
                         created_at: 1664803257299
                         updated_at: 1664803257300
         '400':
-          description: failed search barrel
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResponseBodyInfo'
-              examples:
-                General Error:
-                  $ref: '#/paths/~1v1~1barrel/post/responses/400/content/application~1json/examples/General%20Error'
-                Invalid Param:
-                  $ref: '#/paths/~1v1~1barrel/post/responses/400/content/application~1json/examples/Invalid%20Param'
+          $ref: '#/paths/~1v1~1barrel/post/responses/400'
         '401':
-          description: unauthenticated access
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResponseBodyInfo'
-              examples:
-                Invalid Credential:
-                  $ref: '#/paths/~1v1~1barrel/post/responses/401/content/application~1json/examples/Invalid%20Credential'
+          $ref: '#/paths/~1v1~1barrel/post/responses/401'
+        '500':
+          $ref: '#/paths/~1v1~1barrel/post/responses/500'
       security:
         - basicAuth: []
   '/v1/barrel/{id}':
@@ -261,25 +254,9 @@ paths:
                       created_at: 1664803257299
                       updated_at: 1664803257300
         '400':
-          description: failed update barrel
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResponseBodyInfo'
-              examples:
-                General Error:
-                  $ref: '#/paths/~1v1~1barrel/post/responses/400/content/application~1json/examples/General%20Error'
-                Invalid Param:
-                  $ref: '#/paths/~1v1~1barrel/post/responses/400/content/application~1json/examples/Invalid%20Param'
+          $ref: '#/paths/~1v1~1barrel/post/responses/400'
         '401':
-          description: unauthenticated access
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResponseBodyInfo'
-              examples:
-                Invalid Credential:
-                  $ref: '#/paths/~1v1~1barrel/post/responses/401/content/application~1json/examples/Invalid%20Credential'
+          $ref: '#/paths/~1v1~1barrel/post/responses/401'
         '404':
           description: resource not found
           content:
@@ -291,6 +268,8 @@ paths:
                   value:
                     code: 1004
                     message: not found
+        '500':
+          $ref: '#/paths/~1v1~1barrel/post/responses/500'
       security:
         - basicAuth: []
     get:
@@ -323,27 +302,13 @@ paths:
                       created_at: 1664803257299
                       updated_at: 1664803257300
         '400':
-          description: failed get barrel
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResponseBodyInfo'
-              examples:
-                General Error:
-                  $ref: '#/paths/~1v1~1barrel/post/responses/400/content/application~1json/examples/General%20Error'
-                Invalid Param:
-                  $ref: '#/paths/~1v1~1barrel/post/responses/400/content/application~1json/examples/Invalid%20Param'
+          $ref: '#/paths/~1v1~1barrel/post/responses/400'
         '401':
-          description: unauthenticated access
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResponseBodyInfo'
-              examples:
-                Invalid Credential:
-                  $ref: '#/paths/~1v1~1barrel/post/responses/401/content/application~1json/examples/Invalid%20Credential'
+          $ref: '#/paths/~1v1~1barrel/post/responses/401'
         '404':
           $ref: '#/paths/~1v1~1barrel~1%7Bid%7D/put/responses/404'
+        '500':
+          $ref: '#/paths/~1v1~1barrel/post/responses/500'
       security:
         - basicAuth: []
 components:
