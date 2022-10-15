@@ -5,14 +5,14 @@ description: get app info
 tags:
   - app
 parameters:
-  - $ref: "./../../parameter/correlation_id.yml"
+  - $ref: "./../../main.yml#/components/parameters/CorrelationId"
 responses:
   '200':
     description: success get app info
     content: 
       application/json:
         schema:
-          $ref: "./schema_response.yml"
+          $ref: "./response_body.yml"
         examples:
           'Success':
             $ref: "./example_success.yml"

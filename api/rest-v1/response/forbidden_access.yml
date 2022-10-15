@@ -1,0 +1,8 @@
+description: forbidden access
+content: 
+  application/json:
+    schema:
+      $ref: "./../schema/response_body_info.yml"
+    examples:
+      'Forbidden Access':
+        $ref: "./example_forbidden_access.yml"

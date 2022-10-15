@@ -1,0 +1,35 @@
+
+operationId: UploadFile
+summary: upload file
+description: upload file
+tags:
+  - file
+parameters:
+  - $ref: "./../../main.yml#/components/parameters/CorrelationId"
+requestBody:
+  description: file to be uploaded
+  required: true
+  content:
+    multipart/form-data:
+      schema:
+        $ref: "./request_body.yml"
+responses:
+  '200':
+    description: success upload file
+    content: 
+      application/json:
+        schema:
+          $ref: "./response_body.yml"
+        examples:
+          'Success':
+            $ref: "./example_success.yml"
+  '400':
+    $ref: "./../../main.yml#/components/responses/BadRequest"
+  '401':
+    $ref: "./../../main.yml#/components/responses/UnauthenticatedAccess"
+  '403':
+    $ref: "./../../main.yml#/components/responses/ForbiddenAccess"
+  '500':
+    $ref: "./../../main.yml#/components/responses/ServerError"
+security:
+  - basicAuth: []

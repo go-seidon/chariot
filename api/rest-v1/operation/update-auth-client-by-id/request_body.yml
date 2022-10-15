@@ -1,0 +1,22 @@
+
+type: object
+required:
+- name
+- status
+- type
+properties:
+  name:
+    type: string
+  status:
+    type: string
+    enum: 
+    - active
+    - inactive
+  type:
+    type: string
+    enum:
+    - basic_auth
+  client_id:
+    type: string
+  client_secret:
+    type: string

@@ -1,0 +1,12 @@
+type: object
+properties:
+  upload_date:
+    type: string
+    enum:
+    - asc
+    - desc
+  size:
+    type: string
+    enum:
+    - asc
+    - desc

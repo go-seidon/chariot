@@ -11,25 +11,153 @@ info:
     name: MIT
     url: https://opensource.org/licenses/MIT
 servers:
-  - url: http://localhost:3000/
+  - url: http://localhost:3030/
     description: local
 paths:
   /:
     $ref: "./path/info.yml"
+  /file:
+    $ref: "./path/file.yml"
+  /file/{slug}:
+    $ref: "./path/file_slug.yml"
+  /v1/file/search:
+    $ref: "./path/file_search.yml"
+  /v1/file/{id}:
+    $ref: "./path/file_id.yml"
+  /v1/barrel:
+    $ref: "./path/barrel.yml"
+  /v1/barrel/search:
+    $ref: "./path/barrel_search.yml"
+  /v1/barrel/{id}:
+    $ref: "./path/barrel_id.yml"
+  /v1/auth-client:
+    $ref: "./path/auth_client.yml"
+  /v1/auth-client/search:
+    $ref: "./path/auth_client_search.yml"
+  /v1/auth-client/{id}:
+    $ref: "./path/auth_client_id.yml"
 components:
   parameters:
-    objectId: 
+    ObjectId: 
       $ref: "./parameter/object_id.yml"
-    correlationId: 
+    ObjectSlug:
+      $ref: "./parameter/object_slug.yml"
+    CorrelationId: 
       $ref: "./parameter/correlation_id.yml"
   schemas:
     ResponseBodyInfo:
       $ref: "./schema/response_body_info.yml"
+    RequestPagination:
+      $ref: "./schema/request_pagination.yml"
 
+    # app
     GetAppInfoResponse:
-      $ref: "./operation/get-app-info/schema_response.yml"
+      $ref: "./operation/get-app-info/response_body.yml"
     GetAppInfoData:
-      $ref: "./operation/get-app-info/schema_data.yml"
+      $ref: "./operation/get-app-info/response_data.yml"
+
+    # barrel management
+    CreateBarrelRequest:
+      $ref: "./operation/create-barrel/request_body.yml"
+    CreateBarrelResponse:
+      $ref: "./operation/create-barrel/response_body.yml"
+    CreateBarrelData:
+      $ref: "./operation/create-barrel/response_data.yml"
+
+    UpdateBarrelByIdRequest:
+      $ref: "./operation/update-barrel-by-id/request_body.yml"
+    UpdateBarrelByIdResponse:
+      $ref: "./operation/update-barrel-by-id/response_body.yml"
+    UpdateBarrelByIdData:
+      $ref: "./operation/update-barrel-by-id/response_data.yml"
+
+    GetBarrelByIdResponse:
+      $ref: "./operation/get-barrel-by-id/response_body.yml"
+    GetBarrelByIdData:
+      $ref: "./operation/get-barrel-by-id/response_data.yml"
+
+    SearchBarrelRequest:
+      $ref: "./operation/search-barrel/request_body.yml"
+    SearchBarrelFilter:
+      $ref: "./operation/search-barrel/request_filter.yml"
+    SearchBarrelResponse:
+      $ref: "./operation/search-barrel/response_body.yml"
+    SearchBarrelItem:
+      $ref: "./operation/search-barrel/response_item.yml"
+
+    # auth client management
+    CreateAuthClientRequest:
+      $ref: "./operation/create-auth-client/request_body.yml"
+    CreateAuthClientResponse:
+      $ref: "./operation/create-auth-client/response_body.yml"
+    CreateAuthClientData:
+      $ref: "./operation/create-auth-client/response_data.yml"
+
+    UpdateAuthClientByIdRequest:
+      $ref: "./operation/update-auth-client-by-id/request_body.yml"
+    UpdateAuthClientByIdResponse:
+      $ref: "./operation/update-auth-client-by-id/response_body.yml"
+    UpdateAuthClientByIdData:
+      $ref: "./operation/update-auth-client-by-id/response_data.yml"
+
+    GetAuthClientByIdResponse:
+      $ref: "./operation/get-auth-client-by-id/response_body.yml"
+    GetAuthClientByIdData:
+      $ref: "./operation/get-auth-client-by-id/response_data.yml"
+
+    SearchAuthClientRequest:
+      $ref: "./operation/search-auth-client/request_body.yml"
+    SearchAuthClientFilter:
+      $ref: "./operation/search-auth-client/request_filter.yml"
+    SearchAuthClientResponse:
+      $ref: "./operation/search-auth-client/response_body.yml"
+    SearchAuthClientItem:
+      $ref: "./operation/search-auth-client/response_item.yml"
+
+    # file access
+    UploadFileRequest:
+      $ref: "./operation/upload-file/request_body.yml"
+    UploadFileResponse:
+      $ref: "./operation/upload-file/response_body.yml"
+    UploadFileData:
+      $ref: "./operation/upload-file/response_data.yml"
+
+    RetrieveFileBySlugResponse:
+      $ref: "./operation/retrieve-file-by-slug/response_body.yml"
+
+    # file management
+    GetFileByIdResponse:
+      $ref: "./operation/get-file-by-id/response_body.yml"
+    GetFileByIdData:
+      $ref: "./operation/get-file-by-id/response_data.yml"
+
+    DeleteFileByIdResponse:
+      $ref: "./operation/delete-file-by-id/response_body.yml"
+    DeleteFileByIdData:
+      $ref: "./operation/delete-file-by-id/response_data.yml"
+
+    SearchFileRequest:
+      $ref: "./operation/search-file/request_body.yml"
+    SearchFileFilter:
+      $ref: "./operation/search-file/request_filter.yml"
+    SearchFileSort:
+      $ref: "./operation/search-file/request_sort.yml"
+    SearchFileResponse:
+      $ref: "./operation/search-file/response_body.yml"
+    SearchFileItem:
+      $ref: "./operation/search-file/response_item.yml"
+
+  responses:
+    BadRequest:
+      $ref: "./response/bad_request.yml"
+    UnauthenticatedAccess:
+      $ref: "./response/unauthenticated_access.yml"
+    ForbiddenAccess:
+      $ref: "./response/forbidden_access.yml"
+    NotFound:
+      $ref: "./response/not_found.yml"
+    ServerError:
+      $ref: "./response/server_error.yml"
 
   securitySchemes:
     basicAuth:

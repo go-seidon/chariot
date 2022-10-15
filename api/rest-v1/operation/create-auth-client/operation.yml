@@ -1,0 +1,33 @@
+
+operationId: CreateAuthClient
+summary: create auth client
+description: create auth client
+tags:
+  - auth-client
+parameters:
+  - $ref: "./../../main.yml#/components/parameters/CorrelationId"
+requestBody:
+  description: auth client information
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: "./request_body.yml"
+responses:
+  '201':
+    description: success create auth client
+    content: 
+      application/json:
+        schema:
+          $ref: "./response_body.yml"
+        examples:
+          'Success':
+            $ref: "./example_success.yml"
+  '400':
+    $ref: "./../../main.yml#/components/responses/BadRequest"
+  '401':
+    $ref: "./../../main.yml#/components/responses/UnauthenticatedAccess"
+  '500':
+    $ref: "./../../main.yml#/components/responses/ServerError"
+security:
+  - basicAuth: []

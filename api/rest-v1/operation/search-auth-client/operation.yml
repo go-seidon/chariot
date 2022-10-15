@@ -1,0 +1,58 @@
+
+operationId: SearchAuthClient
+summary: search auth client
+description: search auth client
+tags:
+  - auth-client
+parameters:
+  - $ref: "./../../main.yml#/components/parameters/CorrelationId"
+requestBody:
+  description: search parameter
+  required: false
+  content:
+    application/json:
+      schema:
+        $ref: "./request_body.yml"
+      examples:
+        'All Parameter':
+          value:
+            keyword: ser
+            pagination:
+              total_items: 25
+              page: 1
+            filter:
+              status_in: ['active', 'inactive']
+        'Keyword':
+          value:
+            keyword: ser
+        'Pagination':
+          value:
+            pagination:
+              total_items: 25
+              page: 1
+        'All Filter':
+          value:
+            filter:
+              status_in: ['active', 'inactive']
+responses:
+  '200':
+    description: success search auth client
+    content: 
+      application/json:
+        schema:
+          $ref: "./response_body.yml"
+        examples:
+          'Empty Result':
+            $ref: "./example_empty.yml"
+          'Some Result':
+            $ref: "./example_some.yml"
+          'Max Result':
+            $ref: "./example_max.yml"
+  '400':
+    $ref: "./../../main.yml#/components/responses/BadRequest"
+  '401':
+    $ref: "./../../main.yml#/components/responses/UnauthenticatedAccess"
+  '500':
+    $ref: "./../../main.yml#/components/responses/ServerError"
+security:
+  - basicAuth: []

@@ -1,0 +1,8 @@
+description: unauthenticated access
+content: 
+  application/json:
+    schema:
+      $ref: "./../schema/response_body_info.yml"
+    examples:
+      'Invalid Credential':
+        $ref: "./example_invalid_credential.yml"

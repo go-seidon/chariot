@@ -1,0 +1,3 @@
+value:
+  code: 1002
+  message: property must be at least 5 characters in length

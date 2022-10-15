@@ -1,0 +1,4 @@
+put:
+  $ref: "./../operation/update-auth-client-by-id/operation.yml"
+get:
+  $ref: "./../operation/get-auth-client-by-id/operation.yml"

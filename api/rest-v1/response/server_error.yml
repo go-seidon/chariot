@@ -1,0 +1,8 @@
+description: failed do action
+content: 
+  application/json:
+    schema:
+      $ref: "./../schema/response_body_info.yml"
+    examples:
+      'General Error':
+        $ref: "./example_general_error.yml"

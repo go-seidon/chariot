@@ -1,0 +1,8 @@
+description: invalid parameter
+content: 
+  application/json:
+    schema:
+      $ref: "./../schema/response_body_info.yml"
+    examples:
+      'Bad Request':
+        $ref: "./example_invalid_param.yml"

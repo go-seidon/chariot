@@ -1,0 +1,11 @@
+value:
+  code: 1000
+  message: success
+  data:
+    id: 2EvNFKm97MjLU0JNSOYnoyMFv9i
+    name: 'Service A'
+    status: inactive
+    type: basic_auth
+    client_id: goseidon
+    created_at: 1664803257299
+    updated_at: 1664803257300

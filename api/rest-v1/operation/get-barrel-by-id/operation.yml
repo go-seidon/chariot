@@ -1,0 +1,29 @@
+
+operationId: GetBarrelById
+summary: get barrel
+description: get barrel
+tags:
+  - barrel
+parameters:
+  - $ref: "./../../main.yml#/components/parameters/CorrelationId"
+  - $ref: "./../../main.yml#/components/parameters/ObjectId"
+responses:
+  '200':
+    description: success get barrel
+    content: 
+      application/json:
+        schema:
+          $ref: "./response_body.yml"
+        examples:
+          'Success':
+            $ref: "./example_success.yml"
+  '400':
+    $ref: "./../../main.yml#/components/responses/BadRequest"
+  '401':
+    $ref: "./../../main.yml#/components/responses/UnauthenticatedAccess"
+  '404':
+    $ref: "./../../main.yml#/components/responses/NotFound"
+  '500':
+    $ref: "./../../main.yml#/components/responses/ServerError"
+security:
+  - basicAuth: []

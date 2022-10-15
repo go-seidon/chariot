@@ -1,0 +1,33 @@
+
+operationId: CreateBarrel
+summary: create barrel
+description: create barrel
+tags:
+  - barrel
+parameters:
+  - $ref: "./../../main.yml#/components/parameters/CorrelationId"
+requestBody:
+  description: barrel information
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: "./request_body.yml"
+responses:
+  '201':
+    description: success create barrel
+    content: 
+      application/json:
+        schema:
+          $ref: "./response_body.yml"
+        examples:
+          'Success':
+            $ref: "./example_success.yml"
+  '400':
+    $ref: "./../../main.yml#/components/responses/BadRequest"
+  '401':
+    $ref: "./../../main.yml#/components/responses/UnauthenticatedAccess"
+  '500':
+    $ref: "./../../main.yml#/components/responses/ServerError"
+security:
+  - basicAuth: []

@@ -1,0 +1,4 @@
+get:
+  $ref: "./../operation/get-file-by-id/operation.yml"
+delete:
+  $ref: "./../operation/delete-file-by-id/operation.yml"

@@ -1,0 +1,12 @@
+type: object
+required:
+- total_items
+- page
+properties:
+  total_items:
+    type: integer
+    description: min = 1, max = 200
+  page:
+    type: integer
+    format: int64
+    description: min = 1

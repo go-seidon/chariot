@@ -1,0 +1,2 @@
+post:
+  $ref: "./../operation/create-auth-client/operation.yml"

@@ -1,0 +1,7 @@
+value:
+  code: 1000
+  message: success upload file
+  data:
+    file_id: 2FfnA2ifBQDT5bMFRCvcdnIhVmg
+    file_url: http://localhost:3030/file/lumba-lumba.jpg
+    uploaded_at: 1664891858856

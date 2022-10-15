@@ -1,0 +1,10 @@
+
+type: object
+properties:
+  keyword:
+    type: string
+    description: min = 2 character
+  pagination:
+    $ref: "./../../main.yml#/components/schemas/RequestPagination"
+  filter:
+    $ref: "./request_filter.yml"

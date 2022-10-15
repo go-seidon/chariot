@@ -10,4 +10,6 @@ properties:
   message:
     type: string
   data:
-    $ref: "./schema_data.yml"
+    type: array
+    items:
+      $ref: "./response_item.yml"

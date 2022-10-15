@@ -1,0 +1,64 @@
+
+operationId: SearchBarrel
+summary: search barrel
+description: search barrel
+tags:
+  - barrel
+parameters:
+  - $ref: "./../../main.yml#/components/parameters/CorrelationId"
+requestBody:
+  description: search parameter
+  required: false
+  content:
+    application/json:
+      schema:
+        $ref: "./request_body.yml"
+      examples:
+        'All Parameter':
+          value:
+            keyword: hip
+            pagination:
+              total_items: 25
+              page: 1
+            filter:
+              status_in: ['active', 'inactive']
+              provider_in: ['goseidon_hippo', 'aws_s3', 'gcloud_stroage', 'alicloud_oss']
+        'Keyword':
+          value:
+            keyword: hip
+        'Pagination':
+          value:
+            pagination:
+              total_items: 25
+              page: 1
+        'Some Filter':
+          value:
+            filter:
+              status_in: ['active']
+        'All Filter':
+          value:
+            filter:
+              status_in: ['active', 'inactive']
+              provider_in: ['goseidon_hippo', 'aws_s3', 'gcloud_stroage', 'alicloud_oss']
+responses:
+  '200':
+    description: success search barrel
+    content: 
+      application/json:
+        schema:
+          $ref: "./response_body.yml"
+        examples:
+          'Empty Result':
+            $ref: "./example_empty.yml"
+          'Some Result':
+            $ref: "./example_some.yml"
+          'Max Result':
+            $ref: "./example_max.yml"
+  '400':
+    $ref: "./../../main.yml#/components/responses/BadRequest"
+  '401':
+    $ref: "./../../main.yml#/components/responses/UnauthenticatedAccess"
+  '500':
+    $ref: "./../../main.yml#/components/responses/ServerError"
+security:
+  - basicAuth: []

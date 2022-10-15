@@ -1,0 +1,8 @@
+description: resource not found
+content: 
+  application/json:
+    schema:
+      $ref: "./../schema/response_body_info.yml"
+    examples:
+      'Not Found':
+        $ref: "./example_not_found.yml"

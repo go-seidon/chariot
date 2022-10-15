@@ -1,0 +1,12 @@
+type: object
+required:
+- file_id
+- uploaded_at
+properties:
+  file_id:
+    type: string
+  file_url:
+    type: string
+  uploaded_at:
+    type: integer
+    format: int64
