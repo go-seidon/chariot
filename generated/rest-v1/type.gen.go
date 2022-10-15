@@ -7,6 +7,23 @@ const (
 	BasicAuthScopes = "basicAuth.Scopes"
 )
 
+// Defines values for CreateAuthClientRequestStatus.
+const (
+	CreateAuthClientRequestStatusActive   CreateAuthClientRequestStatus = "active"
+	CreateAuthClientRequestStatusInactive CreateAuthClientRequestStatus = "inactive"
+)
+
+// Defines values for CreateAuthClientRequestType.
+const (
+	CreateAuthClientRequestTypeBasicAuth CreateAuthClientRequestType = "basic_auth"
+)
+
+// Defines values for SearchAuthClientFilterStatusIn.
+const (
+	SearchAuthClientFilterStatusInActive   SearchAuthClientFilterStatusIn = "active"
+	SearchAuthClientFilterStatusInInactive SearchAuthClientFilterStatusIn = "inactive"
+)
+
 // Defines values for SearchBarrelFilterProviderIn.
 const (
 	AlicloudOss   SearchBarrelFilterProviderIn = "alicloud_oss"
@@ -17,9 +34,52 @@ const (
 
 // Defines values for SearchBarrelFilterStatusIn.
 const (
-	Active   SearchBarrelFilterStatusIn = "active"
-	Inactive SearchBarrelFilterStatusIn = "inactive"
+	SearchBarrelFilterStatusInActive   SearchBarrelFilterStatusIn = "active"
+	SearchBarrelFilterStatusInInactive SearchBarrelFilterStatusIn = "inactive"
 )
+
+// Defines values for UpdateAuthClientByIdRequestStatus.
+const (
+	UpdateAuthClientByIdRequestStatusActive   UpdateAuthClientByIdRequestStatus = "active"
+	UpdateAuthClientByIdRequestStatusInactive UpdateAuthClientByIdRequestStatus = "inactive"
+)
+
+// Defines values for UpdateAuthClientByIdRequestType.
+const (
+	UpdateAuthClientByIdRequestTypeBasicAuth UpdateAuthClientByIdRequestType = "basic_auth"
+)
+
+// CreateAuthClientData defines model for CreateAuthClientData.
+type CreateAuthClientData struct {
+	ClientId  *string `json:"client_id,omitempty"`
+	CreatedAt int64   `json:"created_at"`
+	Id        string  `json:"id"`
+	Name      string  `json:"name"`
+	Status    string  `json:"status"`
+	Type      string  `json:"type"`
+}
+
+// CreateAuthClientRequest defines model for CreateAuthClientRequest.
+type CreateAuthClientRequest struct {
+	ClientId     *string                       `json:"client_id,omitempty"`
+	ClientSecret *string                       `json:"client_secret,omitempty"`
+	Name         string                        `json:"name"`
+	Status       CreateAuthClientRequestStatus `json:"status"`
+	Type         CreateAuthClientRequestType   `json:"type"`
+}
+
+// CreateAuthClientRequestStatus defines model for CreateAuthClientRequest.Status.
+type CreateAuthClientRequestStatus string
+
+// CreateAuthClientRequestType defines model for CreateAuthClientRequest.Type.
+type CreateAuthClientRequestType string
+
+// CreateAuthClientResponse defines model for CreateAuthClientResponse.
+type CreateAuthClientResponse struct {
+	Code    int32                `json:"code"`
+	Data    CreateAuthClientData `json:"data"`
+	Message string               `json:"message"`
+}
 
 // CreateBarrelData defines model for CreateBarrelData.
 type CreateBarrelData struct {
@@ -59,6 +119,24 @@ type GetAppInfoResponse struct {
 	Message string         `json:"message"`
 }
 
+// GetAuthClientByIdData defines model for GetAuthClientByIdData.
+type GetAuthClientByIdData struct {
+	ClientId  *string `json:"client_id,omitempty"`
+	CreatedAt int64   `json:"created_at"`
+	Id        string  `json:"id"`
+	Name      string  `json:"name"`
+	Status    string  `json:"status"`
+	Type      string  `json:"type"`
+	UpdatedAt *int64  `json:"updated_at,omitempty"`
+}
+
+// GetAuthClientByIdResponse defines model for GetAuthClientByIdResponse.
+type GetAuthClientByIdResponse struct {
+	Code    int32                 `json:"code"`
+	Data    GetAuthClientByIdData `json:"data"`
+	Message string                `json:"message"`
+}
+
 // GetBarrelByIdData defines model for GetBarrelByIdData.
 type GetBarrelByIdData struct {
 	Code      string `json:"code"`
@@ -77,10 +155,54 @@ type GetBarrelByIdResponse struct {
 	Message string            `json:"message"`
 }
 
+// RequestPagination defines model for RequestPagination.
+type RequestPagination struct {
+	// min = 1
+	Page int64 `json:"page"`
+
+	// min = 1, max = 200
+	TotalItems int `json:"total_items"`
+}
+
 // ResponseBodyInfo defines model for ResponseBodyInfo.
 type ResponseBodyInfo struct {
 	Code    int32  `json:"code"`
 	Message string `json:"message"`
+}
+
+// SearchAuthClientFilter defines model for SearchAuthClientFilter.
+type SearchAuthClientFilter struct {
+	StatusIn *[]SearchAuthClientFilterStatusIn `json:"status_in,omitempty"`
+}
+
+// auth client status
+type SearchAuthClientFilterStatusIn string
+
+// SearchAuthClientItem defines model for SearchAuthClientItem.
+type SearchAuthClientItem struct {
+	ClientId  *string `json:"client_id,omitempty"`
+	CreatedAt int64   `json:"created_at"`
+	Id        string  `json:"id"`
+	Name      string  `json:"name"`
+	Status    string  `json:"status"`
+	Type      string  `json:"type"`
+	UpdatedAt *int64  `json:"updated_at,omitempty"`
+}
+
+// SearchAuthClientRequest defines model for SearchAuthClientRequest.
+type SearchAuthClientRequest struct {
+	Filter *SearchAuthClientFilter `json:"filter,omitempty"`
+
+	// min = 2 character
+	Keyword    *string            `json:"keyword,omitempty"`
+	Pagination *RequestPagination `json:"pagination,omitempty"`
+}
+
+// SearchAuthClientResponse defines model for SearchAuthClientResponse.
+type SearchAuthClientResponse struct {
+	Code    int32                  `json:"code"`
+	Data    []SearchAuthClientItem `json:"data"`
+	Message string                 `json:"message"`
 }
 
 // SearchBarrelFilter defines model for SearchBarrelFilter.
@@ -106,22 +228,13 @@ type SearchBarrelItem struct {
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 }
 
-// SearchBarrelPagination defines model for SearchBarrelPagination.
-type SearchBarrelPagination struct {
-	// min = 1
-	Page int64 `json:"page"`
-
-	// min = 1, max = 200
-	TotalItems int `json:"total_items"`
-}
-
 // SearchBarrelRequest defines model for SearchBarrelRequest.
 type SearchBarrelRequest struct {
 	Filter *SearchBarrelFilter `json:"filter,omitempty"`
 
 	// min = 2 character
-	Keyword    *string                 `json:"keyword,omitempty"`
-	Pagination *SearchBarrelPagination `json:"pagination,omitempty"`
+	Keyword    *string            `json:"keyword,omitempty"`
+	Pagination *RequestPagination `json:"pagination,omitempty"`
 }
 
 // SearchBarrelResponse defines model for SearchBarrelResponse.
@@ -129,6 +242,39 @@ type SearchBarrelResponse struct {
 	Code    int32              `json:"code"`
 	Data    []SearchBarrelItem `json:"data"`
 	Message string             `json:"message"`
+}
+
+// UpdateAuthClientByIdData defines model for UpdateAuthClientByIdData.
+type UpdateAuthClientByIdData struct {
+	ClientId  *string `json:"client_id,omitempty"`
+	CreatedAt int64   `json:"created_at"`
+	Id        string  `json:"id"`
+	Name      string  `json:"name"`
+	Status    string  `json:"status"`
+	Type      string  `json:"type"`
+	UpdatedAt int64   `json:"updated_at"`
+}
+
+// UpdateAuthClientByIdRequest defines model for UpdateAuthClientByIdRequest.
+type UpdateAuthClientByIdRequest struct {
+	ClientId     *string                           `json:"client_id,omitempty"`
+	ClientSecret *string                           `json:"client_secret,omitempty"`
+	Name         string                            `json:"name"`
+	Status       UpdateAuthClientByIdRequestStatus `json:"status"`
+	Type         UpdateAuthClientByIdRequestType   `json:"type"`
+}
+
+// UpdateAuthClientByIdRequestStatus defines model for UpdateAuthClientByIdRequest.Status.
+type UpdateAuthClientByIdRequestStatus string
+
+// UpdateAuthClientByIdRequestType defines model for UpdateAuthClientByIdRequest.Type.
+type UpdateAuthClientByIdRequestType string
+
+// UpdateAuthClientByIdResponse defines model for UpdateAuthClientByIdResponse.
+type UpdateAuthClientByIdResponse struct {
+	Code    int32                    `json:"code"`
+	Data    UpdateAuthClientByIdData `json:"data"`
+	Message string                   `json:"message"`
 }
 
 // UpdateBarrelByIdData defines model for UpdateBarrelByIdData.
@@ -169,6 +315,39 @@ type GetAppInfoParams struct {
 	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
 }
 
+// CreateAuthClientJSONBody defines parameters for CreateAuthClient.
+type CreateAuthClientJSONBody = CreateAuthClientRequest
+
+// CreateAuthClientParams defines parameters for CreateAuthClient.
+type CreateAuthClientParams struct {
+	// correlation id for tracing purposes
+	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
+}
+
+// SearchAuthClientJSONBody defines parameters for SearchAuthClient.
+type SearchAuthClientJSONBody = SearchAuthClientRequest
+
+// SearchAuthClientParams defines parameters for SearchAuthClient.
+type SearchAuthClientParams struct {
+	// correlation id for tracing purposes
+	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
+}
+
+// GetAuthClientByIdParams defines parameters for GetAuthClientById.
+type GetAuthClientByIdParams struct {
+	// correlation id for tracing purposes
+	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
+}
+
+// UpdateAuthClientByIdJSONBody defines parameters for UpdateAuthClientById.
+type UpdateAuthClientByIdJSONBody = UpdateAuthClientByIdRequest
+
+// UpdateAuthClientByIdParams defines parameters for UpdateAuthClientById.
+type UpdateAuthClientByIdParams struct {
+	// correlation id for tracing purposes
+	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
+}
+
 // CreateBarrelJSONBody defines parameters for CreateBarrel.
 type CreateBarrelJSONBody = CreateBarrelRequest
 
@@ -201,6 +380,15 @@ type UpdateBarrelByIdParams struct {
 	// correlation id for tracing purposes
 	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
 }
+
+// CreateAuthClientJSONRequestBody defines body for CreateAuthClient for application/json ContentType.
+type CreateAuthClientJSONRequestBody = CreateAuthClientJSONBody
+
+// SearchAuthClientJSONRequestBody defines body for SearchAuthClient for application/json ContentType.
+type SearchAuthClientJSONRequestBody = SearchAuthClientJSONBody
+
+// UpdateAuthClientByIdJSONRequestBody defines body for UpdateAuthClientById for application/json ContentType.
+type UpdateAuthClientByIdJSONRequestBody = UpdateAuthClientByIdJSONBody
 
 // CreateBarrelJSONRequestBody defines body for CreateBarrel for application/json ContentType.
 type CreateBarrelJSONRequestBody = CreateBarrelJSONBody

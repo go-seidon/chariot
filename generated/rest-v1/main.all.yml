@@ -311,6 +311,226 @@ paths:
           $ref: '#/paths/~1v1~1barrel/post/responses/500'
       security:
         - basicAuth: []
+  /v1/auth-client:
+    post:
+      operationId: CreateAuthClient
+      summary: create auth client
+      description: create auth client
+      tags:
+        - auth-client
+      parameters:
+        - $ref: '#/components/parameters/correlationId'
+      requestBody:
+        description: auth client information
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAuthClientRequest'
+      responses:
+        '201':
+          description: success create auth client
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAuthClientResponse'
+              examples:
+                Success:
+                  value:
+                    code: 1000
+                    message: success
+                    data:
+                      id: 2EvNFKm97MjLU0JNSOYnoyMFv9i
+                      name: Service A
+                      status: inactive
+                      type: basic_auth
+                      client_id: goseidon
+                      created_at: 1664803257299
+        '400':
+          $ref: '#/paths/~1v1~1barrel/post/responses/400'
+        '401':
+          $ref: '#/paths/~1v1~1barrel/post/responses/401'
+        '500':
+          $ref: '#/paths/~1v1~1barrel/post/responses/500'
+      security:
+        - basicAuth: []
+  /v1/auth-client/search:
+    post:
+      operationId: SearchAuthClient
+      summary: search auth client
+      description: search auth client
+      tags:
+        - auth-client
+      parameters:
+        - $ref: '#/components/parameters/correlationId'
+      requestBody:
+        description: search parameter
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchAuthClientRequest'
+            examples:
+              All Parameter:
+                value:
+                  keyword: ser
+                  pagination:
+                    total_items: 25
+                    page: 1
+                  filter:
+                    status_in:
+                      - active
+                      - inactive
+              Keyword:
+                value:
+                  keyword: ser
+              Pagination:
+                value:
+                  pagination:
+                    total_items: 25
+                    page: 1
+              All Filter:
+                value:
+                  filter:
+                    status_in:
+                      - active
+                      - inactive
+      responses:
+        '200':
+          description: success search auth client
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchAuthClientResponse'
+              examples:
+                Empty Result:
+                  value:
+                    code: 1000
+                    message: success
+                    data: []
+                Some Result:
+                  value:
+                    code: 1000
+                    message: success
+                    data:
+                      - id: 2EvNFKm97MjLU0JNSOYnoyMFv9i
+                        name: Service A
+                        status: inactive
+                        type: basic_auth
+                        client_id: goseidon
+                        created_at: 1664803257299
+                        updated_at: 1664803257300
+                Max Result:
+                  value:
+                    code: 1000
+                    message: success
+                    data:
+                      - id: 2EvNFKm97MjLU0JNSOYnoyMFv9i
+                        name: Service A
+                        status: inactive
+                        type: basic_auth
+                        client_id: goseidon
+                        created_at: 1664803257299
+                        updated_at: 1664803257300
+                      - id: 2EvNFKm97MjLU0JNSOYnoyMFv9i
+                        name: Service A
+                        status: active
+                        type: basic_auth
+                        client_id: goseidon
+                        created_at: 1664803257299
+        '400':
+          $ref: '#/paths/~1v1~1barrel/post/responses/400'
+        '401':
+          $ref: '#/paths/~1v1~1barrel/post/responses/401'
+        '500':
+          $ref: '#/paths/~1v1~1barrel/post/responses/500'
+      security:
+        - basicAuth: []
+  '/v1/auth-client/{id}':
+    put:
+      operationId: UpdateAuthClientById
+      summary: update auth client
+      description: update auth client
+      tags:
+        - auth-client
+      parameters:
+        - $ref: '#/components/parameters/objectId'
+        - $ref: '#/components/parameters/correlationId'
+      requestBody:
+        description: auth client information
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAuthClientByIdRequest'
+      responses:
+        '200':
+          description: success update auth client
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateAuthClientByIdResponse'
+              examples:
+                Success:
+                  value:
+                    code: 1000
+                    message: success
+                    data:
+                      id: 2EvNFKm97MjLU0JNSOYnoyMFv9i
+                      name: Service A
+                      status: inactive
+                      type: basic_auth
+                      client_id: goseidon
+                      created_at: 1664803257299
+                      updated_at: 1664803257300
+        '400':
+          $ref: '#/paths/~1v1~1barrel/post/responses/400'
+        '401':
+          $ref: '#/paths/~1v1~1barrel/post/responses/401'
+        '404':
+          $ref: '#/paths/~1v1~1barrel~1%7Bid%7D/put/responses/404'
+        '500':
+          $ref: '#/paths/~1v1~1barrel/post/responses/500'
+      security:
+        - basicAuth: []
+    get:
+      operationId: GetAuthClientById
+      summary: get auth client
+      description: get auth client
+      tags:
+        - auth-client
+      parameters:
+        - $ref: '#/components/parameters/objectId'
+        - $ref: '#/components/parameters/correlationId'
+      responses:
+        '200':
+          description: success get auth client
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAuthClientByIdResponse'
+              examples:
+                Success:
+                  value:
+                    code: 1000
+                    message: success
+                    data:
+                      id: 2EvNFKm97MjLU0JNSOYnoyMFv9i
+                      name: Service A
+                      status: inactive
+                      type: basic_auth
+                      client_id: goseidon
+                      created_at: 1664803257299
+        '400':
+          $ref: '#/paths/~1v1~1barrel/post/responses/400'
+        '401':
+          $ref: '#/paths/~1v1~1barrel/post/responses/401'
+        '404':
+          $ref: '#/paths/~1v1~1barrel~1%7Bid%7D/put/responses/404'
+        '500':
+          $ref: '#/paths/~1v1~1barrel/post/responses/500'
+      security:
+        - basicAuth: []
 components:
   parameters:
     objectId:
@@ -339,6 +559,19 @@ components:
           format: int32
         message:
           type: string
+    RequestPagination:
+      type: object
+      required:
+        - total_items
+        - page
+      properties:
+        total_items:
+          type: integer
+          description: 'min = 1, max = 200'
+        page:
+          type: integer
+          format: int64
+          description: min = 1
     GetAppInfoResponse:
       type: object
       required:
@@ -520,22 +753,9 @@ components:
           type: string
           description: min = 2 character
         pagination:
-          $ref: '#/components/schemas/SearchBarrelPagination'
+          $ref: '#/components/schemas/RequestPagination'
         filter:
           $ref: '#/components/schemas/SearchBarrelFilter'
-    SearchBarrelPagination:
-      type: object
-      required:
-        - total_items
-        - page
-      properties:
-        total_items:
-          type: integer
-          description: 'min = 1, max = 200'
-        page:
-          type: integer
-          format: int64
-          description: min = 1
     SearchBarrelFilter:
       type: object
       properties:
@@ -592,6 +812,227 @@ components:
         provider:
           type: string
         status:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+        updated_at:
+          type: integer
+          format: int64
+    CreateAuthClientRequest:
+      type: object
+      required:
+        - name
+        - status
+        - type
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+        type:
+          type: string
+          enum:
+            - basic_auth
+        client_id:
+          type: string
+        client_secret:
+          type: string
+    CreateAuthClientResponse:
+      type: object
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CreateAuthClientData'
+    CreateAuthClientData:
+      type: object
+      required:
+        - id
+        - name
+        - status
+        - type
+        - created_at
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        type:
+          type: string
+        client_id:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+    UpdateAuthClientByIdRequest:
+      type: object
+      required:
+        - name
+        - status
+        - type
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+        type:
+          type: string
+          enum:
+            - basic_auth
+        client_id:
+          type: string
+        client_secret:
+          type: string
+    UpdateAuthClientByIdResponse:
+      type: object
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/UpdateAuthClientByIdData'
+    UpdateAuthClientByIdData:
+      type: object
+      required:
+        - id
+        - name
+        - status
+        - type
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        type:
+          type: string
+        client_id:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+        updated_at:
+          type: integer
+          format: int64
+    GetAuthClientByIdResponse:
+      type: object
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/GetAuthClientByIdData'
+    GetAuthClientByIdData:
+      type: object
+      required:
+        - id
+        - name
+        - status
+        - type
+        - created_at
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        type:
+          type: string
+        client_id:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+        updated_at:
+          type: integer
+          format: int64
+    SearchAuthClientRequest:
+      type: object
+      properties:
+        keyword:
+          type: string
+          description: min = 2 character
+        pagination:
+          $ref: '#/components/schemas/RequestPagination'
+        filter:
+          $ref: '#/components/schemas/SearchAuthClientFilter'
+    SearchAuthClientFilter:
+      type: object
+      properties:
+        status_in:
+          type: array
+          items:
+            type: string
+            enum:
+              - active
+              - inactive
+            description: auth client status
+    SearchAuthClientResponse:
+      type: object
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchAuthClientItem'
+    SearchAuthClientItem:
+      type: object
+      required:
+        - id
+        - name
+        - status
+        - type
+        - created_at
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        type:
+          type: string
+        client_id:
           type: string
         created_at:
           type: integer

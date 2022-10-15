@@ -1,0 +1,29 @@
+
+operationId: GetAuthClientById
+summary: get auth client
+description: get auth client
+tags:
+  - auth-client
+parameters:
+  - $ref: "./../../parameter/object_id.yml"
+  - $ref: "./../../parameter/correlation_id.yml"
+responses:
+  '200':
+    description: success get auth client
+    content: 
+      application/json:
+        schema:
+          $ref: "./response_body.yml"
+        examples:
+          'Success':
+            $ref: "./example_success.yml"
+  '400':
+    $ref: "./../../response/bad_request.yml"
+  '401':
+    $ref: "./../../response/unauthenticated_access.yml"
+  '404':
+    $ref: "./../../response/not_found.yml"
+  '500':
+    $ref: "./../../response/internal_error.yml"
+security:
+  - basicAuth: []

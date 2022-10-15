@@ -1,0 +1,15 @@
+type: object
+required:
+- code
+- message
+- data
+properties:
+  code:
+    type: integer
+    format: int32
+  message:
+    type: string
+  data:
+    type: array
+    items:
+      $ref: "./response_item.yml"
