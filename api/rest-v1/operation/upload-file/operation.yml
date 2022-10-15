@@ -1,15 +1,21 @@
 
-operationId: GetBarrelById
-summary: get barrel
-description: get barrel
+operationId: UploadFile
+summary: upload file
+description: upload file
 tags:
-  - barrel
+  - file
 parameters:
   - $ref: "./../../main.yml#/components/parameters/CorrelationId"
-  - $ref: "./../../main.yml#/components/parameters/ObjectId"
+requestBody:
+  description: file to be uploaded
+  required: true
+  content:
+    multipart/form-data:
+      schema:
+        $ref: "./request_body.yml"
 responses:
   '200':
-    description: success get barrel
+    description: success upload file
     content: 
       application/json:
         schema:
@@ -21,8 +27,8 @@ responses:
     $ref: "./../../main.yml#/components/responses/BadRequest"
   '401':
     $ref: "./../../main.yml#/components/responses/UnauthenticatedAccess"
-  '404':
-    $ref: "./../../main.yml#/components/responses/NotFound"
+  '403':
+    $ref: "./../../main.yml#/components/responses/ForbiddenAccess"
   '500':
     $ref: "./../../main.yml#/components/responses/ServerError"
 security:

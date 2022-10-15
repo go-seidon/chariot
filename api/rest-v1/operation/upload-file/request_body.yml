@@ -1,0 +1,24 @@
+
+type: object
+required:
+- file
+- visibility
+- barrels
+properties:
+  file:
+    type: string
+    format: binary
+  visibility:
+    type: string
+    enum:
+    - public
+    - protected
+  barrels:
+    type: string
+    description: csv of barrel code
+  rule:
+    type: string
+    description: rule code
+  metadata:
+    type: string
+    description: json metadata

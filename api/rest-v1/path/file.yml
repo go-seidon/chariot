@@ -1,0 +1,2 @@
+post:
+  $ref: "./../operation/upload-file/operation.yml"

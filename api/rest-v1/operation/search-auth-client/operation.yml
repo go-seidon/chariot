@@ -5,7 +5,7 @@ description: search auth client
 tags:
   - auth-client
 parameters:
-  - $ref: "./../../parameter/correlation_id.yml"
+  - $ref: "./../../main.yml#/components/parameters/CorrelationId"
 requestBody:
   description: search parameter
   required: false
@@ -49,10 +49,10 @@ responses:
           'Max Result':
             $ref: "./example_max.yml"
   '400':
-    $ref: "./../../response/bad_request.yml"
+    $ref: "./../../main.yml#/components/responses/BadRequest"
   '401':
-    $ref: "./../../response/unauthenticated_access.yml"
+    $ref: "./../../main.yml#/components/responses/UnauthenticatedAccess"
   '500':
-    $ref: "./../../response/internal_error.yml"
+    $ref: "./../../main.yml#/components/responses/ServerError"
 security:
   - basicAuth: []

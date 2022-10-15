@@ -16,6 +16,10 @@ servers:
 paths:
   /:
     $ref: "./path/info.yml"
+  /file:
+    $ref: "./path/file.yml"
+  /file/{slug}:
+    $ref: "./path/file_slug.yml"
   /v1/barrel:
     $ref: "./path/barrel.yml"
   /v1/barrel/search:
@@ -30,9 +34,11 @@ paths:
     $ref: "./path/auth_client_id.yml"
 components:
   parameters:
-    objectId: 
+    ObjectId: 
       $ref: "./parameter/object_id.yml"
-    correlationId: 
+    ObjectSlug:
+      $ref: "./parameter/object_slug.yml"
+    CorrelationId: 
       $ref: "./parameter/correlation_id.yml"
   schemas:
     ResponseBodyInfo:
@@ -103,6 +109,29 @@ components:
       $ref: "./operation/search-auth-client/response_body.yml"
     SearchAuthClientItem:
       $ref: "./operation/search-auth-client/response_item.yml"
+
+    # file
+    UploadFileRequest:
+      $ref: "./operation/upload-file/request_body.yml"
+    UploadFileResponse:
+      $ref: "./operation/upload-file/response_body.yml"
+    UploadFileData:
+      $ref: "./operation/upload-file/response_data.yml"
+
+    RetrieveFileBySlugResponse:
+      $ref: "./operation/retrieve-file-by-slug/response_body.yml"
+
+  responses:
+    BadRequest:
+      $ref: "./response/bad_request.yml"
+    UnauthenticatedAccess:
+      $ref: "./response/unauthenticated_access.yml"
+    ForbiddenAccess:
+      $ref: "./response/forbidden_access.yml"
+    NotFound:
+      $ref: "./response/not_found.yml"
+    ServerError:
+      $ref: "./response/server_error.yml"
 
   securitySchemes:
     basicAuth:

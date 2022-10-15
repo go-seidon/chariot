@@ -1,0 +1,7 @@
+
+name: slug
+in: path
+required: true
+description: object slug
+schema:
+  type: string

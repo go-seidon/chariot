@@ -5,7 +5,7 @@ description: create barrel
 tags:
   - barrel
 parameters:
-  - $ref: "./../../parameter/correlation_id.yml"
+  - $ref: "./../../main.yml#/components/parameters/CorrelationId"
 requestBody:
   description: barrel information
   required: true
@@ -24,10 +24,10 @@ responses:
           'Success':
             $ref: "./example_success.yml"
   '400':
-    $ref: "./../../response/bad_request.yml"
+    $ref: "./../../main.yml#/components/responses/BadRequest"
   '401':
-    $ref: "./../../response/unauthenticated_access.yml"
+    $ref: "./../../main.yml#/components/responses/UnauthenticatedAccess"
   '500':
-    $ref: "./../../response/internal_error.yml"
+    $ref: "./../../main.yml#/components/responses/ServerError"
 security:
   - basicAuth: []

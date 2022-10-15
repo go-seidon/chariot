@@ -22,7 +22,7 @@ paths:
       tags:
         - app
       parameters:
-        - $ref: '#/components/parameters/correlationId'
+        - $ref: '#/components/parameters/CorrelationId'
       responses:
         '200':
           description: success get app info
@@ -40,6 +40,95 @@ paths:
                       app_version: 1.0.0
       security:
         - basicAuth: []
+  /file:
+    post:
+      operationId: UploadFile
+      summary: upload file
+      description: upload file
+      tags:
+        - file
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        description: file to be uploaded
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UploadFileRequest'
+      responses:
+        '200':
+          description: success upload file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadFileResponse'
+              examples:
+                Success:
+                  value:
+                    code: 1000
+                    message: success upload file
+                    data:
+                      file_id: 2FfnA2ifBQDT5bMFRCvcdnIhVmg
+                      file_url: 'http://localhost:3030/file/lumba-lumba.jpg'
+                      uploaded_at: 1664891858856
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedAccess'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - basicAuth: []
+  '/file/{slug}':
+    get:
+      operationId: RetrieveFileBySlug
+      summary: retrieve file object
+      description: retrieve file object
+      tags:
+        - file
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/ObjectSlug'
+      responses:
+        '200':
+          description: success retrieve file
+          content:
+            application/octet-stream:
+              schema:
+                $ref: '#/components/schemas/RetrieveFileBySlugResponse'
+          headers:
+            X-File-Name:
+              schema:
+                type: string
+                description: file name
+                example: dolphin
+            X-File-Extension:
+              schema:
+                type: string
+                description: file extension
+                example: jpg
+            X-File-Mimetype:
+              schema:
+                type: string
+                description: file mimetype
+                example: image/jpeg
+            X-File-Size:
+              schema:
+                type: integer
+                format: int64
+                description: file size
+                example: 18934
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/ForbiddenAccess'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - basicAuth: []
   /v1/barrel:
     post:
       operationId: CreateBarrel
@@ -48,7 +137,7 @@ paths:
       tags:
         - barrel
       parameters:
-        - $ref: '#/components/parameters/correlationId'
+        - $ref: '#/components/parameters/CorrelationId'
       requestBody:
         description: barrel information
         required: true
@@ -76,38 +165,11 @@ paths:
                       status: inactive
                       created_at: 1664803257299
         '400':
-          description: invalid parameter
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResponseBodyInfo'
-              examples:
-                Bad Request:
-                  value:
-                    code: 1002
-                    message: property must be at least 5 characters in length
+          $ref: '#/components/responses/BadRequest'
         '401':
-          description: unauthenticated access
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResponseBodyInfo'
-              examples:
-                Invalid Credential:
-                  value:
-                    code: 1003
-                    message: credential is invalid
+          $ref: '#/components/responses/UnauthenticatedAccess'
         '500':
-          description: failed do action
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResponseBodyInfo'
-              examples:
-                General Error:
-                  value:
-                    code: 1001
-                    message: network error
+          $ref: '#/components/responses/ServerError'
       security:
         - basicAuth: []
   /v1/barrel/search:
@@ -118,7 +180,7 @@ paths:
       tags:
         - barrel
       parameters:
-        - $ref: '#/components/parameters/correlationId'
+        - $ref: '#/components/parameters/CorrelationId'
       requestBody:
         description: search parameter
         required: false
@@ -209,11 +271,11 @@ paths:
                         created_at: 1664803257299
                         updated_at: 1664803257300
         '400':
-          $ref: '#/paths/~1v1~1barrel/post/responses/400'
+          $ref: '#/components/responses/BadRequest'
         '401':
-          $ref: '#/paths/~1v1~1barrel/post/responses/401'
+          $ref: '#/components/responses/UnauthenticatedAccess'
         '500':
-          $ref: '#/paths/~1v1~1barrel/post/responses/500'
+          $ref: '#/components/responses/ServerError'
       security:
         - basicAuth: []
   '/v1/barrel/{id}':
@@ -224,8 +286,8 @@ paths:
       tags:
         - barrel
       parameters:
-        - $ref: '#/components/parameters/objectId'
-        - $ref: '#/components/parameters/correlationId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/ObjectId'
       requestBody:
         description: barrel information
         required: true
@@ -254,22 +316,13 @@ paths:
                       created_at: 1664803257299
                       updated_at: 1664803257300
         '400':
-          $ref: '#/paths/~1v1~1barrel/post/responses/400'
+          $ref: '#/components/responses/BadRequest'
         '401':
-          $ref: '#/paths/~1v1~1barrel/post/responses/401'
+          $ref: '#/components/responses/UnauthenticatedAccess'
         '404':
-          description: resource not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResponseBodyInfo'
-              examples:
-                Not Found:
-                  value:
-                    code: 1004
-                    message: not found
+          $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/paths/~1v1~1barrel/post/responses/500'
+          $ref: '#/components/responses/ServerError'
       security:
         - basicAuth: []
     get:
@@ -279,8 +332,8 @@ paths:
       tags:
         - barrel
       parameters:
-        - $ref: '#/components/parameters/objectId'
-        - $ref: '#/components/parameters/correlationId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/ObjectId'
       responses:
         '200':
           description: success get barrel
@@ -302,13 +355,13 @@ paths:
                       created_at: 1664803257299
                       updated_at: 1664803257300
         '400':
-          $ref: '#/paths/~1v1~1barrel/post/responses/400'
+          $ref: '#/components/responses/BadRequest'
         '401':
-          $ref: '#/paths/~1v1~1barrel/post/responses/401'
+          $ref: '#/components/responses/UnauthenticatedAccess'
         '404':
-          $ref: '#/paths/~1v1~1barrel~1%7Bid%7D/put/responses/404'
+          $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/paths/~1v1~1barrel/post/responses/500'
+          $ref: '#/components/responses/ServerError'
       security:
         - basicAuth: []
   /v1/auth-client:
@@ -319,7 +372,7 @@ paths:
       tags:
         - auth-client
       parameters:
-        - $ref: '#/components/parameters/correlationId'
+        - $ref: '#/components/parameters/CorrelationId'
       requestBody:
         description: auth client information
         required: true
@@ -347,11 +400,11 @@ paths:
                       client_id: goseidon
                       created_at: 1664803257299
         '400':
-          $ref: '#/paths/~1v1~1barrel/post/responses/400'
+          $ref: '#/components/responses/BadRequest'
         '401':
-          $ref: '#/paths/~1v1~1barrel/post/responses/401'
+          $ref: '#/components/responses/UnauthenticatedAccess'
         '500':
-          $ref: '#/paths/~1v1~1barrel/post/responses/500'
+          $ref: '#/components/responses/ServerError'
       security:
         - basicAuth: []
   /v1/auth-client/search:
@@ -362,7 +415,7 @@ paths:
       tags:
         - auth-client
       parameters:
-        - $ref: '#/components/parameters/correlationId'
+        - $ref: '#/components/parameters/CorrelationId'
       requestBody:
         description: search parameter
         required: false
@@ -439,11 +492,11 @@ paths:
                         client_id: goseidon
                         created_at: 1664803257299
         '400':
-          $ref: '#/paths/~1v1~1barrel/post/responses/400'
+          $ref: '#/components/responses/BadRequest'
         '401':
-          $ref: '#/paths/~1v1~1barrel/post/responses/401'
+          $ref: '#/components/responses/UnauthenticatedAccess'
         '500':
-          $ref: '#/paths/~1v1~1barrel/post/responses/500'
+          $ref: '#/components/responses/ServerError'
       security:
         - basicAuth: []
   '/v1/auth-client/{id}':
@@ -454,8 +507,8 @@ paths:
       tags:
         - auth-client
       parameters:
-        - $ref: '#/components/parameters/objectId'
-        - $ref: '#/components/parameters/correlationId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/ObjectId'
       requestBody:
         description: auth client information
         required: true
@@ -484,13 +537,13 @@ paths:
                       created_at: 1664803257299
                       updated_at: 1664803257300
         '400':
-          $ref: '#/paths/~1v1~1barrel/post/responses/400'
+          $ref: '#/components/responses/BadRequest'
         '401':
-          $ref: '#/paths/~1v1~1barrel/post/responses/401'
+          $ref: '#/components/responses/UnauthenticatedAccess'
         '404':
-          $ref: '#/paths/~1v1~1barrel~1%7Bid%7D/put/responses/404'
+          $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/paths/~1v1~1barrel/post/responses/500'
+          $ref: '#/components/responses/ServerError'
       security:
         - basicAuth: []
     get:
@@ -500,8 +553,8 @@ paths:
       tags:
         - auth-client
       parameters:
-        - $ref: '#/components/parameters/objectId'
-        - $ref: '#/components/parameters/correlationId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/ObjectId'
       responses:
         '200':
           description: success get auth client
@@ -522,25 +575,32 @@ paths:
                       client_id: goseidon
                       created_at: 1664803257299
         '400':
-          $ref: '#/paths/~1v1~1barrel/post/responses/400'
+          $ref: '#/components/responses/BadRequest'
         '401':
-          $ref: '#/paths/~1v1~1barrel/post/responses/401'
+          $ref: '#/components/responses/UnauthenticatedAccess'
         '404':
-          $ref: '#/paths/~1v1~1barrel~1%7Bid%7D/put/responses/404'
+          $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/paths/~1v1~1barrel/post/responses/500'
+          $ref: '#/components/responses/ServerError'
       security:
         - basicAuth: []
 components:
   parameters:
-    objectId:
+    ObjectId:
       name: id
       in: path
       required: true
       description: object id
       schema:
         type: string
-    correlationId:
+    ObjectSlug:
+      name: slug
+      in: path
+      required: true
+      description: object slug
+      schema:
+        type: string
+    CorrelationId:
       name: X-Correlation-Id
       in: header
       required: false
@@ -1040,6 +1100,116 @@ components:
         updated_at:
           type: integer
           format: int64
+    UploadFileRequest:
+      type: object
+      required:
+        - file
+        - visibility
+        - barrels
+      properties:
+        file:
+          type: string
+          format: binary
+        visibility:
+          type: string
+          enum:
+            - public
+            - protected
+        barrels:
+          type: string
+          description: csv of barrel code
+        rule:
+          type: string
+          description: rule code
+        metadata:
+          type: string
+          description: json metadata
+    UploadFileResponse:
+      type: object
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/UploadFileData'
+    UploadFileData:
+      type: object
+      required:
+        - file_id
+        - uploaded_at
+      properties:
+        file_id:
+          type: string
+        file_url:
+          type: string
+        uploaded_at:
+          type: integer
+          format: int64
+    RetrieveFileBySlugResponse:
+      type: string
+      format: binary
+  responses:
+    BadRequest:
+      description: invalid parameter
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResponseBodyInfo'
+          examples:
+            Bad Request:
+              value:
+                code: 1002
+                message: property must be at least 5 characters in length
+    UnauthenticatedAccess:
+      description: unauthenticated access
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResponseBodyInfo'
+          examples:
+            Invalid Credential:
+              value:
+                code: 1003
+                message: credential is invalid
+    ForbiddenAccess:
+      description: forbidden access
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResponseBodyInfo'
+          examples:
+            Forbidden Access:
+              value:
+                code: 1003
+                message: forbiden access
+    NotFound:
+      description: resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResponseBodyInfo'
+          examples:
+            Not Found:
+              value:
+                code: 1004
+                message: not found
+    ServerError:
+      description: failed do action
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResponseBodyInfo'
+          examples:
+            General Error:
+              value:
+                code: 1001
+                message: network error
   securitySchemes:
     basicAuth:
       type: http

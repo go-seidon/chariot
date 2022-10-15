@@ -5,8 +5,8 @@ description: update barrel
 tags:
   - barrel
 parameters:
-  - $ref: "./../../parameter/object_id.yml"
-  - $ref: "./../../parameter/correlation_id.yml"
+  - $ref: "./../../main.yml#/components/parameters/CorrelationId"
+  - $ref: "./../../main.yml#/components/parameters/ObjectId"
 requestBody:
   description: barrel information
   required: true
@@ -25,12 +25,12 @@ responses:
           'Success':
             $ref: "./example_success.yml"
   '400':
-    $ref: "./../../response/bad_request.yml"
+    $ref: "./../../main.yml#/components/responses/BadRequest"
   '401':
-    $ref: "./../../response/unauthenticated_access.yml"
+    $ref: "./../../main.yml#/components/responses/UnauthenticatedAccess"
   '404':
-    $ref: "./../../response/not_found.yml"
+    $ref: "./../../main.yml#/components/responses/NotFound"
   '500':
-    $ref: "./../../response/internal_error.yml"
+    $ref: "./../../main.yml#/components/responses/ServerError"
 security:
   - basicAuth: []

@@ -1,26 +1,23 @@
 
-operationId: GetBarrelById
-summary: get barrel
-description: get barrel
+operationId: RetrieveFileBySlug
+summary: retrieve file
+description: retrieve file
 tags:
-  - barrel
+  - file
 parameters:
   - $ref: "./../../main.yml#/components/parameters/CorrelationId"
-  - $ref: "./../../main.yml#/components/parameters/ObjectId"
+  - $ref: "./../../main.yml#/components/parameters/ObjectSlug"
 responses:
   '200':
-    description: success get barrel
+    description: success retrieve file
     content: 
-      application/json:
+      application/octet-stream:
         schema:
           $ref: "./response_body.yml"
-        examples:
-          'Success':
-            $ref: "./example_success.yml"
   '400':
     $ref: "./../../main.yml#/components/responses/BadRequest"
-  '401':
-    $ref: "./../../main.yml#/components/responses/UnauthenticatedAccess"
+  '403':
+    $ref: "./../../main.yml#/components/responses/ForbiddenAccess"
   '404':
     $ref: "./../../main.yml#/components/responses/NotFound"
   '500':

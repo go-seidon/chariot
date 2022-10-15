@@ -1,0 +1,2 @@
+get:
+  $ref: "./../operation/retrieve-file-by-slug/operation.yml"

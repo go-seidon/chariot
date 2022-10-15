@@ -49,6 +49,12 @@ const (
 	UpdateAuthClientByIdRequestTypeBasicAuth UpdateAuthClientByIdRequestType = "basic_auth"
 )
 
+// Defines values for UploadFileRequestVisibility.
+const (
+	Protected UploadFileRequestVisibility = "protected"
+	Public    UploadFileRequestVisibility = "public"
+)
+
 // CreateAuthClientData defines model for CreateAuthClientData.
 type CreateAuthClientData struct {
 	ClientId  *string `json:"client_id,omitempty"`
@@ -169,6 +175,9 @@ type ResponseBodyInfo struct {
 	Code    int32  `json:"code"`
 	Message string `json:"message"`
 }
+
+// RetrieveFileBySlugResponse defines model for RetrieveFileBySlugResponse.
+type RetrieveFileBySlugResponse = string
 
 // SearchAuthClientFilter defines model for SearchAuthClientFilter.
 type SearchAuthClientFilter struct {
@@ -303,14 +312,75 @@ type UpdateBarrelByIdResponse struct {
 	Message string               `json:"message"`
 }
 
-// CorrelationId defines model for correlationId.
+// UploadFileData defines model for UploadFileData.
+type UploadFileData struct {
+	FileId     string  `json:"file_id"`
+	FileUrl    *string `json:"file_url,omitempty"`
+	UploadedAt int64   `json:"uploaded_at"`
+}
+
+// UploadFileRequest defines model for UploadFileRequest.
+type UploadFileRequest struct {
+	// csv of barrel code
+	Barrels string `json:"barrels"`
+	File    string `json:"file"`
+
+	// json metadata
+	Metadata *string `json:"metadata,omitempty"`
+
+	// rule code
+	Rule       *string                     `json:"rule,omitempty"`
+	Visibility UploadFileRequestVisibility `json:"visibility"`
+}
+
+// UploadFileRequestVisibility defines model for UploadFileRequest.Visibility.
+type UploadFileRequestVisibility string
+
+// UploadFileResponse defines model for UploadFileResponse.
+type UploadFileResponse struct {
+	Code    int32          `json:"code"`
+	Data    UploadFileData `json:"data"`
+	Message string         `json:"message"`
+}
+
+// CorrelationId defines model for CorrelationId.
 type CorrelationId = string
 
-// ObjectId defines model for objectId.
+// ObjectId defines model for ObjectId.
 type ObjectId = string
+
+// ObjectSlug defines model for ObjectSlug.
+type ObjectSlug = string
+
+// BadRequest defines model for BadRequest.
+type BadRequest = ResponseBodyInfo
+
+// ForbiddenAccess defines model for ForbiddenAccess.
+type ForbiddenAccess = ResponseBodyInfo
+
+// NotFound defines model for NotFound.
+type NotFound = ResponseBodyInfo
+
+// ServerError defines model for ServerError.
+type ServerError = ResponseBodyInfo
+
+// UnauthenticatedAccess defines model for UnauthenticatedAccess.
+type UnauthenticatedAccess = ResponseBodyInfo
 
 // GetAppInfoParams defines parameters for GetAppInfo.
 type GetAppInfoParams struct {
+	// correlation id for tracing purposes
+	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
+}
+
+// UploadFileParams defines parameters for UploadFile.
+type UploadFileParams struct {
+	// correlation id for tracing purposes
+	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
+}
+
+// RetrieveFileBySlugParams defines parameters for RetrieveFileBySlug.
+type RetrieveFileBySlugParams struct {
 	// correlation id for tracing purposes
 	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
 }
