@@ -54,6 +54,7 @@ test-watch-integration:
 
 .PHONY: generate-mock
 generate-mock:
+	mockgen -package=mock_restapp -source internal/rest-app/server.go -destination=internal/rest-app/mock/server_mock.go
 
 .PHONY: generate-proto
 generate-proto:
