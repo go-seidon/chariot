@@ -1,3 +1,12 @@
 module github.com/go-seidon/chariot
 
 go 1.16
+
+require (
+	github.com/deepmap/oapi-codegen v1.11.0
+	github.com/go-seidon/provider v0.0.1-alpha
+	github.com/golang/mock v1.6.0
+	github.com/labstack/echo/v4 v4.9.1
+	github.com/onsi/ginkgo/v2 v2.3.1
+	github.com/onsi/gomega v1.22.1
+)

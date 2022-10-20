@@ -171,6 +171,7 @@ C:\Windows\System32\drivers\etc\hosts
 - Image manipulation capability (width, height, compression)
 7. Caching support
 8. Enhance Rule: mimetype
+9. Unit test: app NewDefaultConfig
 
 ## Issue
 No issue right now

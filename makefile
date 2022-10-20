@@ -54,6 +54,7 @@ test-watch-integration:
 
 .PHONY: generate-mock
 generate-mock:
+	mockgen -package=mock_restapp -source internal/rest-app/server.go -destination=internal/rest-app/mock/server_mock.go
 
 .PHONY: generate-proto
 generate-proto:
@@ -72,10 +73,15 @@ generate-swagger:
 generate-oapi:
 	make generate-swagger
 	make generate-oapi-type
+	make generate-oapi-server
 
 .PHONY: generate-oapi-type
 generate-oapi-type:
 	oapi-codegen -old-config-style -config api/rest-v1/type.gen.yaml generated/rest-v1/main.all.yml
+
+.PHONY: generate-oapi-server
+generate-oapi-server:
+	oapi-codegen -old-config-style -config api/rest-v1/server.gen.yaml generated/rest-v1/main.all.yml
 
 .PHONY: run-rest-app
 run-rest-app:
