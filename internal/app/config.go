@@ -18,17 +18,17 @@ type Config struct {
 
 	RepositoryProvider string `env:"REPOSITORY_PROVIDER"`
 
-	MySQLMasterHost     string `env:"MYSQL_MASTER_HOST"`
-	MySQLMasterPort     int    `env:"MYSQL_MASTER_PORT"`
-	MySQLMasterUser     string `env:"MYSQL_MASTER_USER"`
-	MySQLMasterPassword string `env:"MYSQL_MASTER_PASSWORD"`
-	MySQLMasterDBName   string `env:"MYSQL_MASTER_DB_NAME"`
+	MySQLPrimaryHost     string `env:"MYSQL_PRIMARY_HOST"`
+	MySQLPrimaryPort     int    `env:"MYSQL_PRIMARY_PORT"`
+	MySQLPrimaryUser     string `env:"MYSQL_PRIMARY_USER"`
+	MySQLPrimaryPassword string `env:"MYSQL_PRIMARY_PASSWORD"`
+	MySQLPrimaryDBName   string `env:"MYSQL_PRIMARY_DB_NAME"`
 
-	MySQLReplicaHost     string `env:"MYSQL_REPLICA_HOST"`
-	MySQLReplicaPort     int    `env:"MYSQL_REPLICA_PORT"`
-	MySQLReplicaUser     string `env:"MYSQL_REPLICA_USER"`
-	MySQLReplicaPassword string `env:"MYSQL_REPLICA_PASSWORD"`
-	MySQLReplicaDBName   string `env:"MYSQL_REPLICA_DB_NAME"`
+	MySQLSecondaryHost     string `env:"MYSQL_SECONDARY_HOST"`
+	MySQLSecondaryPort     int    `env:"MYSQL_SECONDARY_PORT"`
+	MySQLSecondaryUser     string `env:"MYSQL_SECONDARY_USER"`
+	MySQLSecondaryPassword string `env:"MYSQL_SECONDARY_PASSWORD"`
+	MySQLSecondaryDBName   string `env:"MYSQL_SECONDARY_DB_NAME"`
 
 	UploadFormSize int64 `env:"UPLOAD_FORM_SIZE"`
 }
