@@ -54,6 +54,9 @@ test-watch-integration:
 
 .PHONY: generate-mock
 generate-mock:
+	mockgen -package=mock_auth -source internal/auth/client.go -destination=internal/auth/mock/client_mock.go
+	mockgen -package=mock_repository -source internal/repository/auth.go -destination=internal/repository/mock/auth_mock.go
+	mockgen -package=mock_repository -source internal/repository/provider.go -destination=internal/repository/mock/provider_mock.go
 	mockgen -package=mock_restapp -source internal/rest-app/server.go -destination=internal/rest-app/mock/server_mock.go
 
 .PHONY: generate-proto
