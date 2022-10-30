@@ -11,7 +11,6 @@ import (
 	"gorm.io/plugin/dbresolver"
 )
 
-// @todo: add unit test
 func NewDefaultRepository(config *Config) (repository.Provider, error) {
 	if config == nil {
 		return nil, fmt.Errorf("invalid config")
@@ -66,7 +65,7 @@ func NewDefaultRepository(config *Config) (repository.Provider, error) {
 		}
 
 		repo, err = repository_mysql.NewRepository(
-			repository_mysql.WithDbClient(dbClient),
+			repository_mysql.WithGormClient(dbClient),
 		)
 		if err != nil {
 			return nil, err
