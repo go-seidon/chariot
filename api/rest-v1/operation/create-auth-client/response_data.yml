@@ -4,6 +4,7 @@ required:
 - name
 - status
 - type
+- client_id
 - created_at
 properties:
   id:

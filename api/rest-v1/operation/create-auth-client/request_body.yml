@@ -4,6 +4,8 @@ required:
 - name
 - status
 - type
+- client_id
+- client_secret
 properties:
   name:
     type: string
