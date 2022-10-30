@@ -35,18 +35,18 @@ func (m *MockProvider) EXPECT() *MockProviderMockRecorder {
 	return m.recorder
 }
 
-// GetAuthRepo mocks base method.
-func (m *MockProvider) GetAuthRepo() repository.Auth {
+// GetAuth mocks base method.
+func (m *MockProvider) GetAuth() repository.Auth {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAuthRepo")
+	ret := m.ctrl.Call(m, "GetAuth")
 	ret0, _ := ret[0].(repository.Auth)
 	return ret0
 }
 
-// GetAuthRepo indicates an expected call of GetAuthRepo.
-func (mr *MockProviderMockRecorder) GetAuthRepo() *gomock.Call {
+// GetAuth indicates an expected call of GetAuth.
+func (mr *MockProviderMockRecorder) GetAuth() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAuthRepo", reflect.TypeOf((*MockProvider)(nil).GetAuthRepo))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAuth", reflect.TypeOf((*MockProvider)(nil).GetAuth))
 }
 
 // Init mocks base method.
