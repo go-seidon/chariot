@@ -1,137 +1,124 @@
 package repository_mysql_test
 
-// import (
-// 	"context"
-// 	"database/sql"
-// 	"fmt"
+import (
+	"context"
+	"database/sql"
+	"fmt"
 
-// 	"github.com/golang/mock/gomock"
-// 	. "github.com/onsi/ginkgo/v2"
-// 	. "github.com/onsi/gomega"
+	"github.com/golang/mock/gomock"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
-// 	mock_db_mysql "github.com/go-seidon/chariot/internal/db-mysql/mock"
-// 	"github.com/go-seidon/chariot/internal/repository"
-// 	repository_mysql "github.com/go-seidon/chariot/internal/repository-mysql"
-// )
+	"github.com/go-seidon/chariot/internal/repository"
+	repository_mysql "github.com/go-seidon/chariot/internal/repository-mysql"
+	mock_dbmysql "github.com/go-seidon/provider/db-mysql/mock"
+)
 
-// var _ = Describe("Repository Provider", func() {
-// 	Context("NewRepository function", Label("unit"), func() {
-// 		When("master db client is not specified", func() {
-// 			It("should return error", func() {
-// 				res, err := repository_mysql.NewRepository()
+var _ = Describe("Repository Provider", func() {
+	Context("NewRepository function", Label("unit"), func() {
+		When("db client is not specified", func() {
+			It("should return error", func() {
+				res, err := repository_mysql.NewRepository()
 
-// 				Expect(res).To(BeNil())
-// 				Expect(err).To(Equal(fmt.Errorf("invalid db client specified")))
-// 			})
-// 		})
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("invalid db client")))
+			})
+		})
 
-// 		When("replica db client is not specified", func() {
-// 			It("should return error", func() {
-// 				mOpt := repository_mysql.WithDbMaster(&sql.DB{})
-// 				res, err := repository_mysql.NewRepository(mOpt)
+		When("required parameters are specified", func() {
+			It("should return result", func() {
+				mOpt := repository_mysql.WithDbClient(&sql.DB{})
+				res, err := repository_mysql.NewRepository(mOpt)
 
-// 				Expect(res).To(BeNil())
-// 				Expect(err).To(Equal(fmt.Errorf("invalid db client specified")))
-// 			})
-// 		})
+				Expect(res).ToNot(BeNil())
+				Expect(err).To(BeNil())
+			})
+		})
+	})
 
-// 		When("required parameters are specified", func() {
-// 			It("should return result", func() {
-// 				mOpt := repository_mysql.WithDbMaster(&sql.DB{})
-// 				rOpt := repository_mysql.WithDbReplica(&sql.DB{})
-// 				res, err := repository_mysql.NewRepository(mOpt, rOpt)
+	Context("GetAuth function", Label("unit"), func() {
+		var (
+			provider repository.Provider
+		)
 
-// 				Expect(res).ToNot(BeNil())
-// 				Expect(err).To(BeNil())
-// 			})
-// 		})
-// 	})
+		BeforeEach(func() {
+			mOpt := repository_mysql.WithDbClient(&sql.DB{})
+			provider, _ = repository_mysql.NewRepository(mOpt)
+		})
 
-// 	Context("GetAuthRepo function", Label("unit"), func() {
-// 		var (
-// 			provider repository.Provider
-// 		)
+		When("function is called", func() {
+			It("should return result", func() {
+				res := provider.GetAuth()
 
-// 		BeforeEach(func() {
-// 			mOpt := repository_mysql.WithDbMaster(&sql.DB{})
-// 			rOpt := repository_mysql.WithDbReplica(&sql.DB{})
-// 			provider, _ = repository_mysql.NewRepository(mOpt, rOpt)
-// 		})
+				Expect(res).ToNot(BeNil())
+			})
+		})
+	})
 
-// 		When("function is called", func() {
-// 			It("should return result", func() {
-// 				res := provider.GetAuthRepo()
+	Context("Init function", Label("unit"), func() {
+		var (
+			provider repository.Provider
+			ctx      context.Context
+		)
 
-// 				Expect(res).ToNot(BeNil())
-// 			})
-// 		})
-// 	})
+		BeforeEach(func() {
+			mOpt := repository_mysql.WithDbClient(&sql.DB{})
+			provider, _ = repository_mysql.NewRepository(mOpt)
+			ctx = context.Background()
+		})
 
-// 	Context("Init function", Label("unit"), func() {
-// 		var (
-// 			provider repository.Provider
-// 			ctx      context.Context
-// 		)
+		When("success init", func() {
+			It("should return result", func() {
+				res := provider.Init(ctx)
 
-// 		BeforeEach(func() {
-// 			mOpt := repository_mysql.WithDbMaster(&sql.DB{})
-// 			rOpt := repository_mysql.WithDbReplica(&sql.DB{})
-// 			provider, _ = repository_mysql.NewRepository(mOpt, rOpt)
-// 			ctx = context.Background()
-// 		})
+				Expect(res).To(BeNil())
+			})
+		})
+	})
 
-// 		When("success init", func() {
-// 			It("should return result", func() {
-// 				res := provider.Init(ctx)
+	Context("Ping function", Label("unit"), func() {
+		var (
+			provider repository.Provider
+			ctx      context.Context
+			client   *mock_dbmysql.MockClient
+		)
 
-// 				Expect(res).To(BeNil())
-// 			})
-// 		})
-// 	})
+		BeforeEach(func() {
+			ctx = context.Background()
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			client = mock_dbmysql.NewMockClient(ctrl)
+			provider, _ = repository_mysql.NewRepository(
+				repository_mysql.WithDbClient(client),
+			)
+		})
 
-// 	Context("Ping function", Label("unit"), func() {
-// 		var (
-// 			provider repository.Provider
-// 			ctx      context.Context
-// 			client   *mock_db_mysql.MockClient
-// 		)
+		When("success ping", func() {
+			It("should return result", func() {
+				client.
+					EXPECT().
+					PingContext(gomock.Eq(ctx)).
+					Return(nil).
+					Times(1)
 
-// 		BeforeEach(func() {
-// 			t := GinkgoT()
-// 			ctrl := gomock.NewController(t)
-// 			client = mock_db_mysql.NewMockClient(ctrl)
-// 			mOpt := repository_mysql.WithDbMaster(client)
-// 			rOpt := repository_mysql.WithDbReplica(client)
-// 			provider, _ = repository_mysql.NewRepository(mOpt, rOpt)
-// 			ctx = context.Background()
-// 		})
+				err := provider.Ping(ctx)
 
-// 		When("success ping", func() {
-// 			It("should return result", func() {
-// 				client.
-// 					EXPECT().
-// 					PingContext(gomock.Eq(ctx)).
-// 					Return(nil).
-// 					Times(1)
+				Expect(err).To(BeNil())
+			})
+		})
 
-// 				res := provider.Ping(ctx)
+		When("failed ping", func() {
+			It("should return error", func() {
+				client.
+					EXPECT().
+					PingContext(gomock.Eq(ctx)).
+					Return(fmt.Errorf("ping error")).
+					Times(1)
 
-// 				Expect(res).To(BeNil())
-// 			})
-// 		})
+				err := provider.Ping(ctx)
 
-// 		When("failed ping", func() {
-// 			It("should return error", func() {
-// 				client.
-// 					EXPECT().
-// 					PingContext(gomock.Eq(ctx)).
-// 					Return(fmt.Errorf("ping error")).
-// 					Times(1)
-
-// 				res := provider.Ping(ctx)
-
-// 				Expect(res).To(Equal(fmt.Errorf("ping error")))
-// 			})
-// 		})
-// 	})
-// })
+				Expect(err).To(Equal(fmt.Errorf("ping error")))
+			})
+		})
+	})
+})

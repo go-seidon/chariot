@@ -53,7 +53,7 @@ var _ = Describe("Auth Repository", func() {
 				AbortSuite("failed create gorm client: " + err.Error())
 			}
 			authRepo = repository_mysql.NewAuth(repository_mysql.AuthParam{
-				DbClient: gormClient,
+				GormClient: gormClient,
 			})
 
 			p = repository.CreateClientParam{

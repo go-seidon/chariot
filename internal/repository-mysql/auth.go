@@ -10,11 +10,11 @@ import (
 )
 
 type auth struct {
-	dbClient *gorm.DB
+	gormClient *gorm.DB
 }
 
 func (r *auth) CreateClient(ctx context.Context, p repository.CreateClientParam) (*repository.CreateClientResult, error) {
-	tx := r.dbClient.
+	tx := r.gormClient.
 		WithContext(ctx).
 		Clauses(dbresolver.Write).
 		Begin()
@@ -70,12 +70,12 @@ func (r *auth) CreateClient(ctx context.Context, p repository.CreateClientParam)
 }
 
 type AuthParam struct {
-	DbClient *gorm.DB
+	GormClient *gorm.DB
 }
 
 func NewAuth(p AuthParam) *auth {
 	return &auth{
-		dbClient: p.DbClient,
+		gormClient: p.GormClient,
 	}
 }
 

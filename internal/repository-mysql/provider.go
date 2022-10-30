@@ -4,11 +4,11 @@ import (
 	"context"
 
 	"github.com/go-seidon/chariot/internal/repository"
-	"gorm.io/gorm"
+	db_mysql "github.com/go-seidon/provider/db-mysql"
 )
 
 type provider struct {
-	dbClient *gorm.DB
+	dbClient db_mysql.Pingable
 	authRepo *auth
 }
 
@@ -17,11 +17,7 @@ func (p *provider) Init(ctx context.Context) error {
 }
 
 func (p *provider) Ping(ctx context.Context) error {
-	db, err := p.dbClient.DB()
-	if err != nil {
-		return err
-	}
-	return db.PingContext(ctx)
+	return p.dbClient.PingContext(ctx)
 }
 
 func (p *provider) GetAuth() repository.Auth {
