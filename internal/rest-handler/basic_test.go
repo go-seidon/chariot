@@ -1,4 +1,4 @@
-package rest_app_test
+package rest_handler_test
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 
 	rest_v1 "github.com/go-seidon/chariot/generated/rest-v1"
-	rest_app "github.com/go-seidon/chariot/internal/rest-app"
+	rest_handler "github.com/go-seidon/chariot/internal/rest-handler"
 	"github.com/labstack/echo/v4"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -21,14 +21,14 @@ var _ = Describe("Basic Handler", func() {
 		)
 
 		BeforeEach(func() {
-			e := echo.New()
 			req := httptest.NewRequest(http.MethodPost, "/", nil)
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec = httptest.NewRecorder()
 
+			e := echo.New()
 			ctx = e.NewContext(req, rec)
-			basicHandler := rest_app.NewBasicHandler(rest_app.BasicHandlerParam{
-				Config: &rest_app.RestAppConfig{
+			basicHandler := rest_handler.NewBasic(rest_handler.BasicParam{
+				Config: &rest_handler.BasicConfig{
 					AppName:    "name",
 					AppVersion: "version",
 				},

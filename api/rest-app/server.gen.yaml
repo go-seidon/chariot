@@ -1,0 +1,4 @@
+package: rest_v1
+generate:
+  - server
+output: generated/rest-app/server.gen.go

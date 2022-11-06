@@ -98,18 +98,18 @@ const (
 
 // CreateAuthClientData defines model for CreateAuthClientData.
 type CreateAuthClientData struct {
-	ClientId  *string `json:"client_id,omitempty"`
-	CreatedAt int64   `json:"created_at"`
-	Id        string  `json:"id"`
-	Name      string  `json:"name"`
-	Status    string  `json:"status"`
-	Type      string  `json:"type"`
+	ClientId  string `json:"client_id"`
+	CreatedAt int64  `json:"created_at"`
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Status    string `json:"status"`
+	Type      string `json:"type"`
 }
 
 // CreateAuthClientRequest defines model for CreateAuthClientRequest.
 type CreateAuthClientRequest struct {
-	ClientId     *string                       `json:"client_id,omitempty"`
-	ClientSecret *string                       `json:"client_secret,omitempty"`
+	ClientId     string                        `json:"client_id"`
+	ClientSecret string                        `json:"client_secret"`
 	Name         string                        `json:"name"`
 	Status       CreateAuthClientRequestStatus `json:"status"`
 	Type         CreateAuthClientRequestType   `json:"type"`

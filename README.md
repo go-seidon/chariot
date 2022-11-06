@@ -67,50 +67,14 @@ TBA
   $ make migrate-mysql [args] # args e.g: migrate-mysql up
 ```
 
-2. Mongo Migration
-```bash
-  $ make migrate-mongo-create [args] # args e.g: migrate-mongo-create file-table
-  $ make migrate-mongo [args] # args e.g: migrate-mongo up
-```
-
 ### MySQL Replication Setup
 1. Run setup
 ```bash
   $ ./development/mysql/replication.sh
 ```
 
-### MongoDB Replication Setup
-1. Generate keyFile (if necessary)
-```bash
-  $ cd /development/mongo
-  $ openssl rand -base64 741 > mongodb.key
-  $ chmod 400 mongodb.key
-```
-
-2. Setting local hosts
-- Window
-C:\Windows\System32\drivers\etc\hosts
-```md
-  127.0.0.1 mongo-db-1
-  127.0.0.1 mongo-db-2
-  127.0.0.1 mongo-db-3
-```
-
-- Linux
-\etc\hosts
-```md
-  127.0.0.1 mongo-db-1
-  127.0.0.1 mongo-db-2
-  127.0.0.1 mongo-db-3
-```
-
-3. Run setup
-```bash
-  $ ./development/mongo/replication.sh
-```
-
 ## Todo
-1. Admin: CreateAuthClient
+1. Override default error handler
 2. Admin: ReadAuthClient
 3. Admin: UpdateAuthClient
 4. Admin: SearchAuthClients

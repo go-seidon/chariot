@@ -1,21 +1,24 @@
+
 type: object
 required:
-- id
 - name
 - status
 - type
-- created_at
+- client_id
+- client_secret
 properties:
-  id:
-    type: string
   name:
     type: string
   status:
     type: string
+    enum: 
+    - active
+    - inactive
   type:
     type: string
+    enum:
+    - basic_auth
   client_id:
     type: string
-  created_at:
-    type: integer
-    format: int64
+  client_secret:
+    type: string

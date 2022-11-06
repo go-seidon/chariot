@@ -1,4 +1,4 @@
-package rest_app
+package rest_handler
 
 import (
 	"net/http"
@@ -9,7 +9,7 @@ import (
 )
 
 type basicHandler struct {
-	config *RestAppConfig
+	config *BasicConfig
 }
 
 func (h *basicHandler) GetAppInfo(ctx echo.Context) error {
@@ -24,11 +24,16 @@ func (h *basicHandler) GetAppInfo(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
-type BasicHandlerParam struct {
-	Config *RestAppConfig
+type BasicParam struct {
+	Config *BasicConfig
 }
 
-func NewBasicHandler(p BasicHandlerParam) *basicHandler {
+type BasicConfig struct {
+	AppName    string
+	AppVersion string
+}
+
+func NewBasic(p BasicParam) *basicHandler {
 	return &basicHandler{
 		config: p.Config,
 	}

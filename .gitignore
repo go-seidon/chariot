@@ -10,6 +10,7 @@ vendor/*
 *.env
 temp/*
 storage/*
+cmd/*-test
 
 # open api
 generated/rest-v1/main.all.yml
