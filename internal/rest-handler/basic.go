@@ -3,7 +3,7 @@ package rest_handler
 import (
 	"net/http"
 
-	rest_v1 "github.com/go-seidon/chariot/generated/rest-v1"
+	rest_app "github.com/go-seidon/chariot/generated/rest-app"
 	"github.com/go-seidon/provider/status"
 	"github.com/labstack/echo/v4"
 )
@@ -13,10 +13,10 @@ type basicHandler struct {
 }
 
 func (h *basicHandler) GetAppInfo(ctx echo.Context) error {
-	res := &rest_v1.GetAppInfoResponse{
+	res := &rest_app.GetAppInfoResponse{
 		Code:    status.ACTION_SUCCESS,
 		Message: "success get app info",
-		Data: rest_v1.GetAppInfoData{
+		Data: rest_app.GetAppInfoData{
 			AppName:    h.config.AppName,
 			AppVersion: h.config.AppVersion,
 		},

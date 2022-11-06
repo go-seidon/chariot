@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"time"
 
-	rest_v1 "github.com/go-seidon/chariot/generated/rest-v1"
+	rest_app "github.com/go-seidon/chariot/generated/rest-app"
 	"github.com/go-seidon/chariot/internal/auth"
 	mock_auth "github.com/go-seidon/chariot/internal/auth/mock"
 	rest_handler "github.com/go-seidon/chariot/internal/rest-handler"
@@ -32,7 +32,7 @@ var _ = Describe("Basic Handler", func() {
 
 		BeforeEach(func() {
 			currentTs = time.Now()
-			reqBody := &rest_v1.CreateAuthClientRequest{
+			reqBody := &rest_app.CreateAuthClientRequest{
 				ClientId:     "client-id",
 				ClientSecret: "client-secret",
 				Name:         "name",
@@ -97,7 +97,7 @@ var _ = Describe("Basic Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_v1.ResponseBodyInfo{
+					Message: &rest_app.ResponseBodyInfo{
 						Code:    1002,
 						Message: "invalid request",
 					},
@@ -120,7 +120,7 @@ var _ = Describe("Basic Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_v1.ResponseBodyInfo{
+					Message: &rest_app.ResponseBodyInfo{
 						Code:    1002,
 						Message: "invalid data",
 					},
@@ -143,7 +143,7 @@ var _ = Describe("Basic Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 500,
-					Message: &rest_v1.ResponseBodyInfo{
+					Message: &rest_app.ResponseBodyInfo{
 						Code:    1001,
 						Message: "network error",
 					},
@@ -161,14 +161,14 @@ var _ = Describe("Basic Handler", func() {
 
 				err := h(ctx)
 
-				res := &rest_v1.CreateAuthClientResponse{}
+				res := &rest_app.CreateAuthClientResponse{}
 				json.Unmarshal(rec.Body.Bytes(), res)
 
 				Expect(err).To(BeNil())
 				Expect(rec.Code).To(Equal(http.StatusCreated))
 				Expect(res.Code).To(Equal(int32(1000)))
 				Expect(res.Message).To(Equal("success create auth client"))
-				Expect(res.Data).To(Equal(rest_v1.CreateAuthClientData{
+				Expect(res.Data).To(Equal(rest_app.CreateAuthClientData{
 					Id:        createRes.Id,
 					Name:      createRes.Name,
 					Status:    createRes.Status,
