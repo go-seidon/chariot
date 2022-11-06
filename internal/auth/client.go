@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/go-seidon/chariot/internal/repository"
@@ -19,7 +20,7 @@ type AuthClient interface {
 
 type CreateClientParam struct {
 	ClientId     string `validate:"required,min=3,max=128" label:"client_id"`
-	ClientSecret string `validate:"required,min=16,max=128" label:"client_secret"`
+	ClientSecret string `validate:"required,min=8,max=128" label:"client_secret"`
 	Name         string `validate:"required,min=3,max=64" label:"name"`
 	Type         string `validate:"required,oneof='basic'" label:"type"`
 	Status       string `validate:"required,oneof='active' 'inactive'" label:"status"`
@@ -80,6 +81,12 @@ func (c *authClient) CreateClient(ctx context.Context, p CreateClientParam) (*Cr
 		CreatedAt:    currentTs,
 	})
 	if err != nil {
+		if errors.Is(err, repository.ErrExists) {
+			return nil, &system.SystemError{
+				Code:    status.INVALID_PARAM,
+				Message: "client is already exists",
+			}
+		}
 		return nil, &system.SystemError{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),

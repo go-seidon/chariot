@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"regexp"
+
+	// "regexp"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -26,6 +28,7 @@ var _ = Describe("Auth Repository", func() {
 			dbClient   sqlmock.Sqlmock
 			authRepo   repository.Auth
 			p          repository.CreateClientParam
+			checkStmt  string
 			insertStmt string
 			findStmt   string
 		)
@@ -65,6 +68,7 @@ var _ = Describe("Auth Repository", func() {
 				Status:       "active",
 				CreatedAt:    currentTs,
 			}
+			checkStmt = regexp.QuoteMeta("SELECT id, client_id FROM `auth_client` WHERE client_id = ? ORDER BY `auth_client`.`id` LIMIT 1")
 			insertStmt = regexp.QuoteMeta("INSERT INTO `auth_client` (`id`,`client_id`,`client_secret`,`name`,`type`,`status`,`created_at`) VALUES (?,?,?,?,?,?,?)")
 			findStmt = regexp.QuoteMeta("SELECT id, client_id, client_secret, name, type, status, created_at FROM `auth_client` WHERE id = ? ORDER BY `auth_client`.`id` LIMIT 1")
 		})
@@ -89,10 +93,82 @@ var _ = Describe("Auth Repository", func() {
 			})
 		})
 
+		When("failed rollback during check client", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.ClientId).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback().
+					WillReturnError(fmt.Errorf("rollback error"))
+
+				res, err := authRepo.CreateClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("rollback error")))
+			})
+		})
+
+		When("failed check client", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.ClientId).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback()
+
+				res, err := authRepo.CreateClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("client already exists", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				rows := sqlmock.NewRows([]string{
+					"id", "client_id",
+				}).AddRow(
+					p.Id, p.ClientId,
+				)
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.ClientId).
+					WillReturnRows(rows)
+
+				dbClient.
+					ExpectRollback()
+
+				res, err := authRepo.CreateClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(repository.ErrExists))
+			})
+		})
+
 		When("failed rollback during client creation", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.ClientId).
+					WillReturnError(gorm.ErrRecordNotFound)
 
 				dbClient.
 					ExpectExec(insertStmt).
@@ -120,6 +196,11 @@ var _ = Describe("Auth Repository", func() {
 					ExpectBegin()
 
 				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.ClientId).
+					WillReturnError(gorm.ErrRecordNotFound)
+
+				dbClient.
 					ExpectExec(insertStmt).
 					WithArgs(
 						p.Id, p.ClientId, p.ClientSecret,
@@ -142,6 +223,11 @@ var _ = Describe("Auth Repository", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.ClientId).
+					WillReturnError(gorm.ErrRecordNotFound)
 
 				dbClient.
 					ExpectExec(insertStmt).
@@ -174,6 +260,11 @@ var _ = Describe("Auth Repository", func() {
 					ExpectBegin()
 
 				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.ClientId).
+					WillReturnError(gorm.ErrRecordNotFound)
+
+				dbClient.
 					ExpectExec(insertStmt).
 					WithArgs(
 						p.Id, p.ClientId, p.ClientSecret,
@@ -201,6 +292,11 @@ var _ = Describe("Auth Repository", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.ClientId).
+					WillReturnError(gorm.ErrRecordNotFound)
 
 				dbClient.
 					ExpectExec(insertStmt).
@@ -238,6 +334,11 @@ var _ = Describe("Auth Repository", func() {
 			It("should return result", func() {
 				dbClient.
 					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.ClientId).
+					WillReturnError(gorm.ErrRecordNotFound)
 
 				dbClient.
 					ExpectExec(insertStmt).

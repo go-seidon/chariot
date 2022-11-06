@@ -185,6 +185,46 @@ var _ = Describe("Client Package", func() {
 			})
 		})
 
+		When("client is already exists", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				identifier.
+					EXPECT().
+					GenerateId().
+					Return("id", nil).
+					Times(1)
+
+				hasher.
+					EXPECT().
+					Generate(gomock.Eq(p.ClientSecret)).
+					Return([]byte("secret"), nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				authRepo.
+					EXPECT().
+					CreateClient(gomock.Eq(ctx), gomock.Eq(createParam)).
+					Return(nil, repository.ErrExists).
+					Times(1)
+
+				res, err := authClient.CreateClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1002)))
+				Expect(err.Message).To(Equal("client is already exists"))
+			})
+		})
+
 		When("success create client", func() {
 			It("should return result", func() {
 				validator.
