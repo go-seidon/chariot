@@ -3,7 +3,7 @@ package rest_handler
 import (
 	"net/http"
 
-	rest_v1 "github.com/go-seidon/chariot/generated/rest-v1"
+	rest_app "github.com/go-seidon/chariot/generated/rest-app"
 	"github.com/go-seidon/chariot/internal/auth"
 	"github.com/go-seidon/provider/status"
 	"github.com/labstack/echo/v4"
@@ -14,9 +14,9 @@ type authHandler struct {
 }
 
 func (h *authHandler) CreateClient(ctx echo.Context) error {
-	req := &rest_v1.CreateAuthClientRequest{}
+	req := &rest_app.CreateAuthClientRequest{}
 	if err := ctx.Bind(req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, &rest_v1.ResponseBodyInfo{
+		return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
 			Code:    status.INVALID_PARAM,
 			Message: "invalid request",
 		})
@@ -32,21 +32,21 @@ func (h *authHandler) CreateClient(ctx echo.Context) error {
 	if err != nil {
 		switch err.Code {
 		case status.INVALID_PARAM:
-			return echo.NewHTTPError(http.StatusBadRequest, &rest_v1.ResponseBodyInfo{
+			return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
 				Code:    err.Code,
 				Message: err.Message,
 			})
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, &rest_v1.ResponseBodyInfo{
+		return echo.NewHTTPError(http.StatusInternalServerError, &rest_app.ResponseBodyInfo{
 			Code:    err.Code,
 			Message: err.Message,
 		})
 	}
 
-	return ctx.JSON(http.StatusCreated, &rest_v1.CreateAuthClientResponse{
+	return ctx.JSON(http.StatusCreated, &rest_app.CreateAuthClientResponse{
 		Code:    createRes.Success.Code,
 		Message: createRes.Success.Message,
-		Data: rest_v1.CreateAuthClientData{
+		Data: rest_app.CreateAuthClientData{
 			Id:        createRes.Id,
 			Name:      createRes.Name,
 			Type:      createRes.Type,

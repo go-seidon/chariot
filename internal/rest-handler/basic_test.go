@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	rest_v1 "github.com/go-seidon/chariot/generated/rest-v1"
+	rest_app "github.com/go-seidon/chariot/generated/rest-app"
 	rest_handler "github.com/go-seidon/chariot/internal/rest-handler"
 	"github.com/labstack/echo/v4"
 	. "github.com/onsi/ginkgo/v2"
@@ -41,14 +41,14 @@ var _ = Describe("Basic Handler", func() {
 
 				err := h(ctx)
 
-				res := &rest_v1.GetAppInfoResponse{}
+				res := &rest_app.GetAppInfoResponse{}
 				json.Unmarshal(rec.Body.Bytes(), res)
 
 				Expect(err).To(BeNil())
 				Expect(rec.Code).To(Equal(http.StatusOK))
 				Expect(res.Code).To(Equal(int32(1000)))
 				Expect(res.Message).To(Equal("success get app info"))
-				Expect(res.Data).To(Equal(rest_v1.GetAppInfoData{
+				Expect(res.Data).To(Equal(rest_app.GetAppInfoData{
 					AppName:    "name",
 					AppVersion: "version",
 				}))
