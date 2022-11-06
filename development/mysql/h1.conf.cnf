@@ -1,0 +1,22 @@
+[mysqld]
+
+# Disable use of the internal host cache for faster name-to-IP resolution.
+skip-host-cache
+
+# Disable DNS host name lookups
+skip-name-resolve 
+
+# It must be different from every other ID in use by any other source or replica.
+server-id = 1
+
+# Enables bin log and sets the base name and path for the binary log files
+log_bin = /var/log/mysql/mysql-bin.log
+
+# enum: ROW, STATEMENT, MIXED
+binlog_format = ROW 
+
+# database to be replicated
+# add more database by entering new entry, e.g:
+# binlog_do_db = db1
+# binlog_do_db = db2
+binlog_do_db = chariot 
