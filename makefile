@@ -65,12 +65,12 @@ generate-proto:
 
 .PHONY: verify-swagger
 verify-swagger:
-	swagger-cli bundle api/rest-v1/main.yml --type json > generated/rest-v1/main.all.json
-	swagger-cli validate generated/rest-v1/main.all.json 
+	swagger-cli bundle api/rest-app/main.yml --type json > generated/rest-app/main.all.json
+	swagger-cli validate generated/rest-app/main.all.json 
 
 .PHONY: generate-swagger
 generate-swagger:
-	swagger-cli bundle api/rest-v1/main.yml --type yaml > generated/rest-v1/main.all.yml
+	swagger-cli bundle api/rest-app/main.yml --type yaml > generated/rest-app/main.all.yml
 
 .PHONY: generate-oapi
 generate-oapi:
@@ -80,11 +80,11 @@ generate-oapi:
 
 .PHONY: generate-oapi-type
 generate-oapi-type:
-	oapi-codegen -old-config-style -config api/rest-v1/type.gen.yaml generated/rest-v1/main.all.yml
+	oapi-codegen -old-config-style -config api/rest-app/type.gen.yaml generated/rest-app/main.all.yml
 
 .PHONY: generate-oapi-server
 generate-oapi-server:
-	oapi-codegen -old-config-style -config api/rest-v1/server.gen.yaml generated/rest-v1/main.all.yml
+	oapi-codegen -old-config-style -config api/rest-app/server.gen.yaml generated/rest-app/main.all.yml
 
 .PHONY: run-rest-app
 run-rest-app:
@@ -126,7 +126,7 @@ dummy: ## used by migrate script as do-nothing targets
 	@:
 
 
-MYSQL_DB_URI=mysql://admin:123456@tcp(localhost:3308)/chariot?x-tls-insecure-skip-verify=true
+MYSQL_DB_URI=mysql://admin:123456@tcp(localhost:3311)/chariot?x-tls-insecure-skip-verify=true
 MONGO_DB_URI=mongodb://admin:123456@localhost:27030/chariot
 
 .PHONY: migrate-mysql

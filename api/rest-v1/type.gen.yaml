@@ -1,4 +1,0 @@
-package: rest_v1
-generate:
-  - types
-output: generated/rest-v1/type.gen.go
