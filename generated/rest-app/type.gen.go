@@ -180,13 +180,13 @@ type GetAppInfoResponse struct {
 
 // GetAuthClientByIdData defines model for GetAuthClientByIdData.
 type GetAuthClientByIdData struct {
-	ClientId  *string `json:"client_id,omitempty"`
-	CreatedAt int64   `json:"created_at"`
-	Id        string  `json:"id"`
-	Name      string  `json:"name"`
-	Status    string  `json:"status"`
-	Type      string  `json:"type"`
-	UpdatedAt *int64  `json:"updated_at,omitempty"`
+	ClientId  string `json:"client_id"`
+	CreatedAt int64  `json:"created_at"`
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Status    string `json:"status"`
+	Type      string `json:"type"`
+	UpdatedAt *int64 `json:"updated_at,omitempty"`
 }
 
 // GetAuthClientByIdResponse defines model for GetAuthClientByIdResponse.
