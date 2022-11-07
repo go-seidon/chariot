@@ -108,26 +108,11 @@ ifeq (migrate-mysql-create,$(firstword $(MAKECMDGOALS)))
   $(eval $(MIGRATE_MYSQL_RUN_ARGS):dummy;@:)
 endif
 
-ifeq (migrate-mongo,$(firstword $(MAKECMDGOALS)))
-  # use the rest as arguments for "migrate-mongo"
-  MIGRATE_MONGO_RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-  # ...and turn them into do-nothing targets
-  $(eval $(MIGRATE_MONGO_RUN_ARGS):dummy;@:)
-endif
-
-ifeq (migrate-mongo-create,$(firstword $(MAKECMDGOALS)))
-  # use the rest as arguments for "migrate-mongo-create"
-  MIGRATE_MONGO_RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-  # ...and turn them into do-nothing targets
-  $(eval $(MIGRATE_MONGO_RUN_ARGS):dummy;@:)
-endif
-
 dummy: ## used by migrate script as do-nothing targets
 	@:
 
 
 MYSQL_DB_URI=mysql://admin:123456@tcp(localhost:3311)/chariot?x-tls-insecure-skip-verify=true
-MONGO_DB_URI=mongodb://admin:123456@localhost:27030/chariot
 
 .PHONY: migrate-mysql
 migrate-mysql:
@@ -136,11 +121,3 @@ migrate-mysql:
 .PHONY: migrate-mysql-create
 migrate-mysql-create:
 	migrate create -dir migration/mysql -ext .sql $(MIGRATE_MYSQL_RUN_ARGS)
-
-.PHONY: migrate-mongo
-migrate-mongo:
-	migrate -database "$(MONGO_DB_URI)" -path ./migration/mongo $(MIGRATE_MONGO_RUN_ARGS)
-
-.PHONY: migrate-mongo-create
-migrate-mongo-create:
-	migrate create -dir migration/mongo -ext .json $(MIGRATE_MONGO_RUN_ARGS)
