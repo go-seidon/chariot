@@ -1,0 +1,47 @@
+name: Code Quality Check
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test: 
+    name: Code Test
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        ports:
+          - 3307:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        env:
+          MYSQL_USER: admin
+          MYSQL_PASSWORD: 123456
+          MYSQL_DATABASE: chariot_test
+          MYSQL_ROOT_PASSWORD: toor
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Setup golang
+        uses: actions/setup-go@v2
+        with:
+          go-version: '^1.16'
+      - name: Install golang migrate
+        run: |
+          curl -L https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz | tar xvz
+          sudo mv migrate.linux-amd64 /usr/bin/migrate
+          which migrate
+      - name: Run MySQL migration
+        run: migrate -database 'mysql://admin:123456@tcp(localhost:3307)/chariot_test?x-tls-insecure-skip-verify=true' -path ./migration/mysql up
+      - name: Run test
+        run: make test
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
