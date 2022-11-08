@@ -50,3 +50,18 @@ func (mr *MockAuthClientMockRecorder) CreateClient(ctx, p interface{}) *gomock.C
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateClient", reflect.TypeOf((*MockAuthClient)(nil).CreateClient), ctx, p)
 }
+
+// FindClientById mocks base method.
+func (m *MockAuthClient) FindClientById(ctx context.Context, p auth.FindClientByIdParam) (*auth.FindClientByIdResult, *system.SystemError) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindClientById", ctx, p)
+	ret0, _ := ret[0].(*auth.FindClientByIdResult)
+	ret1, _ := ret[1].(*system.SystemError)
+	return ret0, ret1
+}
+
+// FindClientById indicates an expected call of FindClientById.
+func (mr *MockAuthClientMockRecorder) FindClientById(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindClientById", reflect.TypeOf((*MockAuthClient)(nil).FindClientById), ctx, p)
+}
