@@ -67,13 +67,12 @@ var _ = Describe("Basic Handler", func() {
 					Code:    1000,
 					Message: "success create auth client",
 				},
-				Id:           "id",
-				ClientId:     "client-id",
-				ClientSecret: "client-secret",
-				Name:         "name",
-				Type:         "basic",
-				Status:       "active",
-				CreatedAt:    currentTs,
+				Id:        "id",
+				ClientId:  "client-id",
+				Name:      "name",
+				Type:      "basic",
+				Status:    "active",
+				CreatedAt: currentTs,
 			}
 		})
 
@@ -175,6 +174,155 @@ var _ = Describe("Basic Handler", func() {
 					Type:      createRes.Type,
 					ClientId:  createRes.ClientId,
 					CreatedAt: createRes.CreatedAt.UnixMilli(),
+				}))
+			})
+		})
+	})
+
+	Context("GetClientById function", Label("unit"), func() {
+		var (
+			currentTs  time.Time
+			ctx        echo.Context
+			h          func(ctx echo.Context) error
+			rec        *httptest.ResponseRecorder
+			authClient *mock_auth.MockAuthClient
+			findParam  auth.FindClientByIdParam
+			findRes    *auth.FindClientByIdResult
+		)
+
+		BeforeEach(func() {
+			currentTs = time.Now().UTC()
+
+			req := httptest.NewRequest(http.MethodPost, "/", nil)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec = httptest.NewRecorder()
+
+			e := echo.New()
+			ctx = e.NewContext(req, rec)
+			ctx.SetParamNames("id")
+			ctx.SetParamValues("mock-id")
+
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			authClient = mock_auth.NewMockAuthClient(ctrl)
+			authHandler := rest_handler.NewAuth(rest_handler.AuthParam{
+				AuthClient: authClient,
+			})
+			h = authHandler.GetClientById
+			findParam = auth.FindClientByIdParam{
+				Id: "mock-id",
+			}
+			findRes = &auth.FindClientByIdResult{
+				Success: system.SystemSuccess{
+					Code:    1000,
+					Message: "success find auth client",
+				},
+				Id:        "id",
+				ClientId:  "client-id",
+				Name:      "name",
+				Type:      "basic",
+				Status:    "active",
+				CreatedAt: currentTs,
+				UpdatedAt: &currentTs,
+			}
+		})
+
+		When("there are invalid data", func() {
+			It("should return error", func() {
+				authClient.
+					EXPECT().
+					FindClientById(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
+					Return(nil, &system.SystemError{
+						Code:    1002,
+						Message: "invalid data",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 400,
+					Message: &rest_app.ResponseBodyInfo{
+						Code:    1002,
+						Message: "invalid data",
+					},
+				}))
+			})
+		})
+
+		When("failed find client", func() {
+			It("should return error", func() {
+				authClient.
+					EXPECT().
+					FindClientById(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
+					Return(nil, &system.SystemError{
+						Code:    1001,
+						Message: "network error",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 500,
+					Message: &rest_app.ResponseBodyInfo{
+						Code:    1001,
+						Message: "network error",
+					},
+				}))
+			})
+		})
+
+		When("client is not available", func() {
+			It("should return error", func() {
+				authClient.
+					EXPECT().
+					FindClientById(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
+					Return(nil, &system.SystemError{
+						Code:    1004,
+						Message: "not found",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 404,
+					Message: &rest_app.ResponseBodyInfo{
+						Code:    1004,
+						Message: "not found",
+					},
+				}))
+			})
+		})
+
+		When("success find client", func() {
+			It("should return result", func() {
+				authClient.
+					EXPECT().
+					FindClientById(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
+					Return(findRes, nil).
+					Times(1)
+
+				err := h(ctx)
+
+				updatedAt := findRes.UpdatedAt.UnixMilli()
+
+				res := &rest_app.GetAuthClientByIdResponse{}
+				json.Unmarshal(rec.Body.Bytes(), res)
+
+				Expect(err).To(BeNil())
+				Expect(rec.Code).To(Equal(http.StatusOK))
+				Expect(res.Code).To(Equal(int32(1000)))
+				Expect(res.Message).To(Equal("success find auth client"))
+				Expect(res.Data).To(Equal(rest_app.GetAuthClientByIdData{
+					Id:        findRes.Id,
+					Name:      findRes.Name,
+					Status:    findRes.Status,
+					Type:      findRes.Type,
+					ClientId:  findRes.ClientId,
+					CreatedAt: findRes.CreatedAt.UnixMilli(),
+					UpdatedAt: &updatedAt,
 				}))
 			})
 		})

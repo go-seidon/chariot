@@ -16,6 +16,7 @@ import (
 
 type AuthClient interface {
 	CreateClient(ctx context.Context, p CreateClientParam) (*CreateClientResult, *system.SystemError)
+	FindClientById(ctx context.Context, p FindClientByIdParam) (*FindClientByIdResult, *system.SystemError)
 }
 
 type CreateClientParam struct {
@@ -27,14 +28,28 @@ type CreateClientParam struct {
 }
 
 type CreateClientResult struct {
-	Success      system.SystemSuccess
-	Id           string
-	ClientId     string
-	ClientSecret string
-	Name         string
-	Type         string
-	Status       string
-	CreatedAt    time.Time
+	Success   system.SystemSuccess
+	Id        string
+	ClientId  string
+	Name      string
+	Type      string
+	Status    string
+	CreatedAt time.Time
+}
+
+type FindClientByIdParam struct {
+	Id string `validate:"required,min=5,max=64" label:"id"`
+}
+
+type FindClientByIdResult struct {
+	Success   system.SystemSuccess
+	Id        string
+	ClientId  string
+	Name      string
+	Type      string
+	Status    string
+	CreatedAt time.Time
+	UpdatedAt *time.Time
 }
 
 type authClient struct {
@@ -98,13 +113,53 @@ func (c *authClient) CreateClient(ctx context.Context, p CreateClientParam) (*Cr
 			Code:    status.ACTION_SUCCESS,
 			Message: "success create auth client",
 		},
-		Id:           createRes.Id,
-		ClientId:     createRes.ClientId,
-		ClientSecret: createRes.ClientSecret,
-		Name:         createRes.Name,
-		Type:         createRes.Type,
-		Status:       createRes.Status,
-		CreatedAt:    createRes.CreatedAt,
+		Id:        createRes.Id,
+		ClientId:  createRes.ClientId,
+		Name:      createRes.Name,
+		Type:      createRes.Type,
+		Status:    createRes.Status,
+		CreatedAt: createRes.CreatedAt,
+	}
+	return res, nil
+}
+
+func (c *authClient) FindClientById(ctx context.Context, p FindClientByIdParam) (*FindClientByIdResult, *system.SystemError) {
+	err := c.validator.Validate(p)
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.INVALID_PARAM,
+			Message: err.Error(),
+		}
+	}
+
+	authClient, err := c.authRepo.FindClient(ctx, repository.FindClientParam{
+		Id: p.Id,
+	})
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, &system.SystemError{
+				Code:    status.RESOURCE_NOTFOUND,
+				Message: "auth client is not available",
+			}
+		}
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	res := &FindClientByIdResult{
+		Success: system.SystemSuccess{
+			Code:    status.ACTION_SUCCESS,
+			Message: "success find auth client",
+		},
+		Id:        authClient.Id,
+		ClientId:  authClient.ClientId,
+		Name:      authClient.Name,
+		Type:      authClient.Type,
+		Status:    authClient.Status,
+		CreatedAt: authClient.CreatedAt,
+		UpdatedAt: authClient.UpdatedAt,
 	}
 	return res, nil
 }

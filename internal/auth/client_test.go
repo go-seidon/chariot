@@ -11,6 +11,7 @@ import (
 	mock_datetime "github.com/go-seidon/provider/datetime/mock"
 	mock_hashing "github.com/go-seidon/provider/hashing/mock"
 	mock_identifier "github.com/go-seidon/provider/identifier/mock"
+	"github.com/go-seidon/provider/system"
 	mock_validation "github.com/go-seidon/provider/validation/mock"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
@@ -266,6 +267,153 @@ var _ = Describe("Client Package", func() {
 				Expect(res.Status).To(Equal("active"))
 				Expect(res.Type).To(Equal("basic"))
 				Expect(res.CreatedAt).To(Equal(currentTs))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
+
+	Context("CreateClient function", Label("unit"), func() {
+
+		var (
+			ctx        context.Context
+			currentTs  time.Time
+			authClient auth.AuthClient
+			param      auth.FindClientByIdParam
+			result     *auth.FindClientByIdResult
+			validator  *mock_validation.MockValidator
+			identifier *mock_identifier.MockIdentifier
+			hasher     *mock_hashing.MockHasher
+			clock      *mock_datetime.MockClock
+			authRepo   *mock_repository.MockAuth
+			findParam  repository.FindClientParam
+			findRes    *repository.FindClientResult
+		)
+
+		BeforeEach(func() {
+			ctx = context.Background()
+			currentTs = time.Now()
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			validator = mock_validation.NewMockValidator(ctrl)
+			identifier = mock_identifier.NewMockIdentifier(ctrl)
+			hasher = mock_hashing.NewMockHasher(ctrl)
+			clock = mock_datetime.NewMockClock(ctrl)
+			authRepo = mock_repository.NewMockAuth(ctrl)
+			authClient = auth.NewAuthClient(auth.AuthClientParam{
+				Validator:  validator,
+				Hasher:     hasher,
+				Identifier: identifier,
+				Clock:      clock,
+				AuthRepo:   authRepo,
+			})
+
+			param = auth.FindClientByIdParam{
+				Id: "client-id",
+			}
+			findParam = repository.FindClientParam{
+				Id: param.Id,
+			}
+			findRes = &repository.FindClientResult{
+				Id:           "id",
+				ClientId:     "client-id",
+				ClientSecret: "client-secret",
+				Name:         "name",
+				Type:         "basic",
+				Status:       "active",
+				CreatedAt:    currentTs.UTC(),
+			}
+			result = &auth.FindClientByIdResult{
+				Success: system.SystemSuccess{
+					Code:    1000,
+					Message: "success find auth client",
+				},
+				Id:        findRes.Id,
+				ClientId:  findRes.ClientId,
+				Name:      findRes.Name,
+				Type:      findRes.Type,
+				Status:    findRes.Status,
+				CreatedAt: findRes.CreatedAt,
+				UpdatedAt: findRes.UpdatedAt,
+			}
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(param)).
+					Return(fmt.Errorf("invalid data")).
+					Times(1)
+
+				res, err := authClient.FindClientById(ctx, param)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1002)))
+				Expect(err.Message).To(Equal("invalid data"))
+			})
+		})
+
+		When("failed find client", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(param)).
+					Return(nil).
+					Times(1)
+
+				authRepo.
+					EXPECT().
+					FindClient(gomock.Eq(ctx), gomock.Eq(findParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := authClient.FindClientById(ctx, param)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("network error"))
+			})
+		})
+
+		When("client is not available", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(param)).
+					Return(nil).
+					Times(1)
+
+				authRepo.
+					EXPECT().
+					FindClient(gomock.Eq(ctx), gomock.Eq(findParam)).
+					Return(nil, repository.ErrNotFound).
+					Times(1)
+
+				res, err := authClient.FindClientById(ctx, param)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1004)))
+				Expect(err.Message).To(Equal("auth client is not available"))
+			})
+		})
+
+		When("client is available", func() {
+			It("should return result", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(param)).
+					Return(nil).
+					Times(1)
+
+				authRepo.
+					EXPECT().
+					FindClient(gomock.Eq(ctx), gomock.Eq(findParam)).
+					Return(findRes, nil).
+					Times(1)
+
+				res, err := authClient.FindClientById(ctx, param)
+
+				Expect(res).To(Equal(result))
 				Expect(err).To(BeNil())
 			})
 		})

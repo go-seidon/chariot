@@ -57,6 +57,51 @@ func (h *authHandler) CreateClient(ctx echo.Context) error {
 	})
 }
 
+func (h *authHandler) GetClientById(ctx echo.Context) error {
+	findRes, err := h.authClient.FindClientById(ctx.Request().Context(), auth.FindClientByIdParam{
+		Id: ctx.Param("id"),
+	})
+	if err != nil {
+		switch err.Code {
+		case status.INVALID_PARAM:
+			return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+				Code:    err.Code,
+				Message: err.Message,
+			})
+		case status.RESOURCE_NOTFOUND:
+			return echo.NewHTTPError(http.StatusNotFound, &rest_app.ResponseBodyInfo{
+				Code:    err.Code,
+				Message: err.Message,
+			})
+		}
+
+		return echo.NewHTTPError(http.StatusInternalServerError, &rest_app.ResponseBodyInfo{
+			Code:    err.Code,
+			Message: err.Message,
+		})
+	}
+
+	var updatedAt *int64
+	if findRes.UpdatedAt != nil {
+		updatedDate := findRes.UpdatedAt.UnixMilli()
+		updatedAt = &updatedDate
+	}
+
+	return ctx.JSON(http.StatusOK, &rest_app.GetAuthClientByIdResponse{
+		Code:    findRes.Success.Code,
+		Message: findRes.Success.Message,
+		Data: rest_app.GetAuthClientByIdData{
+			Id:        findRes.Id,
+			Name:      findRes.Name,
+			Type:      findRes.Type,
+			Status:    findRes.Status,
+			ClientId:  findRes.ClientId,
+			CreatedAt: findRes.CreatedAt.UnixMilli(),
+			UpdatedAt: updatedAt,
+		},
+	})
+}
+
 type AuthParam struct {
 	AuthClient auth.AuthClient
 }
