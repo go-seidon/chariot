@@ -373,9 +373,157 @@ var _ = Describe("Auth Repository", func() {
 					Name:         p.Name,
 					Type:         p.Type,
 					Status:       p.Status,
-					CreatedAt:    time.UnixMilli(p.CreatedAt.UnixMilli()),
+					CreatedAt:    time.UnixMilli(p.CreatedAt.UnixMilli()).UTC(),
 				}
 				Expect(res).To(Equal(expectedRes))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
+
+	Context("FindClient function", Label("unit"), func() {
+
+		var (
+			ctx       context.Context
+			currentTs time.Time
+			dbClient  sqlmock.Sqlmock
+			authRepo  repository.Auth
+			p         repository.FindClientParam
+			r         *repository.FindClientResult
+			findStmt  string
+		)
+
+		BeforeEach(func() {
+			var (
+				db  *sql.DB
+				err error
+			)
+
+			ctx = context.Background()
+			currentTs = time.Now()
+			db, dbClient, err = sqlmock.New()
+			if err != nil {
+				AbortSuite("failed create db mock: " + err.Error())
+			}
+
+			gormClient, err := gorm.Open(mysql.New(mysql.Config{
+				Conn:                      db,
+				SkipInitializeWithVersion: true,
+			}), &gorm.Config{
+				DisableAutomaticPing: true,
+			})
+			if err != nil {
+				AbortSuite("failed create gorm client: " + err.Error())
+			}
+			authRepo = repository_mysql.NewAuth(repository_mysql.AuthParam{
+				GormClient: gormClient,
+			})
+
+			p = repository.FindClientParam{
+				Id: "id",
+			}
+			r = &repository.FindClientResult{
+				Id:           "id",
+				ClientId:     "client-id",
+				ClientSecret: "client-secret",
+				Name:         "name",
+				Type:         "basic",
+				Status:       "active",
+				CreatedAt:    time.UnixMilli(currentTs.UnixMilli()).UTC(),
+			}
+			findStmt = regexp.QuoteMeta("SELECT id, client_id, client_secret, name, type, status, created_at, updated_at FROM `auth_client` WHERE id = ? ORDER BY `auth_client`.`id` LIMIT 1")
+		})
+
+		AfterEach(func() {
+			err := dbClient.ExpectationsWereMet()
+			if err != nil {
+				AbortSuite("some expectations were not met " + err.Error())
+			}
+		})
+
+		When("failed check client", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnError(fmt.Errorf("network error"))
+
+				res, err := authRepo.FindClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("client is not available", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnError(gorm.ErrRecordNotFound)
+
+				res, err := authRepo.FindClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(repository.ErrNotFound))
+			})
+		})
+
+		When("success find client", func() {
+			It("should return result", func() {
+				rows := sqlmock.NewRows([]string{
+					"id", "client_id", "client_secret",
+					"name", "type", "status",
+					"created_at", "updated_at",
+				}).AddRow(
+					r.Id, r.ClientId, r.ClientSecret,
+					r.Name, r.Type, r.Status,
+					currentTs.UnixMilli(), nil,
+				)
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnRows(rows)
+
+				res, err := authRepo.FindClient(ctx, p)
+
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("success find updated client", func() {
+			It("should return result", func() {
+				rows := sqlmock.NewRows([]string{
+					"id", "client_id", "client_secret",
+					"name", "type", "status",
+					"created_at", "updated_at",
+				}).AddRow(
+					r.Id, r.ClientId, r.ClientSecret,
+					r.Name, r.Type, r.Status,
+					currentTs.UnixMilli(), currentTs.UnixMilli(),
+				)
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnRows(rows)
+
+				res, err := authRepo.FindClient(ctx, p)
+
+				updatedAt := time.UnixMilli(currentTs.UnixMilli()).UTC()
+				r := &repository.FindClientResult{
+					Id:           "id",
+					ClientId:     "client-id",
+					ClientSecret: "client-secret",
+					Name:         "name",
+					Type:         "basic",
+					Status:       "active",
+					CreatedAt:    time.UnixMilli(currentTs.UnixMilli()).UTC(),
+					UpdatedAt:    &updatedAt,
+				}
+				Expect(res).To(Equal(r))
 				Expect(err).To(BeNil())
 			})
 		})

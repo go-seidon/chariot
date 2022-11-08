@@ -15,7 +15,7 @@ type auth struct {
 	gormClient *gorm.DB
 }
 
-// @note: return `ErrExists` if client_id is already create
+// @note: return `ErrExists` if client_id is already created
 func (r *auth) CreateClient(ctx context.Context, p repository.CreateClientParam) (*repository.CreateClientResult, error) {
 	tx := r.gormClient.
 		WithContext(ctx).
@@ -82,7 +82,43 @@ func (r *auth) CreateClient(ctx context.Context, p repository.CreateClientParam)
 		Name:         authClient.Name,
 		Type:         authClient.Type,
 		Status:       authClient.Status,
-		CreatedAt:    time.UnixMilli(authClient.CreatedAt),
+		CreatedAt:    time.UnixMilli(authClient.CreatedAt).UTC(),
+	}
+	return res, nil
+}
+
+func (r *auth) FindClient(ctx context.Context, p repository.FindClientParam) (*repository.FindClientResult, error) {
+	authClient := &AauthClient{}
+
+	query := r.gormClient.
+		WithContext(ctx).
+		Clauses(dbresolver.Read)
+
+	findRes := query.
+		Select(`id, client_id, client_secret, name, type, status, created_at, updated_at`).
+		First(authClient, "id = ?", p.Id)
+	if findRes.Error != nil {
+		if errors.Is(findRes.Error, gorm.ErrRecordNotFound) {
+			return nil, repository.ErrNotFound
+		}
+		return nil, findRes.Error
+	}
+
+	var updatedAt *time.Time
+	if authClient.UpdatedAt.Valid {
+		updatedDate := time.UnixMilli(authClient.UpdatedAt.Int64).UTC()
+		updatedAt = &updatedDate
+	}
+
+	res := &repository.FindClientResult{
+		Id:           authClient.Id,
+		ClientId:     authClient.ClientId,
+		ClientSecret: authClient.ClientSecret,
+		Name:         authClient.Name,
+		Type:         authClient.Type,
+		Status:       authClient.Status,
+		CreatedAt:    time.UnixMilli(authClient.CreatedAt).UTC(),
+		UpdatedAt:    updatedAt,
 	}
 	return res, nil
 }
