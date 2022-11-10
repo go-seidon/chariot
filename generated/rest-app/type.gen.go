@@ -404,22 +404,21 @@ type SearchFileResponse struct {
 
 // UpdateAuthClientByIdData defines model for UpdateAuthClientByIdData.
 type UpdateAuthClientByIdData struct {
-	ClientId  *string `json:"client_id,omitempty"`
-	CreatedAt int64   `json:"created_at"`
-	Id        string  `json:"id"`
-	Name      string  `json:"name"`
-	Status    string  `json:"status"`
-	Type      string  `json:"type"`
-	UpdatedAt int64   `json:"updated_at"`
+	ClientId  string `json:"client_id"`
+	CreatedAt int64  `json:"created_at"`
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Status    string `json:"status"`
+	Type      string `json:"type"`
+	UpdatedAt int64  `json:"updated_at"`
 }
 
 // UpdateAuthClientByIdRequest defines model for UpdateAuthClientByIdRequest.
 type UpdateAuthClientByIdRequest struct {
-	ClientId     *string                           `json:"client_id,omitempty"`
-	ClientSecret *string                           `json:"client_secret,omitempty"`
-	Name         string                            `json:"name"`
-	Status       UpdateAuthClientByIdRequestStatus `json:"status"`
-	Type         UpdateAuthClientByIdRequestType   `json:"type"`
+	ClientId string                            `json:"client_id"`
+	Name     string                            `json:"name"`
+	Status   UpdateAuthClientByIdRequestStatus `json:"status"`
+	Type     UpdateAuthClientByIdRequestType   `json:"type"`
 }
 
 // UpdateAuthClientByIdRequestStatus defines model for UpdateAuthClientByIdRequest.Status.

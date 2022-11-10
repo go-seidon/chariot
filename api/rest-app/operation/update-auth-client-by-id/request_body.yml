@@ -4,6 +4,7 @@ required:
 - name
 - status
 - type
+- client_id
 properties:
   name:
     type: string
@@ -17,6 +18,4 @@ properties:
     enum:
     - basic_auth
   client_id:
-    type: string
-  client_secret:
     type: string
