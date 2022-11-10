@@ -1151,6 +1151,7 @@ components:
         - name
         - status
         - type
+        - client_id
       properties:
         name:
           type: string
@@ -1164,8 +1165,6 @@ components:
           enum:
             - basic_auth
         client_id:
-          type: string
-        client_secret:
           type: string
     UpdateAuthClientByIdResponse:
       type: object
@@ -1188,6 +1187,7 @@ components:
         - name
         - status
         - type
+        - client_id
         - created_at
         - updated_at
       properties:

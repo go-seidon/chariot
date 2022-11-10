@@ -123,6 +123,77 @@ func (r *auth) FindClient(ctx context.Context, p repository.FindClientParam) (*r
 	return res, nil
 }
 
+func (r *auth) UpdateClient(ctx context.Context, p repository.UpdateClientParam) (*repository.UpdateClientResult, error) {
+	tx := r.gormClient.
+		WithContext(ctx).
+		Clauses(dbresolver.Write).
+		Begin()
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	findRes := tx.
+		Select(`id, client_id, name, type, status`).
+		First(&AauthClient{}, "id = ?", p.Id)
+	if findRes.Error != nil {
+		txRes := tx.Rollback()
+		if txRes.Error != nil {
+			return nil, txRes.Error
+		}
+		if errors.Is(findRes.Error, gorm.ErrRecordNotFound) {
+			return nil, repository.ErrNotFound
+		}
+		return nil, findRes.Error
+	}
+
+	updateRes := tx.
+		Model(&AauthClient{}).
+		Where("id = ?", p.Id).
+		Updates(map[string]interface{}{
+			"client_id":  p.ClientId,
+			"name":       p.Name,
+			"type":       p.Type,
+			"status":     p.Status,
+			"updated_at": p.UpdatedAt.UnixMilli(),
+		})
+	if updateRes.Error != nil {
+		txRes := tx.Rollback()
+		if txRes.Error != nil {
+			return nil, txRes.Error
+		}
+		return nil, updateRes.Error
+	}
+
+	authClient := &AauthClient{}
+	checkRes := tx.
+		Select(`id, client_id, client_secret, name, type, status, created_at, updated_at`).
+		First(authClient, "id = ?", p.Id)
+	if checkRes.Error != nil {
+		txRes := tx.Rollback()
+		if txRes.Error != nil {
+			return nil, txRes.Error
+		}
+		return nil, checkRes.Error
+	}
+
+	txRes := tx.Commit()
+	if txRes.Error != nil {
+		return nil, txRes.Error
+	}
+
+	res := &repository.UpdateClientResult{
+		Id:           authClient.Id,
+		ClientId:     authClient.ClientId,
+		ClientSecret: authClient.ClientSecret,
+		Name:         authClient.Name,
+		Type:         authClient.Type,
+		Status:       authClient.Status,
+		CreatedAt:    time.UnixMilli(authClient.CreatedAt).UTC(),
+		UpdatedAt:    time.UnixMilli(authClient.UpdatedAt.Int64).UTC(),
+	}
+	return res, nil
+}
+
 type AuthParam struct {
 	GormClient *gorm.DB
 }

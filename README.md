@@ -78,7 +78,6 @@ TBA
 
 ## Todo
 1. Override default error handler
-3. Admin: UpdateAuthClient
 4. Admin: SearchAuthClients
 5. Admin: CreateBarrel
 6. Admin: ReadBarrel

@@ -104,7 +104,7 @@ var _ = Describe("Basic Handler", func() {
 			})
 		})
 
-		When("there are invalid data", func() {
+		When("there is invalid data", func() {
 			It("should return error", func() {
 				authClient.
 					EXPECT().
@@ -227,7 +227,7 @@ var _ = Describe("Basic Handler", func() {
 			}
 		})
 
-		When("there are invalid data", func() {
+		When("there is invalid data", func() {
 			It("should return error", func() {
 				authClient.
 					EXPECT().
@@ -323,6 +323,192 @@ var _ = Describe("Basic Handler", func() {
 					ClientId:  findRes.ClientId,
 					CreatedAt: findRes.CreatedAt.UnixMilli(),
 					UpdatedAt: &updatedAt,
+				}))
+			})
+		})
+	})
+
+	Context("UpdateClientById function", Label("unit"), func() {
+		var (
+			currentTs   time.Time
+			ctx         echo.Context
+			h           func(ctx echo.Context) error
+			rec         *httptest.ResponseRecorder
+			authClient  *mock_auth.MockAuthClient
+			updateParam auth.UpdateClientByIdParam
+			updateRes   *auth.UpdateClientByIdResult
+		)
+
+		BeforeEach(func() {
+			currentTs = time.Now().UTC()
+			reqBody := &rest_app.UpdateAuthClientByIdRequest{
+				ClientId: "client-id",
+				Name:     "name",
+				Type:     "basic",
+				Status:   "active",
+			}
+			body, _ := json.Marshal(reqBody)
+			buffer := bytes.NewBuffer(body)
+			req := httptest.NewRequest(http.MethodPost, "/", buffer)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec = httptest.NewRecorder()
+
+			e := echo.New()
+			ctx = e.NewContext(req, rec)
+			ctx.SetParamNames("id")
+			ctx.SetParamValues("mock-id")
+
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			authClient = mock_auth.NewMockAuthClient(ctrl)
+			authHandler := rest_handler.NewAuth(rest_handler.AuthParam{
+				AuthClient: authClient,
+			})
+			h = authHandler.UpdateClientById
+			updateParam = auth.UpdateClientByIdParam{
+				Id:       "mock-id",
+				ClientId: reqBody.ClientId,
+				Name:     reqBody.Name,
+				Type:     string(reqBody.Type),
+				Status:   string(reqBody.Status),
+			}
+			updateRes = &auth.UpdateClientByIdResult{
+				Success: system.SystemSuccess{
+					Code:    1000,
+					Message: "success update auth client",
+				},
+				Id:        "id",
+				ClientId:  "client-id",
+				Name:      "name",
+				Type:      "basic",
+				Status:    "active",
+				CreatedAt: currentTs,
+				UpdatedAt: currentTs,
+			}
+		})
+
+		When("failed binding request body", func() {
+			It("should return error", func() {
+				body, _ := json.Marshal(struct {
+					Name int `json:"name"`
+				}{
+					Name: 1,
+				})
+				buffer := bytes.NewBuffer(body)
+
+				req := httptest.NewRequest(http.MethodPost, "/", buffer)
+				req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+				rec := httptest.NewRecorder()
+
+				e := echo.New()
+				ctx := e.NewContext(req, rec)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 400,
+					Message: &rest_app.ResponseBodyInfo{
+						Code:    1002,
+						Message: "invalid request",
+					},
+				}))
+			})
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				authClient.
+					EXPECT().
+					UpdateClientById(gomock.Eq(ctx.Request().Context()), gomock.Eq(updateParam)).
+					Return(nil, &system.SystemError{
+						Code:    1002,
+						Message: "invalid data",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 400,
+					Message: &rest_app.ResponseBodyInfo{
+						Code:    1002,
+						Message: "invalid data",
+					},
+				}))
+			})
+		})
+
+		When("auth client is not available", func() {
+			It("should return error", func() {
+				authClient.
+					EXPECT().
+					UpdateClientById(gomock.Eq(ctx.Request().Context()), gomock.Eq(updateParam)).
+					Return(nil, &system.SystemError{
+						Code:    1004,
+						Message: "auth client is not available",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 404,
+					Message: &rest_app.ResponseBodyInfo{
+						Code:    1004,
+						Message: "auth client is not available",
+					},
+				}))
+			})
+		})
+
+		When("failed update auth client", func() {
+			It("should return error", func() {
+				authClient.
+					EXPECT().
+					UpdateClientById(gomock.Eq(ctx.Request().Context()), gomock.Eq(updateParam)).
+					Return(nil, &system.SystemError{
+						Code:    1001,
+						Message: "network error",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 500,
+					Message: &rest_app.ResponseBodyInfo{
+						Code:    1001,
+						Message: "network error",
+					},
+				}))
+			})
+		})
+
+		When("success update auth client", func() {
+			It("should return result", func() {
+				authClient.
+					EXPECT().
+					UpdateClientById(gomock.Eq(ctx.Request().Context()), gomock.Eq(updateParam)).
+					Return(updateRes, nil).
+					Times(1)
+
+				err := h(ctx)
+
+				res := &rest_app.UpdateAuthClientByIdResponse{}
+				json.Unmarshal(rec.Body.Bytes(), res)
+
+				Expect(err).To(BeNil())
+				Expect(rec.Code).To(Equal(http.StatusOK))
+				Expect(res.Code).To(Equal(int32(1000)))
+				Expect(res.Message).To(Equal("success update auth client"))
+				Expect(res.Data).To(Equal(rest_app.UpdateAuthClientByIdData{
+					Id:        updateRes.Id,
+					Name:      updateRes.Name,
+					Status:    updateRes.Status,
+					Type:      updateRes.Type,
+					ClientId:  updateRes.ClientId,
+					CreatedAt: updateRes.CreatedAt.UnixMilli(),
+					UpdatedAt: updateRes.UpdatedAt.UnixMilli(),
 				}))
 			})
 		})

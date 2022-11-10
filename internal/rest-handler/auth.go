@@ -102,6 +102,56 @@ func (h *authHandler) GetClientById(ctx echo.Context) error {
 	})
 }
 
+func (h *authHandler) UpdateClientById(ctx echo.Context) error {
+	req := &rest_app.UpdateAuthClientByIdRequest{}
+	if err := ctx.Bind(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+			Code:    status.INVALID_PARAM,
+			Message: "invalid request",
+		})
+	}
+
+	updateRes, err := h.authClient.UpdateClientById(ctx.Request().Context(), auth.UpdateClientByIdParam{
+		Id:       ctx.Param("id"),
+		ClientId: req.ClientId,
+		Name:     req.Name,
+		Type:     string(req.Type),
+		Status:   string(req.Status),
+	})
+	if err != nil {
+		switch err.Code {
+		case status.INVALID_PARAM:
+			return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+				Code:    err.Code,
+				Message: err.Message,
+			})
+		case status.RESOURCE_NOTFOUND:
+			return echo.NewHTTPError(http.StatusNotFound, &rest_app.ResponseBodyInfo{
+				Code:    err.Code,
+				Message: err.Message,
+			})
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, &rest_app.ResponseBodyInfo{
+			Code:    err.Code,
+			Message: err.Message,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, &rest_app.UpdateAuthClientByIdResponse{
+		Code:    updateRes.Success.Code,
+		Message: updateRes.Success.Message,
+		Data: rest_app.UpdateAuthClientByIdData{
+			Id:        updateRes.Id,
+			Name:      updateRes.Name,
+			Type:      updateRes.Type,
+			Status:    updateRes.Status,
+			ClientId:  updateRes.ClientId,
+			CreatedAt: updateRes.CreatedAt.UnixMilli(),
+			UpdatedAt: updateRes.UpdatedAt.UnixMilli(),
+		},
+	})
+}
+
 type AuthParam struct {
 	AuthClient auth.AuthClient
 }
