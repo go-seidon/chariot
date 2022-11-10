@@ -272,7 +272,7 @@ var _ = Describe("Client Package", func() {
 		})
 	})
 
-	Context("CreateClient function", Label("unit"), func() {
+	Context("FindClientById function", Label("unit"), func() {
 
 		var (
 			ctx        context.Context
@@ -414,6 +414,172 @@ var _ = Describe("Client Package", func() {
 				res, err := authClient.FindClientById(ctx, param)
 
 				Expect(res).To(Equal(result))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
+
+	Context("UpdateClient function", Label("unit"), func() {
+
+		var (
+			ctx         context.Context
+			currentTs   time.Time
+			authClient  auth.AuthClient
+			p           auth.UpdateClientByIdParam
+			validator   *mock_validation.MockValidator
+			identifier  *mock_identifier.MockIdentifier
+			hasher      *mock_hashing.MockHasher
+			clock       *mock_datetime.MockClock
+			authRepo    *mock_repository.MockAuth
+			updateParam repository.UpdateClientParam
+			updateRes   *repository.UpdateClientResult
+		)
+
+		BeforeEach(func() {
+			ctx = context.Background()
+			currentTs = time.Now().UTC()
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			validator = mock_validation.NewMockValidator(ctrl)
+			identifier = mock_identifier.NewMockIdentifier(ctrl)
+			hasher = mock_hashing.NewMockHasher(ctrl)
+			clock = mock_datetime.NewMockClock(ctrl)
+			authRepo = mock_repository.NewMockAuth(ctrl)
+			authClient = auth.NewAuthClient(auth.AuthClientParam{
+				Validator:  validator,
+				Hasher:     hasher,
+				Identifier: identifier,
+				Clock:      clock,
+				AuthRepo:   authRepo,
+			})
+			p = auth.UpdateClientByIdParam{
+				Id:       "id",
+				ClientId: "client-id",
+				Name:     "client-name",
+				Type:     "basic",
+				Status:   "active",
+			}
+			updateParam = repository.UpdateClientParam{
+				Id:        "id",
+				ClientId:  p.ClientId,
+				Name:      p.Name,
+				Type:      p.Type,
+				Status:    p.Status,
+				UpdatedAt: currentTs,
+			}
+			updateRes = &repository.UpdateClientResult{
+				Id:           "id",
+				ClientId:     p.ClientId,
+				ClientSecret: "secret",
+				Name:         p.Name,
+				Type:         p.Type,
+				Status:       p.Status,
+				CreatedAt:    currentTs,
+				UpdatedAt:    currentTs,
+			}
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(fmt.Errorf("invalid data")).
+					Times(1)
+
+				res, err := authClient.UpdateClientById(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1002)))
+				Expect(err.Message).To(Equal("invalid data"))
+			})
+		})
+
+		When("failed update client", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				authRepo.
+					EXPECT().
+					UpdateClient(gomock.Eq(ctx), gomock.Eq(updateParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := authClient.UpdateClientById(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("network error"))
+			})
+		})
+
+		When("client is not available", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				authRepo.
+					EXPECT().
+					UpdateClient(gomock.Eq(ctx), gomock.Eq(updateParam)).
+					Return(nil, repository.ErrNotFound).
+					Times(1)
+
+				res, err := authClient.UpdateClientById(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1004)))
+				Expect(err.Message).To(Equal("auth client is not available"))
+			})
+		})
+
+		When("success update client", func() {
+			It("should return result", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				authRepo.
+					EXPECT().
+					UpdateClient(gomock.Eq(ctx), gomock.Eq(updateParam)).
+					Return(updateRes, nil).
+					Times(1)
+
+				res, err := authClient.UpdateClientById(ctx, p)
+
+				Expect(res.Success.Code).To(Equal(int32(1000)))
+				Expect(res.Success.Message).To(Equal("success update auth client"))
+				Expect(res.Id).To(Equal("id"))
+				Expect(res.Name).To(Equal("client-name"))
+				Expect(res.Status).To(Equal("active"))
+				Expect(res.Type).To(Equal("basic"))
+				Expect(res.CreatedAt).To(Equal(currentTs))
 				Expect(err).To(BeNil())
 			})
 		})
