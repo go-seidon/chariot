@@ -64,3 +64,18 @@ func (mr *MockAuthMockRecorder) FindClient(ctx, p interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindClient", reflect.TypeOf((*MockAuth)(nil).FindClient), ctx, p)
 }
+
+// UpdateClient mocks base method.
+func (m *MockAuth) UpdateClient(ctx context.Context, p repository.UpdateClientParam) (*repository.UpdateClientResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateClient", ctx, p)
+	ret0, _ := ret[0].(*repository.UpdateClientResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateClient indicates an expected call of UpdateClient.
+func (mr *MockAuthMockRecorder) UpdateClient(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateClient", reflect.TypeOf((*MockAuth)(nil).UpdateClient), ctx, p)
+}

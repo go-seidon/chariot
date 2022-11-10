@@ -529,4 +529,382 @@ var _ = Describe("Auth Repository", func() {
 		})
 	})
 
+	Context("UpdateClient function", Label("unit"), func() {
+
+		var (
+			ctx        context.Context
+			currentTs  time.Time
+			dbClient   sqlmock.Sqlmock
+			authRepo   repository.Auth
+			p          repository.UpdateClientParam
+			r          *repository.UpdateClientResult
+			findStmt   string
+			updateStmt string
+			checkStmt  string
+			findRows   *sqlmock.Rows
+			checkRows  *sqlmock.Rows
+		)
+
+		BeforeEach(func() {
+			var (
+				db  *sql.DB
+				err error
+			)
+
+			ctx = context.Background()
+			currentTs = time.Now()
+			db, dbClient, err = sqlmock.New()
+			if err != nil {
+				AbortSuite("failed create db mock: " + err.Error())
+			}
+
+			gormClient, err := gorm.Open(mysql.New(mysql.Config{
+				Conn:                      db,
+				SkipInitializeWithVersion: true,
+			}), &gorm.Config{
+				DisableAutomaticPing: true,
+			})
+			if err != nil {
+				AbortSuite("failed create gorm client: " + err.Error())
+			}
+			authRepo = repository_mysql.NewAuth(repository_mysql.AuthParam{
+				GormClient: gormClient,
+			})
+
+			p = repository.UpdateClientParam{
+				Id:        "id",
+				ClientId:  "new-client-id",
+				Name:      "new-name",
+				Type:      "basic",
+				Status:    "active",
+				UpdatedAt: currentTs,
+			}
+			r = &repository.UpdateClientResult{
+				Id:           "id",
+				ClientId:     "new-client-id",
+				ClientSecret: "client-secret",
+				Name:         "new-name",
+				Type:         "basic",
+				Status:       "active",
+				CreatedAt:    time.UnixMilli(currentTs.UnixMilli()).UTC(),
+				UpdatedAt:    time.UnixMilli(currentTs.UnixMilli()).UTC(),
+			}
+			findStmt = regexp.QuoteMeta("SELECT id, client_id, name, type, status FROM `auth_client` WHERE id = ? ORDER BY `auth_client`.`id` LIMIT 1")
+			updateStmt = regexp.QuoteMeta("UPDATE `auth_client` SET `client_id`=?,`name`=?,`status`=?,`type`=?,`updated_at`=? WHERE id = ?")
+			checkStmt = regexp.QuoteMeta("SELECT id, client_id, client_secret, name, type, status, created_at, updated_at FROM `auth_client` WHERE id = ? ORDER BY `auth_client`.`id` LIMIT 1")
+			findRows = sqlmock.NewRows([]string{
+				"id", "client_id",
+				"name", "type", "status",
+			}).AddRow(
+				"id", "old-client-id",
+				"old-name", "basic", "inactive",
+			)
+			checkRows = sqlmock.NewRows([]string{
+				"id", "client_id", "client_secret",
+				"name", "type", "status",
+				"created_at", "updated_at",
+			}).AddRow(
+				"id", "new-client-id", "client-secret",
+				"new-name", "basic", "active",
+				currentTs.UnixMilli(), currentTs.UnixMilli(),
+			)
+		})
+
+		AfterEach(func() {
+			err := dbClient.ExpectationsWereMet()
+			if err != nil {
+				AbortSuite("some expectations were not met " + err.Error())
+			}
+		})
+
+		When("failed begin trx", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin().
+					WillReturnError(fmt.Errorf("begin error"))
+
+				res, err := authRepo.UpdateClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("begin error")))
+			})
+		})
+
+		When("failed rollback during find client", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback().
+					WillReturnError(fmt.Errorf("rollback error"))
+
+				res, err := authRepo.UpdateClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("rollback error")))
+			})
+		})
+
+		When("failed find client", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback()
+
+				res, err := authRepo.UpdateClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("client is not available", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnError(gorm.ErrRecordNotFound)
+
+				dbClient.
+					ExpectRollback()
+
+				res, err := authRepo.UpdateClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(repository.ErrNotFound))
+			})
+		})
+
+		When("failed rollback during update client", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnRows(findRows)
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.ClientId,
+						p.Name,
+						p.Status,
+						p.Type,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback().
+					WillReturnError(fmt.Errorf("rollback error"))
+
+				res, err := authRepo.UpdateClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("rollback error")))
+			})
+		})
+
+		When("failed update client", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnRows(findRows)
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.ClientId,
+						p.Name,
+						p.Status,
+						p.Type,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback()
+
+				res, err := authRepo.UpdateClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("failed rollback during check update result", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnRows(findRows)
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.ClientId,
+						p.Name,
+						p.Status,
+						p.Type,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.Id).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback().
+					WillReturnError(fmt.Errorf("rollback error"))
+
+				res, err := authRepo.UpdateClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("rollback error")))
+			})
+		})
+
+		When("failed check update result", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnRows(findRows)
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.ClientId,
+						p.Name,
+						p.Status,
+						p.Type,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.Id).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback()
+
+				res, err := authRepo.UpdateClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("failed commit trx", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnRows(findRows)
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.ClientId,
+						p.Name,
+						p.Status,
+						p.Type,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.Id).
+					WillReturnRows(checkRows)
+
+				dbClient.
+					ExpectCommit().
+					WillReturnError(fmt.Errorf("commit error"))
+
+				res, err := authRepo.UpdateClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("commit error")))
+			})
+		})
+
+		When("success update client", func() {
+			It("should return result", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnRows(findRows)
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.ClientId,
+						p.Name,
+						p.Status,
+						p.Type,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.Id).
+					WillReturnRows(checkRows)
+
+				dbClient.
+					ExpectCommit()
+
+				res, err := authRepo.UpdateClient(ctx, p)
+
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
+
 })
