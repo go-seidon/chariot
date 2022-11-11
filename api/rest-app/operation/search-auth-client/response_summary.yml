@@ -5,9 +5,9 @@ required:
 properties:
   total_items:
     type: integer
-    format: int32
-    description: min = 1, max = 200
+    format: int64
+    description: total matched items with a given parameter
   page:
     type: integer
     format: int64
-    description: min = 1
+    description: current page
