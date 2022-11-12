@@ -65,6 +65,21 @@ func (mr *MockAuthMockRecorder) FindClient(ctx, p interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindClient", reflect.TypeOf((*MockAuth)(nil).FindClient), ctx, p)
 }
 
+// SearchClient mocks base method.
+func (m *MockAuth) SearchClient(ctx context.Context, p repository.SearchClientParam) (*repository.SearchClientResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchClient", ctx, p)
+	ret0, _ := ret[0].(*repository.SearchClientResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchClient indicates an expected call of SearchClient.
+func (mr *MockAuthMockRecorder) SearchClient(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchClient", reflect.TypeOf((*MockAuth)(nil).SearchClient), ctx, p)
+}
+
 // UpdateClient mocks base method.
 func (m *MockAuth) UpdateClient(ctx context.Context, p repository.UpdateClientParam) (*repository.UpdateClientResult, error) {
 	m.ctrl.T.Helper()

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"regexp"
+	"strings"
 
 	// "regexp"
 	"time"
@@ -900,6 +901,281 @@ var _ = Describe("Auth Repository", func() {
 					ExpectCommit()
 
 				res, err := authRepo.UpdateClient(ctx, p)
+
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
+
+	Context("SearchClient function", Label("unit"), func() {
+
+		var (
+			ctx        context.Context
+			currentTs  time.Time
+			dbClient   sqlmock.Sqlmock
+			authRepo   repository.Auth
+			p          repository.SearchClientParam
+			r          *repository.SearchClientResult
+			searchStmt string
+			countStmt  string
+			searchRows *sqlmock.Rows
+			countRows  *sqlmock.Rows
+		)
+
+		BeforeEach(func() {
+			var (
+				db  *sql.DB
+				err error
+			)
+
+			ctx = context.Background()
+			currentTs = time.Now().UTC()
+			db, dbClient, err = sqlmock.New()
+			if err != nil {
+				AbortSuite("failed create db mock: " + err.Error())
+			}
+
+			gormClient, err := gorm.Open(mysql.New(mysql.Config{
+				Conn:                      db,
+				SkipInitializeWithVersion: true,
+			}), &gorm.Config{
+				DisableAutomaticPing: true,
+			})
+			if err != nil {
+				AbortSuite("failed create gorm client: " + err.Error())
+			}
+			authRepo = repository_mysql.NewAuth(repository_mysql.AuthParam{
+				GormClient: gormClient,
+			})
+
+			p = repository.SearchClientParam{
+				Limit:    24,
+				Offset:   48,
+				Keyword:  "goseidon",
+				Statuses: []string{"active"},
+			}
+			updatedAt := time.UnixMilli(currentTs.UnixMilli()).UTC()
+			r = &repository.SearchClientResult{
+				Summary: repository.SearchClientSummary{
+					TotalItems: 2,
+				},
+				Items: []repository.SearchClientItem{
+					{
+						Id:           "id-1",
+						ClientId:     "client-id-1",
+						ClientSecret: "client-secret-1",
+						Name:         "name-1",
+						Type:         "basic",
+						Status:       "inactive",
+						CreatedAt:    time.UnixMilli(currentTs.UnixMilli()).UTC(),
+					},
+					{
+						Id:           "id-2",
+						ClientId:     "client-id-2",
+						ClientSecret: "client-secret-2",
+						Name:         "name-2",
+						Type:         "basic",
+						Status:       "active",
+						CreatedAt:    time.UnixMilli(currentTs.UnixMilli()).UTC(),
+						UpdatedAt:    &updatedAt,
+					},
+				},
+			}
+			searchStmt = regexp.QuoteMeta(strings.TrimSpace(`
+				SELECT id, client_id, client_secret, name, type, status, created_at, updated_at 
+				FROM ` + "`auth_client`" + ` 
+				WHERE name LIKE ? OR client_id LIKE ?
+				AND status IN (?)
+				LIMIT 24
+				OFFSET 48
+			`))
+			countStmt = regexp.QuoteMeta(strings.TrimSpace(`
+				SELECT count(*)
+				FROM ` + "`auth_client`" + ` 
+				WHERE name LIKE ? OR client_id LIKE ?
+				AND status IN (?)
+			`))
+			searchRows = sqlmock.NewRows([]string{
+				"id", "client_id", "client_secret",
+				"name", "type", "status",
+				"created_at", "updated_at",
+			}).AddRow(
+				"id-1", "client-id-1", "client-secret-1",
+				"name-1", "basic", "inactive",
+				currentTs.UnixMilli(), nil,
+			).AddRow(
+				"id-2", "client-id-2", "client-secret-2",
+				"name-2", "basic", "active",
+				currentTs.UnixMilli(), currentTs.UnixMilli(),
+			)
+			countRows = sqlmock.
+				NewRows([]string{"count(*)"}).
+				AddRow(2)
+		})
+
+		AfterEach(func() {
+			err := dbClient.ExpectationsWereMet()
+			if err != nil {
+				AbortSuite("some expectations were not met " + err.Error())
+			}
+		})
+
+		When("failed search client", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						"%s"+p.Keyword+"%s",
+						"%s"+p.Keyword+"%s",
+						p.Statuses[0],
+					).
+					WillReturnError(fmt.Errorf("network error"))
+
+				res, err := authRepo.SearchClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("there are no client", func() {
+			It("should return empty result", func() {
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						"%s"+p.Keyword+"%s",
+						"%s"+p.Keyword+"%s",
+						p.Statuses[0],
+					).
+					WillReturnError(gorm.ErrRecordNotFound)
+
+				res, err := authRepo.SearchClient(ctx, p)
+
+				r := &repository.SearchClientResult{
+					Summary: repository.SearchClientSummary{
+						TotalItems: 0,
+					},
+					Items: []repository.SearchClientItem{},
+				}
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("failed count search client", func() {
+			It("should return result", func() {
+				searchRows := sqlmock.NewRows([]string{
+					"id", "client_id", "client_secret",
+					"name", "type", "status",
+					"created_at", "updated_at",
+				}).AddRow(
+					"id-1", "client-id-1", "client-secret-1",
+					"name-1", "basic", "inactive",
+					currentTs.UnixMilli(), nil,
+				)
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						"%s"+p.Keyword+"%s",
+						"%s"+p.Keyword+"%s",
+						p.Statuses[0],
+					).
+					WillReturnRows(searchRows)
+
+				dbClient.
+					ExpectQuery(countStmt).
+					WithArgs(
+						"%s"+p.Keyword+"%s",
+						"%s"+p.Keyword+"%s",
+						p.Statuses[0],
+					).
+					WillReturnError(fmt.Errorf("network error"))
+
+				res, err := authRepo.SearchClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("there is one client", func() {
+			It("should return result", func() {
+				searchRows := sqlmock.NewRows([]string{
+					"id", "client_id", "client_secret",
+					"name", "type", "status",
+					"created_at", "updated_at",
+				}).AddRow(
+					"id-1", "client-id-1", "client-secret-1",
+					"name-1", "basic", "inactive",
+					currentTs.UnixMilli(), nil,
+				)
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						"%s"+p.Keyword+"%s",
+						"%s"+p.Keyword+"%s",
+						p.Statuses[0],
+					).
+					WillReturnRows(searchRows)
+
+				countRows = sqlmock.
+					NewRows([]string{"count(*)"}).
+					AddRow(1)
+				dbClient.
+					ExpectQuery(countStmt).
+					WithArgs(
+						"%s"+p.Keyword+"%s",
+						"%s"+p.Keyword+"%s",
+						p.Statuses[0],
+					).
+					WillReturnRows(countRows)
+
+				res, err := authRepo.SearchClient(ctx, p)
+
+				r := &repository.SearchClientResult{
+					Summary: repository.SearchClientSummary{
+						TotalItems: 1,
+					},
+					Items: []repository.SearchClientItem{
+						{
+							Id:           "id-1",
+							ClientId:     "client-id-1",
+							ClientSecret: "client-secret-1",
+							Name:         "name-1",
+							Type:         "basic",
+							Status:       "inactive",
+							CreatedAt:    time.UnixMilli(currentTs.UnixMilli()).UTC(),
+							UpdatedAt:    nil,
+						},
+					},
+				}
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("there are some clients", func() {
+			It("should return result", func() {
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						"%s"+p.Keyword+"%s",
+						"%s"+p.Keyword+"%s",
+						p.Statuses[0],
+					).
+					WillReturnRows(searchRows)
+
+				dbClient.
+					ExpectQuery(countStmt).
+					WithArgs(
+						"%s"+p.Keyword+"%s",
+						"%s"+p.Keyword+"%s",
+						p.Statuses[0],
+					).
+					WillReturnRows(countRows)
+
+				res, err := authRepo.SearchClient(ctx, p)
 
 				Expect(res).To(Equal(r))
 				Expect(err).To(BeNil())
