@@ -1026,8 +1026,8 @@ var _ = Describe("Auth Repository", func() {
 				dbClient.
 					ExpectQuery(searchStmt).
 					WithArgs(
-						"%s"+p.Keyword+"%s",
-						"%s"+p.Keyword+"%s",
+						"%"+p.Keyword+"%",
+						"%"+p.Keyword+"%",
 						p.Statuses[0],
 					).
 					WillReturnError(fmt.Errorf("network error"))
@@ -1044,8 +1044,8 @@ var _ = Describe("Auth Repository", func() {
 				dbClient.
 					ExpectQuery(searchStmt).
 					WithArgs(
-						"%s"+p.Keyword+"%s",
-						"%s"+p.Keyword+"%s",
+						"%"+p.Keyword+"%",
+						"%"+p.Keyword+"%",
 						p.Statuses[0],
 					).
 					WillReturnError(gorm.ErrRecordNotFound)
@@ -1077,8 +1077,8 @@ var _ = Describe("Auth Repository", func() {
 				dbClient.
 					ExpectQuery(searchStmt).
 					WithArgs(
-						"%s"+p.Keyword+"%s",
-						"%s"+p.Keyword+"%s",
+						"%"+p.Keyword+"%",
+						"%"+p.Keyword+"%",
 						p.Statuses[0],
 					).
 					WillReturnRows(searchRows)
@@ -1086,8 +1086,8 @@ var _ = Describe("Auth Repository", func() {
 				dbClient.
 					ExpectQuery(countStmt).
 					WithArgs(
-						"%s"+p.Keyword+"%s",
-						"%s"+p.Keyword+"%s",
+						"%"+p.Keyword+"%",
+						"%"+p.Keyword+"%",
 						p.Statuses[0],
 					).
 					WillReturnError(fmt.Errorf("network error"))
@@ -1113,8 +1113,8 @@ var _ = Describe("Auth Repository", func() {
 				dbClient.
 					ExpectQuery(searchStmt).
 					WithArgs(
-						"%s"+p.Keyword+"%s",
-						"%s"+p.Keyword+"%s",
+						"%"+p.Keyword+"%",
+						"%"+p.Keyword+"%",
 						p.Statuses[0],
 					).
 					WillReturnRows(searchRows)
@@ -1125,8 +1125,8 @@ var _ = Describe("Auth Repository", func() {
 				dbClient.
 					ExpectQuery(countStmt).
 					WithArgs(
-						"%s"+p.Keyword+"%s",
-						"%s"+p.Keyword+"%s",
+						"%"+p.Keyword+"%",
+						"%"+p.Keyword+"%",
 						p.Statuses[0],
 					).
 					WillReturnRows(countRows)
@@ -1160,8 +1160,8 @@ var _ = Describe("Auth Repository", func() {
 				dbClient.
 					ExpectQuery(searchStmt).
 					WithArgs(
-						"%s"+p.Keyword+"%s",
-						"%s"+p.Keyword+"%s",
+						"%"+p.Keyword+"%",
+						"%"+p.Keyword+"%",
 						p.Statuses[0],
 					).
 					WillReturnRows(searchRows)
@@ -1169,8 +1169,8 @@ var _ = Describe("Auth Repository", func() {
 				dbClient.
 					ExpectQuery(countStmt).
 					WithArgs(
-						"%s"+p.Keyword+"%s",
-						"%s"+p.Keyword+"%s",
+						"%"+p.Keyword+"%",
+						"%"+p.Keyword+"%",
 						p.Statuses[0],
 					).
 					WillReturnRows(countRows)
