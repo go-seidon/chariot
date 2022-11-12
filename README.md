@@ -77,8 +77,11 @@ TBA
 ```
 
 ## Todo
-1. Override default error handler
-4. Admin: SearchAuthClients
+1. Update validation rule
+- client_id should be alphanumeric (lowercased)
+- name should be alphanumeric space
+2. Override default error handler
+
 5. Admin: CreateBarrel
 6. Admin: ReadBarrel
 7. Admin: UpdateBarrel
