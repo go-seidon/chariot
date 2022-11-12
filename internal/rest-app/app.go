@@ -116,6 +116,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		})
 		authClientGroup := echo.Group("/v1/auth-client")
 		authClientGroup.POST("", authHandler.CreateClient)
+		authClientGroup.POST("/search", authHandler.SearchClient)
 		authClientGroup.GET("/:id", authHandler.GetClientById)
 		authClientGroup.PUT("/:id", authHandler.UpdateClientById)
 	}

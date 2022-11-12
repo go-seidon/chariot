@@ -832,6 +832,7 @@ components:
       properties:
         total_items:
           type: integer
+          format: int32
           description: 'min = 1, max = 200'
         page:
           type: integer
@@ -1281,9 +1282,33 @@ components:
         message:
           type: string
         data:
+          $ref: '#/components/schemas/SearchAuthClientData'
+    SearchAuthClientData:
+      type: object
+      required:
+        - items
+        - summary
+      properties:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/SearchAuthClientItem'
+        summary:
+          $ref: '#/components/schemas/SearchAuthClientSummary'
+    SearchAuthClientSummary:
+      type: object
+      required:
+        - total_items
+        - page
+      properties:
+        total_items:
+          type: integer
+          format: int64
+          description: total matched items with a given parameter
+        page:
+          type: integer
+          format: int64
+          description: current page
     SearchAuthClientItem:
       type: object
       required:
@@ -1291,6 +1316,7 @@ components:
         - name
         - status
         - type
+        - client_id
         - created_at
       properties:
         id:

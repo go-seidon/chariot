@@ -18,6 +18,7 @@ type AuthClient interface {
 	CreateClient(ctx context.Context, p CreateClientParam) (*CreateClientResult, *system.SystemError)
 	FindClientById(ctx context.Context, p FindClientByIdParam) (*FindClientByIdResult, *system.SystemError)
 	UpdateClientById(ctx context.Context, p UpdateClientByIdParam) (*UpdateClientByIdResult, *system.SystemError)
+	SearchClient(ctx context.Context, p SearchClientParam) (*SearchClientResult, *system.SystemError)
 }
 
 type CreateClientParam struct {
@@ -70,6 +71,34 @@ type UpdateClientByIdResult struct {
 	Status    string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+}
+
+type SearchClientParam struct {
+	Keyword    string   `validate:"omitempty,min=2,max=64" label:"keyword"`
+	TotalItems int32    `validate:"numeric,min=1,max=100" label:"limit"`
+	Page       int64    `validate:"numeric,min=1" label:"offset"`
+	Statuses   []string `validate:"unique,min=0,max=3,dive,oneof='active' 'inactive'" label:"statuses"`
+}
+
+type SearchClientResult struct {
+	Success system.SystemSuccess
+	Items   []SearchClientItem
+	Summary SearchClientSummary
+}
+
+type SearchClientItem struct {
+	Id        string
+	ClientId  string
+	Name      string
+	Type      string
+	Status    string
+	CreatedAt time.Time
+	UpdatedAt *time.Time
+}
+
+type SearchClientSummary struct {
+	TotalItems int64
+	Page       int64
 }
 
 type authClient struct {
@@ -227,6 +256,60 @@ func (c *authClient) UpdateClientById(ctx context.Context, p UpdateClientByIdPar
 		Status:    updateRes.Status,
 		CreatedAt: updateRes.CreatedAt,
 		UpdatedAt: updateRes.UpdatedAt,
+	}
+	return res, nil
+}
+
+func (c *authClient) SearchClient(ctx context.Context, p SearchClientParam) (*SearchClientResult, *system.SystemError) {
+	err := c.validator.Validate(p)
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.INVALID_PARAM,
+			Message: err.Error(),
+		}
+	}
+
+	offset := int64(0)
+	if p.Page > 1 {
+		offset = (p.Page - 1) * int64(p.TotalItems)
+	}
+
+	searchRes, err := c.authRepo.SearchClient(ctx, repository.SearchClientParam{
+		Keyword:  p.Keyword,
+		Statuses: p.Statuses,
+		Limit:    p.TotalItems,
+		Offset:   offset,
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	items := []SearchClientItem{}
+	for _, authClient := range searchRes.Items {
+		items = append(items, SearchClientItem{
+			Id:        authClient.Id,
+			ClientId:  authClient.ClientId,
+			Name:      authClient.Name,
+			Type:      authClient.Type,
+			Status:    authClient.Status,
+			CreatedAt: authClient.CreatedAt,
+			UpdatedAt: authClient.UpdatedAt,
+		})
+	}
+
+	res := &SearchClientResult{
+		Success: system.SystemSuccess{
+			Code:    status.ACTION_SUCCESS,
+			Message: "success search auth client",
+		},
+		Items: items,
+		Summary: SearchClientSummary{
+			TotalItems: searchRes.Summary.TotalItems,
+			Page:       p.Page,
+		},
 	}
 	return res, nil
 }

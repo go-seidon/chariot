@@ -255,7 +255,7 @@ type RequestPagination struct {
 	Page int64 `json:"page"`
 
 	// min = 1, max = 200
-	TotalItems int `json:"total_items"`
+	TotalItems int32 `json:"total_items"`
 }
 
 // ResponseBodyInfo defines model for ResponseBodyInfo.
@@ -267,6 +267,12 @@ type ResponseBodyInfo struct {
 // RetrieveFileBySlugResponse defines model for RetrieveFileBySlugResponse.
 type RetrieveFileBySlugResponse = string
 
+// SearchAuthClientData defines model for SearchAuthClientData.
+type SearchAuthClientData struct {
+	Items   []SearchAuthClientItem  `json:"items"`
+	Summary SearchAuthClientSummary `json:"summary"`
+}
+
 // SearchAuthClientFilter defines model for SearchAuthClientFilter.
 type SearchAuthClientFilter struct {
 	StatusIn *[]SearchAuthClientFilterStatusIn `json:"status_in,omitempty"`
@@ -277,13 +283,13 @@ type SearchAuthClientFilterStatusIn string
 
 // SearchAuthClientItem defines model for SearchAuthClientItem.
 type SearchAuthClientItem struct {
-	ClientId  *string `json:"client_id,omitempty"`
-	CreatedAt int64   `json:"created_at"`
-	Id        string  `json:"id"`
-	Name      string  `json:"name"`
-	Status    string  `json:"status"`
-	Type      string  `json:"type"`
-	UpdatedAt *int64  `json:"updated_at,omitempty"`
+	ClientId  string `json:"client_id"`
+	CreatedAt int64  `json:"created_at"`
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Status    string `json:"status"`
+	Type      string `json:"type"`
+	UpdatedAt *int64 `json:"updated_at,omitempty"`
 }
 
 // SearchAuthClientRequest defines model for SearchAuthClientRequest.
@@ -297,9 +303,18 @@ type SearchAuthClientRequest struct {
 
 // SearchAuthClientResponse defines model for SearchAuthClientResponse.
 type SearchAuthClientResponse struct {
-	Code    int32                  `json:"code"`
-	Data    []SearchAuthClientItem `json:"data"`
-	Message string                 `json:"message"`
+	Code    int32                `json:"code"`
+	Data    SearchAuthClientData `json:"data"`
+	Message string               `json:"message"`
+}
+
+// SearchAuthClientSummary defines model for SearchAuthClientSummary.
+type SearchAuthClientSummary struct {
+	// current page
+	Page int64 `json:"page"`
+
+	// total matched items with a given parameter
+	TotalItems int64 `json:"total_items"`
 }
 
 // SearchBarrelFilter defines model for SearchBarrelFilter.

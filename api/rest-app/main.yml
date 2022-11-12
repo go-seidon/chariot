@@ -111,6 +111,10 @@ components:
       $ref: "./operation/search-auth-client/request_filter.yml"
     SearchAuthClientResponse:
       $ref: "./operation/search-auth-client/response_body.yml"
+    SearchAuthClientData:
+      $ref: "./operation/search-auth-client/response_data.yml"
+    SearchAuthClientSummary:
+      $ref: "./operation/search-auth-client/response_summary.yml"
     SearchAuthClientItem:
       $ref: "./operation/search-auth-client/response_item.yml"
 

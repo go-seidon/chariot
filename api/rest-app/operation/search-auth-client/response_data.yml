@@ -1,0 +1,11 @@
+type: object
+required:
+- items
+- summary
+properties:
+  items:
+    type: array
+    items:
+      $ref: "./response_item.yml"
+  summary:
+    $ref: "./response_summary.yml"

@@ -25,7 +25,7 @@ func (r *auth) CreateClient(ctx context.Context, p repository.CreateClientParam)
 		return nil, tx.Error
 	}
 
-	currentClient := &AauthClient{}
+	currentClient := &AuthClient{}
 	checkRes := tx.
 		Select("id, client_id").
 		First(currentClient, "client_id = ?", p.ClientId)
@@ -40,7 +40,7 @@ func (r *auth) CreateClient(ctx context.Context, p repository.CreateClientParam)
 		return nil, checkRes.Error
 	}
 
-	createParam := &AauthClient{
+	createParam := &AuthClient{
 		Id:           p.Id,
 		ClientId:     p.ClientId,
 		ClientSecret: p.ClientSecret,
@@ -58,7 +58,7 @@ func (r *auth) CreateClient(ctx context.Context, p repository.CreateClientParam)
 		return nil, createRes.Error
 	}
 
-	authClient := &AauthClient{}
+	authClient := &AuthClient{}
 	findRes := tx.
 		Select("id, client_id, client_secret, name, type, status, created_at").
 		First(authClient, "id = ?", p.Id)
@@ -88,7 +88,7 @@ func (r *auth) CreateClient(ctx context.Context, p repository.CreateClientParam)
 }
 
 func (r *auth) FindClient(ctx context.Context, p repository.FindClientParam) (*repository.FindClientResult, error) {
-	authClient := &AauthClient{}
+	authClient := &AuthClient{}
 
 	query := r.gormClient.
 		WithContext(ctx).
@@ -134,7 +134,7 @@ func (r *auth) UpdateClient(ctx context.Context, p repository.UpdateClientParam)
 
 	findRes := tx.
 		Select(`id, client_id, name, type, status`).
-		First(&AauthClient{}, "id = ?", p.Id)
+		First(&AuthClient{}, "id = ?", p.Id)
 	if findRes.Error != nil {
 		txRes := tx.Rollback()
 		if txRes.Error != nil {
@@ -147,7 +147,7 @@ func (r *auth) UpdateClient(ctx context.Context, p repository.UpdateClientParam)
 	}
 
 	updateRes := tx.
-		Model(&AauthClient{}).
+		Model(&AuthClient{}).
 		Where("id = ?", p.Id).
 		Updates(map[string]interface{}{
 			"client_id":  p.ClientId,
@@ -164,7 +164,7 @@ func (r *auth) UpdateClient(ctx context.Context, p repository.UpdateClientParam)
 		return nil, updateRes.Error
 	}
 
-	authClient := &AauthClient{}
+	authClient := &AuthClient{}
 	checkRes := tx.
 		Select(`id, client_id, client_secret, name, type, status, created_at, updated_at`).
 		First(authClient, "id = ?", p.Id)
@@ -194,6 +194,77 @@ func (r *auth) UpdateClient(ctx context.Context, p repository.UpdateClientParam)
 	return res, nil
 }
 
+func (r *auth) SearchClient(ctx context.Context, p repository.SearchClientParam) (*repository.SearchClientResult, error) {
+	query := r.gormClient.
+		WithContext(ctx).
+		Clauses(dbresolver.Read)
+
+	searchQuery := query
+	if p.Keyword != "" {
+		searchQuery = searchQuery.
+			Where("name LIKE ?", "%"+p.Keyword+"%").
+			Or("client_id LIKE ?", "%"+p.Keyword+"%")
+	}
+
+	if len(p.Statuses) > 0 {
+		searchQuery = searchQuery.
+			Where("status IN ?", p.Statuses)
+	}
+
+	countQuery := searchQuery.Table("auth_client")
+
+	if p.Limit > 0 {
+		searchQuery = searchQuery.Limit(int(p.Limit))
+	}
+
+	if p.Offset > 0 {
+		searchQuery = searchQuery.Offset(int(p.Offset))
+	}
+
+	res := &repository.SearchClientResult{
+		Summary: repository.SearchClientSummary{},
+		Items:   []repository.SearchClientItem{},
+	}
+	authClients := []AuthClient{}
+
+	searchRes := searchQuery.
+		Select(`id, client_id, client_secret, name, type, status, created_at, updated_at`).
+		Find(&authClients)
+
+	if searchRes.Error != nil {
+		if errors.Is(searchRes.Error, gorm.ErrRecordNotFound) {
+			return res, nil
+		}
+		return nil, searchRes.Error
+	}
+
+	for _, authClient := range authClients {
+		var updatedAt *time.Time
+		if authClient.UpdatedAt.Valid {
+			updated := time.UnixMilli(authClient.UpdatedAt.Int64).UTC()
+			updatedAt = &updated
+		}
+
+		res.Items = append(res.Items, repository.SearchClientItem{
+			Id:           authClient.Id,
+			ClientId:     authClient.ClientId,
+			ClientSecret: authClient.ClientSecret,
+			Name:         authClient.Name,
+			Type:         authClient.Type,
+			Status:       authClient.Status,
+			CreatedAt:    time.UnixMilli(authClient.CreatedAt).UTC(),
+			UpdatedAt:    updatedAt,
+		})
+	}
+
+	countRes := countQuery.Count(&res.Summary.TotalItems)
+	if countRes.Error != nil {
+		return nil, countRes.Error
+	}
+
+	return res, nil
+}
+
 type AuthParam struct {
 	GormClient *gorm.DB
 }
@@ -204,7 +275,7 @@ func NewAuth(p AuthParam) *auth {
 	}
 }
 
-type AauthClient struct {
+type AuthClient struct {
 	Id           string        `gorm:"column:id;primaryKey"`
 	ClientId     string        `gorm:"column:client_id"`
 	ClientSecret string        `gorm:"column:client_secret"`
@@ -215,6 +286,6 @@ type AauthClient struct {
 	UpdatedAt    sql.NullInt64 `gorm:"column:updated_at;autoUpdateTime:milli;<-:update"`
 }
 
-func (AauthClient) TableName() string {
+func (AuthClient) TableName() string {
 	return "auth_client"
 }

@@ -38,7 +38,7 @@ var _ = Describe("Client Package", func() {
 
 		BeforeEach(func() {
 			ctx = context.Background()
-			currentTs = time.Now()
+			currentTs = time.Now().UTC()
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
 			validator = mock_validation.NewMockValidator(ctrl)
@@ -291,7 +291,7 @@ var _ = Describe("Client Package", func() {
 
 		BeforeEach(func() {
 			ctx = context.Background()
-			currentTs = time.Now()
+			currentTs = time.Now().UTC()
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
 			validator = mock_validation.NewMockValidator(ctrl)
@@ -320,7 +320,7 @@ var _ = Describe("Client Package", func() {
 				Name:         "name",
 				Type:         "basic",
 				Status:       "active",
-				CreatedAt:    currentTs.UTC(),
+				CreatedAt:    currentTs,
 			}
 			result = &auth.FindClientByIdResult{
 				Success: system.SystemSuccess{
@@ -580,6 +580,215 @@ var _ = Describe("Client Package", func() {
 				Expect(res.Status).To(Equal("active"))
 				Expect(res.Type).To(Equal("basic"))
 				Expect(res.CreatedAt).To(Equal(currentTs))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
+
+	Context("SearchClient function", Label("unit"), func() {
+
+		var (
+			ctx         context.Context
+			currentTs   time.Time
+			authClient  auth.AuthClient
+			p           auth.SearchClientParam
+			validator   *mock_validation.MockValidator
+			identifier  *mock_identifier.MockIdentifier
+			hasher      *mock_hashing.MockHasher
+			clock       *mock_datetime.MockClock
+			authRepo    *mock_repository.MockAuth
+			searchParam repository.SearchClientParam
+			searchRes   *repository.SearchClientResult
+		)
+
+		BeforeEach(func() {
+			ctx = context.Background()
+			currentTs = time.Now().UTC()
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			validator = mock_validation.NewMockValidator(ctrl)
+			identifier = mock_identifier.NewMockIdentifier(ctrl)
+			hasher = mock_hashing.NewMockHasher(ctrl)
+			clock = mock_datetime.NewMockClock(ctrl)
+			authRepo = mock_repository.NewMockAuth(ctrl)
+			authClient = auth.NewAuthClient(auth.AuthClientParam{
+				Validator:  validator,
+				Hasher:     hasher,
+				Identifier: identifier,
+				Clock:      clock,
+				AuthRepo:   authRepo,
+			})
+			p = auth.SearchClientParam{
+				Keyword:    "goseidon",
+				TotalItems: 24,
+				Page:       2,
+				Statuses:   []string{"active", "inactive"},
+			}
+			searchParam = repository.SearchClientParam{
+				Limit:    24,
+				Offset:   24,
+				Keyword:  "goseidon",
+				Statuses: []string{"active", "inactive"},
+			}
+			searchRes = &repository.SearchClientResult{
+				Summary: repository.SearchClientSummary{
+					TotalItems: 2,
+				},
+				Items: []repository.SearchClientItem{
+					{
+						Id:           "id-1",
+						ClientId:     "client-id-1",
+						ClientSecret: "client-secret-1",
+						Name:         "name-1",
+						Type:         "basic",
+						Status:       "inactive",
+						CreatedAt:    currentTs,
+					},
+					{
+						Id:           "id-2",
+						ClientId:     "client-id-2",
+						ClientSecret: "client-secret-2",
+						Name:         "name-2",
+						Type:         "basic",
+						Status:       "active",
+						CreatedAt:    currentTs,
+						UpdatedAt:    &currentTs,
+					},
+				},
+			}
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(fmt.Errorf("invalid data")).
+					Times(1)
+
+				res, err := authClient.SearchClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1002)))
+				Expect(err.Message).To(Equal("invalid data"))
+			})
+		})
+
+		When("failed search client", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				authRepo.
+					EXPECT().
+					SearchClient(gomock.Eq(ctx), gomock.Eq(searchParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := authClient.SearchClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("network error"))
+			})
+		})
+
+		When("there is no client", func() {
+			It("should return empty result", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				searchRes := &repository.SearchClientResult{
+					Summary: repository.SearchClientSummary{
+						TotalItems: 0,
+					},
+					Items: []repository.SearchClientItem{},
+				}
+				authRepo.
+					EXPECT().
+					SearchClient(gomock.Eq(ctx), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				res, err := authClient.SearchClient(ctx, p)
+
+				Expect(res.Success.Code).To(Equal(int32(1000)))
+				Expect(res.Success.Message).To(Equal("success search auth client"))
+				Expect(res.Summary.Page).To(Equal(p.Page))
+				Expect(res.Summary.TotalItems).To(Equal(int64(0)))
+				Expect(len(res.Items)).To(Equal(0))
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("there is one client", func() {
+			It("should return result", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				searchRes := &repository.SearchClientResult{
+					Summary: repository.SearchClientSummary{
+						TotalItems: 1,
+					},
+					Items: []repository.SearchClientItem{
+						{
+							Id:           "id-1",
+							ClientId:     "client-id-1",
+							ClientSecret: "client-secret-1",
+							Name:         "name-1",
+							Type:         "basic",
+							Status:       "inactive",
+							CreatedAt:    currentTs,
+						},
+					},
+				}
+				authRepo.
+					EXPECT().
+					SearchClient(gomock.Eq(ctx), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				res, err := authClient.SearchClient(ctx, p)
+
+				Expect(res.Success.Code).To(Equal(int32(1000)))
+				Expect(res.Success.Message).To(Equal("success search auth client"))
+				Expect(res.Summary.Page).To(Equal(p.Page))
+				Expect(res.Summary.TotalItems).To(Equal(int64(1)))
+				Expect(len(res.Items)).To(Equal(1))
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("there are some clients", func() {
+			It("should return result", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				authRepo.
+					EXPECT().
+					SearchClient(gomock.Eq(ctx), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				res, err := authClient.SearchClient(ctx, p)
+
+				Expect(res.Success.Code).To(Equal(int32(1000)))
+				Expect(res.Success.Message).To(Equal("success search auth client"))
+				Expect(res.Summary.Page).To(Equal(p.Page))
+				Expect(res.Summary.TotalItems).To(Equal(int64(2)))
+				Expect(len(res.Items)).To(Equal(2))
 				Expect(err).To(BeNil())
 			})
 		})
