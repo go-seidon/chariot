@@ -22,9 +22,9 @@ type AuthClient interface {
 }
 
 type CreateClientParam struct {
-	ClientId     string `validate:"required,min=3,max=128" label:"client_id"`
-	ClientSecret string `validate:"required,min=8,max=128" label:"client_secret"`
-	Name         string `validate:"required,min=3,max=64" label:"name"`
+	ClientId     string `validate:"required,lowercase,alphanum,min=6,max=128" label:"client_id"`
+	ClientSecret string `validate:"required,printascii,min=8,max=128" label:"client_secret"`
+	Name         string `validate:"required,printascii,min=3,max=64" label:"name"`
 	Type         string `validate:"required,oneof='basic'" label:"type"`
 	Status       string `validate:"required,oneof='active' 'inactive'" label:"status"`
 }
@@ -56,8 +56,8 @@ type FindClientByIdResult struct {
 
 type UpdateClientByIdParam struct {
 	Id       string `validate:"required,min=5,max=64" label:"id"`
-	ClientId string `validate:"required,min=3,max=128" label:"client_id"`
-	Name     string `validate:"required,min=3,max=64" label:"name"`
+	ClientId string `validate:"required,lowercase,alphanum,min=6,max=128" label:"client_id"`
+	Name     string `validate:"required,printascii,min=3,max=64" label:"name"`
 	Type     string `validate:"required,oneof='basic'" label:"type"`
 	Status   string `validate:"required,oneof='active' 'inactive'" label:"status"`
 }
@@ -74,10 +74,10 @@ type UpdateClientByIdResult struct {
 }
 
 type SearchClientParam struct {
-	Keyword    string   `validate:"omitempty,min=2,max=64" label:"keyword"`
-	TotalItems int32    `validate:"numeric,min=1,max=100" label:"limit"`
-	Page       int64    `validate:"numeric,min=1" label:"offset"`
-	Statuses   []string `validate:"unique,min=0,max=3,dive,oneof='active' 'inactive'" label:"statuses"`
+	Keyword    string   `validate:"omitempty,printascii,min=2,max=64" label:"keyword"`
+	TotalItems int32    `validate:"numeric,min=1,max=100" label:"total_items"`
+	Page       int64    `validate:"numeric,min=1" label:"page"`
+	Statuses   []string `validate:"unique,min=0,max=2,dive,oneof='active' 'inactive'" label:"statuses"`
 }
 
 type SearchClientResult struct {

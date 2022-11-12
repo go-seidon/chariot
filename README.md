@@ -77,48 +77,45 @@ TBA
 ```
 
 ## Todo
-1. Update validation rule
-- client_id should be alphanumeric (lowercased)
-- name should be alphanumeric space
-2. Override default error handler
+1. Admin: CreateBarrel
+- hippo
+- aws-s3
+- google-storage
+- alicloud-oss
+2. Admin: GetBarrelById
+3. Admin: UpdateBarrelById
+4. Admin: SearchBarrels
 
-5. Admin: CreateBarrel
-6. Admin: ReadBarrel
-7. Admin: UpdateBarrel
-8. Admin: SearchBarrels
-
-9. Client: UploadFile
+5. Client: UploadFile
 - *file
 - *barrels (hippo, min: 1, max: 10, order define priority)
 - *visibility (public, protected)
 - metadata (min: 0, max: 30, key-value pairs)
 -> return `file_id`, `uploaded_at` for protected file
 -> return `file_id`, `uploaded_at` and `file_url` for public file
-10. Client: Secure UploadFile (using auth)
+
+6. Client: Secure UploadFile (using auth)
 - secure upload (e.g: presigned url, upload session, etc)
-11. Client: RetrieveFile
+7. Client: RetrieveFile
 - auto failover
-12. Client: File access control (visibility, secret meta: user_id)
+8. Client: File access control (visibility, secret meta: user_id)
 
-13. Admin: ReadFile
-14. Admin: SearchFiles
+9. Admin: GetFileById
+10. Admin: SearchFiles
+11. Admin: DeleteFile
 
-15. Client: Upload rule (size, resolution, extension)
+12. Client: Upload rule (size, resolution, extension)
 - rule is required
 - rule may have no attribute (free rule)
 - rule may have multiple attribute
 - if rule have multiple attribute than it's mean we're matching at least one rule (or clause)
 
-16. Admin: DeleteFile
-
-17. Add barrel provider: (aws-s3)
-18. Add barrel provider: (g-storage)
-19. Add barrel provider: (alicloud-oss)
-
-20. Admin: dashboard monitoring
+13. Admin: dashboard monitoring
 - data exporter: CollectMetris
 - prometheus (rest exporter)
 - grafana
+14. Enhance rest app (echo router)
+- Override default error handler
 
 ## Nice to have
 1. Custom file access (custom link with certain limitation, e.g: access duration)
