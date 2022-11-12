@@ -513,4 +513,294 @@ var _ = Describe("Basic Handler", func() {
 			})
 		})
 	})
+
+	Context("SearchClient function", Label("unit"), func() {
+		var (
+			currentTs   time.Time
+			ctx         echo.Context
+			h           func(ctx echo.Context) error
+			rec         *httptest.ResponseRecorder
+			authClient  *mock_auth.MockAuthClient
+			searchParam auth.SearchClientParam
+			searchRes   *auth.SearchClientResult
+		)
+
+		BeforeEach(func() {
+			currentTs = time.Now().UTC()
+			keyword := "goseidon"
+			reqBody := &rest_app.SearchAuthClientRequest{
+				Filter: &rest_app.SearchAuthClientFilter{
+					StatusIn: &[]rest_app.SearchAuthClientFilterStatusIn{"active"},
+				},
+				Keyword: &keyword,
+				Pagination: &rest_app.RequestPagination{
+					Page:       2,
+					TotalItems: 24,
+				},
+			}
+			body, _ := json.Marshal(reqBody)
+			buffer := bytes.NewBuffer(body)
+			req := httptest.NewRequest(http.MethodPost, "/", buffer)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec = httptest.NewRecorder()
+
+			e := echo.New()
+			ctx = e.NewContext(req, rec)
+
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			authClient = mock_auth.NewMockAuthClient(ctrl)
+			authHandler := rest_handler.NewAuth(rest_handler.AuthParam{
+				AuthClient: authClient,
+			})
+			h = authHandler.SearchClient
+			searchParam = auth.SearchClientParam{
+				Keyword:    "goseidon",
+				TotalItems: 24,
+				Page:       2,
+				Statuses:   []string{"active"},
+			}
+			searchRes = &auth.SearchClientResult{
+				Success: system.SystemSuccess{
+					Code:    1000,
+					Message: "success search auth client",
+				},
+				Items: []auth.SearchClientItem{
+					{
+						Id:        "id-1",
+						ClientId:  "client-id-1",
+						Name:      "name-1",
+						Type:      "basic",
+						Status:    "inactive",
+						CreatedAt: currentTs,
+						UpdatedAt: nil,
+					},
+					{
+						Id:        "id-2",
+						ClientId:  "client-id-2",
+						Name:      "name-2",
+						Type:      "basic",
+						Status:    "active",
+						CreatedAt: currentTs,
+						UpdatedAt: &currentTs,
+					},
+				},
+				Summary: auth.SearchClientSummary{
+					TotalItems: 2,
+					Page:       2,
+				},
+			}
+		})
+
+		When("failed binding request body", func() {
+			It("should return error", func() {
+				reqBody, _ := json.Marshal(struct {
+					Filter int `json:"filter"`
+				}{
+					Filter: 1,
+				})
+				buffer := bytes.NewBuffer(reqBody)
+
+				req := httptest.NewRequest(http.MethodPost, "/", buffer)
+				req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+				rec := httptest.NewRecorder()
+
+				e := echo.New()
+				ctx := e.NewContext(req, rec)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 400,
+					Message: &rest_app.ResponseBodyInfo{
+						Code:    1002,
+						Message: "invalid request",
+					},
+				}))
+			})
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				authClient.
+					EXPECT().
+					SearchClient(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
+					Return(nil, &system.SystemError{
+						Code:    1002,
+						Message: "invalid data",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 400,
+					Message: &rest_app.ResponseBodyInfo{
+						Code:    1002,
+						Message: "invalid data",
+					},
+				}))
+			})
+		})
+
+		When("failed search client", func() {
+			It("should return error", func() {
+				authClient.
+					EXPECT().
+					SearchClient(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
+					Return(nil, &system.SystemError{
+						Code:    1001,
+						Message: "network error",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 500,
+					Message: &rest_app.ResponseBodyInfo{
+						Code:    1001,
+						Message: "network error",
+					},
+				}))
+			})
+		})
+
+		When("there is no client", func() {
+			It("should return empty result", func() {
+				searchRes := &auth.SearchClientResult{
+					Success: system.SystemSuccess{
+						Code:    1000,
+						Message: "success search auth client",
+					},
+					Items: []auth.SearchClientItem{},
+					Summary: auth.SearchClientSummary{
+						TotalItems: 0,
+						Page:       2,
+					},
+				}
+				authClient.
+					EXPECT().
+					SearchClient(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				err := h(ctx)
+
+				res := &rest_app.SearchAuthClientResponse{}
+				json.Unmarshal(rec.Body.Bytes(), res)
+
+				Expect(err).To(BeNil())
+				Expect(rec.Code).To(Equal(http.StatusOK))
+				Expect(res.Code).To(Equal(int32(1000)))
+				Expect(res.Message).To(Equal("success search auth client"))
+				Expect(res.Data.Summary).To(Equal(rest_app.SearchAuthClientSummary{
+					Page:       2,
+					TotalItems: 0,
+				}))
+				Expect(res.Data.Items).To(Equal([]rest_app.SearchAuthClientItem{}))
+			})
+		})
+
+		When("there is one client", func() {
+			It("should return result", func() {
+				searchRes := &auth.SearchClientResult{
+					Success: system.SystemSuccess{
+						Code:    1000,
+						Message: "success search auth client",
+					},
+					Items: []auth.SearchClientItem{
+						{
+							Id:        "id-1",
+							ClientId:  "client-id-1",
+							Name:      "name-1",
+							Type:      "basic",
+							Status:    "active",
+							CreatedAt: currentTs,
+							UpdatedAt: nil,
+						},
+					},
+					Summary: auth.SearchClientSummary{
+						TotalItems: 1,
+						Page:       2,
+					},
+				}
+				authClient.
+					EXPECT().
+					SearchClient(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				err := h(ctx)
+
+				res := &rest_app.SearchAuthClientResponse{}
+				json.Unmarshal(rec.Body.Bytes(), res)
+
+				Expect(err).To(BeNil())
+				Expect(rec.Code).To(Equal(http.StatusOK))
+				Expect(res.Code).To(Equal(int32(1000)))
+				Expect(res.Message).To(Equal("success search auth client"))
+				Expect(res.Data.Summary).To(Equal(rest_app.SearchAuthClientSummary{
+					Page:       2,
+					TotalItems: 1,
+				}))
+				Expect(res.Data.Items).To(Equal([]rest_app.SearchAuthClientItem{
+					{
+						Id:        "id-1",
+						ClientId:  "client-id-1",
+						Name:      "name-1",
+						Type:      "basic",
+						Status:    "active",
+						CreatedAt: currentTs.UnixMilli(),
+						UpdatedAt: nil,
+					},
+				}))
+			})
+		})
+
+		When("there are some clients", func() {
+			It("should return result", func() {
+				authClient.
+					EXPECT().
+					SearchClient(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				err := h(ctx)
+
+				res := &rest_app.SearchAuthClientResponse{}
+				json.Unmarshal(rec.Body.Bytes(), res)
+
+				updatedAt := currentTs.UnixMilli()
+				Expect(err).To(BeNil())
+				Expect(rec.Code).To(Equal(http.StatusOK))
+				Expect(res.Code).To(Equal(int32(1000)))
+				Expect(res.Message).To(Equal("success search auth client"))
+				Expect(res.Data.Summary).To(Equal(rest_app.SearchAuthClientSummary{
+					Page:       2,
+					TotalItems: 2,
+				}))
+				Expect(res.Data.Items).To(Equal([]rest_app.SearchAuthClientItem{
+					{
+						Id:        "id-1",
+						ClientId:  "client-id-1",
+						Name:      "name-1",
+						Type:      "basic",
+						Status:    "inactive",
+						CreatedAt: currentTs.UnixMilli(),
+						UpdatedAt: nil,
+					},
+					{
+						Id:        "id-2",
+						ClientId:  "client-id-2",
+						Name:      "name-2",
+						Type:      "basic",
+						Status:    "active",
+						CreatedAt: currentTs.UnixMilli(),
+						UpdatedAt: &updatedAt,
+					},
+				}))
+			})
+		})
+	})
 })
