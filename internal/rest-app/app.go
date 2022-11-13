@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-seidon/chariot/internal/app"
 	"github.com/go-seidon/chariot/internal/auth"
+	"github.com/go-seidon/chariot/internal/barrel"
 	"github.com/go-seidon/chariot/internal/repository"
 	rest_handler "github.com/go-seidon/chariot/internal/rest-handler"
 	"github.com/go-seidon/provider/datetime"
@@ -119,6 +120,18 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		authClientGroup.POST("/search", authHandler.SearchClient)
 		authClientGroup.GET("/:id", authHandler.GetClientById)
 		authClientGroup.PUT("/:id", authHandler.UpdateClientById)
+
+		barrelClient := barrel.NewBarrel(barrel.BarrelParam{
+			Validator:  validator,
+			Identifier: identifier,
+			Clock:      clock,
+			BarrelRepo: repo.GetBarrel(),
+		})
+		barrelHandler := rest_handler.NewBarrel(rest_handler.BarrelParam{
+			Barrel: barrelClient,
+		})
+		barrelGroup := echo.Group("/v1/barrel")
+		barrelGroup.POST("", barrelHandler.CreateBarrel)
 	}
 
 	app := &restApp{
