@@ -525,4 +525,382 @@ var _ = Describe("Barrel Repository", func() {
 			})
 		})
 	})
+
+	Context("UpdateBarrel function", Label("unit"), func() {
+
+		var (
+			ctx        context.Context
+			currentTs  time.Time
+			dbClient   sqlmock.Sqlmock
+			barrelRepo repository.Barrel
+			p          repository.UpdateBarrelParam
+			r          *repository.UpdateBarrelResult
+			findStmt   string
+			updateStmt string
+			checkStmt  string
+			findRows   *sqlmock.Rows
+			checkRows  *sqlmock.Rows
+		)
+
+		BeforeEach(func() {
+			var (
+				db  *sql.DB
+				err error
+			)
+
+			ctx = context.Background()
+			currentTs = time.Now()
+			db, dbClient, err = sqlmock.New()
+			if err != nil {
+				AbortSuite("failed create db mock: " + err.Error())
+			}
+
+			gormClient, err := gorm.Open(mysql.New(mysql.Config{
+				Conn:                      db,
+				SkipInitializeWithVersion: true,
+			}), &gorm.Config{
+				DisableAutomaticPing: true,
+			})
+			if err != nil {
+				AbortSuite("failed create gorm client: " + err.Error())
+			}
+			barrelRepo = repository_mysql.NewBarrel(repository_mysql.BarrelParam{
+				GormClient: gormClient,
+			})
+
+			p = repository.UpdateBarrelParam{
+				Id:        "id",
+				Code:      "new-code",
+				Name:      "new-name",
+				Provider:  "goseidon_hippo",
+				Status:    "active",
+				UpdatedAt: currentTs,
+			}
+			r = &repository.UpdateBarrelResult{
+				Id:        "id",
+				Code:      "new-code",
+				Name:      "new-name",
+				Provider:  "goseidon_hippo",
+				Status:    "active",
+				CreatedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
+				UpdatedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
+			}
+			findStmt = regexp.QuoteMeta("SELECT id, code, name, provider, status FROM `barrel` WHERE id = ? ORDER BY `barrel`.`id` LIMIT 1")
+			updateStmt = regexp.QuoteMeta("UPDATE `barrel` SET `code`=?,`name`=?,`provider`=?,`status`=?,`updated_at`=? WHERE id = ?")
+			checkStmt = regexp.QuoteMeta("SELECT id, code, name, provider, status, created_at, updated_at FROM `barrel` WHERE id = ? ORDER BY `barrel`.`id` LIMIT 1")
+			findRows = sqlmock.NewRows([]string{
+				"id", "code",
+				"name", "provider", "status",
+			}).AddRow(
+				"id", "old-code",
+				"old-name", "goseidon_hippo", "inactive",
+			)
+			checkRows = sqlmock.NewRows([]string{
+				"id", "code",
+				"name", "provider",
+				"status",
+				"created_at", "updated_at",
+			}).AddRow(
+				"id", "new-code",
+				"new-name", "goseidon_hippo", "active",
+				currentTs.UnixMilli(), currentTs.UnixMilli(),
+			)
+		})
+
+		AfterEach(func() {
+			err := dbClient.ExpectationsWereMet()
+			if err != nil {
+				AbortSuite("some expectations were not met " + err.Error())
+			}
+		})
+
+		When("failed begin trx", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin().
+					WillReturnError(fmt.Errorf("begin error"))
+
+				res, err := barrelRepo.UpdateBarrel(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("begin error")))
+			})
+		})
+
+		When("failed rollback during find barrel", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback().
+					WillReturnError(fmt.Errorf("rollback error"))
+
+				res, err := barrelRepo.UpdateBarrel(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("rollback error")))
+			})
+		})
+
+		When("failed find barrel", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback()
+
+				res, err := barrelRepo.UpdateBarrel(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("barrel is not available", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnError(gorm.ErrRecordNotFound)
+
+				dbClient.
+					ExpectRollback()
+
+				res, err := barrelRepo.UpdateBarrel(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(repository.ErrNotFound))
+			})
+		})
+
+		When("failed rollback during update barrel", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnRows(findRows)
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.Code,
+						p.Name,
+						p.Provider,
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback().
+					WillReturnError(fmt.Errorf("rollback error"))
+
+				res, err := barrelRepo.UpdateBarrel(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("rollback error")))
+			})
+		})
+
+		When("failed update barrel", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnRows(findRows)
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.Code,
+						p.Name,
+						p.Provider,
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback()
+
+				res, err := barrelRepo.UpdateBarrel(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("failed rollback during check update result", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnRows(findRows)
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.Code,
+						p.Name,
+						p.Provider,
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.Id).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback().
+					WillReturnError(fmt.Errorf("rollback error"))
+
+				res, err := barrelRepo.UpdateBarrel(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("rollback error")))
+			})
+		})
+
+		When("failed check update result", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnRows(findRows)
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.Code,
+						p.Name,
+						p.Provider,
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.Id).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback()
+
+				res, err := barrelRepo.UpdateBarrel(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("failed commit trx", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnRows(findRows)
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.Code,
+						p.Name,
+						p.Provider,
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.Id).
+					WillReturnRows(checkRows)
+
+				dbClient.
+					ExpectCommit().
+					WillReturnError(fmt.Errorf("commit error"))
+
+				res, err := barrelRepo.UpdateBarrel(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("commit error")))
+			})
+		})
+
+		When("success update barrel", func() {
+			It("should return result", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnRows(findRows)
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.Code,
+						p.Name,
+						p.Provider,
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.Id).
+					WillReturnRows(checkRows)
+
+				dbClient.
+					ExpectCommit()
+
+				res, err := barrelRepo.UpdateBarrel(ctx, p)
+
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
 })

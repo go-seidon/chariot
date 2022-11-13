@@ -120,6 +120,76 @@ func (r *barrel) FindBarrel(ctx context.Context, p repository.FindBarrelParam) (
 	return res, nil
 }
 
+func (r *barrel) UpdateBarrel(ctx context.Context, p repository.UpdateBarrelParam) (*repository.UpdateBarrelResult, error) {
+	tx := r.gormClient.
+		WithContext(ctx).
+		Clauses(dbresolver.Write).
+		Begin()
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	findRes := tx.
+		Select(`id, code, name, provider, status`).
+		First(&Barrel{}, "id = ?", p.Id)
+	if findRes.Error != nil {
+		txRes := tx.Rollback()
+		if txRes.Error != nil {
+			return nil, txRes.Error
+		}
+		if errors.Is(findRes.Error, gorm.ErrRecordNotFound) {
+			return nil, repository.ErrNotFound
+		}
+		return nil, findRes.Error
+	}
+
+	updateRes := tx.
+		Model(&Barrel{}).
+		Where("id = ?", p.Id).
+		Updates(map[string]interface{}{
+			"code":       p.Code,
+			"name":       p.Name,
+			"provider":   p.Provider,
+			"status":     p.Status,
+			"updated_at": p.UpdatedAt.UnixMilli(),
+		})
+	if updateRes.Error != nil {
+		txRes := tx.Rollback()
+		if txRes.Error != nil {
+			return nil, txRes.Error
+		}
+		return nil, updateRes.Error
+	}
+
+	barrel := &Barrel{}
+	checkRes := tx.
+		Select(`id, code, name, provider, status, created_at, updated_at`).
+		First(barrel, "id = ?", p.Id)
+	if checkRes.Error != nil {
+		txRes := tx.Rollback()
+		if txRes.Error != nil {
+			return nil, txRes.Error
+		}
+		return nil, checkRes.Error
+	}
+
+	txRes := tx.Commit()
+	if txRes.Error != nil {
+		return nil, txRes.Error
+	}
+
+	res := &repository.UpdateBarrelResult{
+		Id:        barrel.Id,
+		Code:      barrel.Code,
+		Name:      barrel.Name,
+		Provider:  barrel.Provider,
+		Status:    barrel.Status,
+		CreatedAt: time.UnixMilli(barrel.CreatedAt).UTC(),
+		UpdatedAt: time.UnixMilli(barrel.UpdatedAt.Int64).UTC(),
+	}
+	return res, nil
+}
+
 type BarrelParam struct {
 	GormClient *gorm.DB
 }

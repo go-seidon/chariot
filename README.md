@@ -77,7 +77,6 @@ TBA
 ```
 
 ## Todo
-2. Admin: UpdateBarrelById
 3. Admin: SearchBarrels
 4. Enhance typeconv (add more type conversion based on current problems)
 

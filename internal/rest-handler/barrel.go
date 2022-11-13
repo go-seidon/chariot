@@ -101,6 +101,56 @@ func (h *barrelHandler) GetBarrelById(ctx echo.Context) error {
 	})
 }
 
+func (h *barrelHandler) UpdateBarrelById(ctx echo.Context) error {
+	req := &rest_app.UpdateBarrelByIdRequest{}
+	if err := ctx.Bind(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+			Code:    status.INVALID_PARAM,
+			Message: "invalid request",
+		})
+	}
+
+	updateRes, err := h.barrelClient.UpdateBarrelById(ctx.Request().Context(), barrel.UpdateBarrelByIdParam{
+		Id:       ctx.Param("id"),
+		Code:     req.Code,
+		Name:     req.Name,
+		Provider: string(req.Provider),
+		Status:   string(req.Status),
+	})
+	if err != nil {
+		switch err.Code {
+		case status.INVALID_PARAM:
+			return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+				Code:    err.Code,
+				Message: err.Message,
+			})
+		case status.RESOURCE_NOTFOUND:
+			return echo.NewHTTPError(http.StatusNotFound, &rest_app.ResponseBodyInfo{
+				Code:    err.Code,
+				Message: err.Message,
+			})
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, &rest_app.ResponseBodyInfo{
+			Code:    err.Code,
+			Message: err.Message,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, &rest_app.UpdateBarrelByIdResponse{
+		Code:    updateRes.Success.Code,
+		Message: updateRes.Success.Message,
+		Data: rest_app.UpdateBarrelByIdData{
+			Id:        updateRes.Id,
+			Code:      updateRes.Code,
+			Name:      updateRes.Name,
+			Provider:  updateRes.Provider,
+			Status:    updateRes.Status,
+			CreatedAt: updateRes.CreatedAt.UnixMilli(),
+			UpdatedAt: updateRes.UpdatedAt.UnixMilli(),
+		},
+	})
+}
+
 type BarrelParam struct {
 	Barrel barrel.Barrel
 }
