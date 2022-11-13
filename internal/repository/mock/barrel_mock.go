@@ -49,3 +49,18 @@ func (mr *MockBarrelMockRecorder) CreateBarrel(ctx, p interface{}) *gomock.Call 
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBarrel", reflect.TypeOf((*MockBarrel)(nil).CreateBarrel), ctx, p)
 }
+
+// FindBarrel mocks base method.
+func (m *MockBarrel) FindBarrel(ctx context.Context, p repository.FindBarrelParam) (*repository.FindBarrelResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindBarrel", ctx, p)
+	ret0, _ := ret[0].(*repository.FindBarrelResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindBarrel indicates an expected call of FindBarrel.
+func (mr *MockBarrelMockRecorder) FindBarrel(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindBarrel", reflect.TypeOf((*MockBarrel)(nil).FindBarrel), ctx, p)
+}

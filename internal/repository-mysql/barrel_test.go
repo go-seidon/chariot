@@ -88,7 +88,7 @@ var _ = Describe("Barrel Repository", func() {
 			})
 		})
 
-		When("failed rollback during check client", func() {
+		When("failed rollback during check barrel", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
@@ -109,7 +109,7 @@ var _ = Describe("Barrel Repository", func() {
 			})
 		})
 
-		When("failed check client", func() {
+		When("failed check barrel", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
@@ -129,7 +129,7 @@ var _ = Describe("Barrel Repository", func() {
 			})
 		})
 
-		When("client already exists", func() {
+		When("barrel already exists", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
@@ -155,7 +155,7 @@ var _ = Describe("Barrel Repository", func() {
 			})
 		})
 
-		When("failed rollback during client creation", func() {
+		When("failed rollback during barrel creation", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
@@ -185,7 +185,7 @@ var _ = Describe("Barrel Repository", func() {
 			})
 		})
 
-		When("failed create client", func() {
+		When("failed create barrel", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
@@ -214,7 +214,7 @@ var _ = Describe("Barrel Repository", func() {
 			})
 		})
 
-		When("failed rollback during find client", func() {
+		When("failed rollback during find barrel", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
@@ -249,7 +249,7 @@ var _ = Describe("Barrel Repository", func() {
 			})
 		})
 
-		When("failed find client", func() {
+		When("failed find barrel", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
@@ -283,7 +283,7 @@ var _ = Describe("Barrel Repository", func() {
 			})
 		})
 
-		When("failed commit during success create client", func() {
+		When("failed commit during success create barrel", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
@@ -327,7 +327,7 @@ var _ = Describe("Barrel Repository", func() {
 			})
 		})
 
-		When("success create client", func() {
+		When("success create barrel", func() {
 			It("should return result", func() {
 				dbClient.
 					ExpectBegin()
@@ -374,6 +374,153 @@ var _ = Describe("Barrel Repository", func() {
 					CreatedAt: time.UnixMilli(p.CreatedAt.UnixMilli()).UTC(),
 				}
 				Expect(res).To(Equal(expectedRes))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
+
+	Context("FindBarrel function", Label("unit"), func() {
+
+		var (
+			ctx        context.Context
+			currentTs  time.Time
+			dbClient   sqlmock.Sqlmock
+			barrelRepo repository.Barrel
+			p          repository.FindBarrelParam
+			r          *repository.FindBarrelResult
+			findStmt   string
+		)
+
+		BeforeEach(func() {
+			var (
+				db  *sql.DB
+				err error
+			)
+
+			ctx = context.Background()
+			currentTs = time.Now()
+			db, dbClient, err = sqlmock.New()
+			if err != nil {
+				AbortSuite("failed create db mock: " + err.Error())
+			}
+
+			gormClient, err := gorm.Open(mysql.New(mysql.Config{
+				Conn:                      db,
+				SkipInitializeWithVersion: true,
+			}), &gorm.Config{
+				DisableAutomaticPing: true,
+			})
+			if err != nil {
+				AbortSuite("failed create gorm client: " + err.Error())
+			}
+			barrelRepo = repository_mysql.NewBarrel(repository_mysql.BarrelParam{
+				GormClient: gormClient,
+			})
+
+			p = repository.FindBarrelParam{
+				Id: "id",
+			}
+			r = &repository.FindBarrelResult{
+				Id:        "id",
+				Code:      "code",
+				Name:      "name",
+				Provider:  "goseidon_hippo",
+				Status:    "active",
+				CreatedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
+			}
+			findStmt = regexp.QuoteMeta("SELECT id, code, name, provider, status, created_at, updated_at FROM `barrel` WHERE id = ? ORDER BY `barrel`.`id` LIMIT 1")
+		})
+
+		AfterEach(func() {
+			err := dbClient.ExpectationsWereMet()
+			if err != nil {
+				AbortSuite("some expectations were not met " + err.Error())
+			}
+		})
+
+		When("failed check barrel", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnError(fmt.Errorf("network error"))
+
+				res, err := barrelRepo.FindBarrel(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("barrel is not available", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnError(gorm.ErrRecordNotFound)
+
+				res, err := barrelRepo.FindBarrel(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(repository.ErrNotFound))
+			})
+		})
+
+		When("success find barrel", func() {
+			It("should return result", func() {
+				rows := sqlmock.NewRows([]string{
+					"id", "code",
+					"name", "provider", "status",
+					"created_at", "updated_at",
+				}).AddRow(
+					r.Id, r.Code,
+					r.Name, r.Provider, r.Status,
+					currentTs.UnixMilli(), nil,
+				)
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnRows(rows)
+
+				res, err := barrelRepo.FindBarrel(ctx, p)
+
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("success find updated barrel", func() {
+			It("should return result", func() {
+				rows := sqlmock.NewRows([]string{
+					"id", "code",
+					"name", "provider", "status",
+					"created_at", "updated_at",
+				}).AddRow(
+					r.Id, r.Code,
+					r.Name, r.Provider, r.Status,
+					currentTs.UnixMilli(),
+					currentTs.UnixMilli(),
+				)
+
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnRows(rows)
+
+				res, err := barrelRepo.FindBarrel(ctx, p)
+
+				updatedAt := time.UnixMilli(currentTs.UnixMilli()).UTC()
+				r := &repository.FindBarrelResult{
+					Id:        "id",
+					Code:      "code",
+					Name:      "name",
+					Provider:  "goseidon_hippo",
+					Status:    "active",
+					CreatedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
+					UpdatedAt: &updatedAt,
+				}
+				Expect(res).To(Equal(r))
 				Expect(err).To(BeNil())
 			})
 		})

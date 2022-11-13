@@ -85,6 +85,41 @@ func (r *barrel) CreateBarrel(ctx context.Context, p repository.CreateBarrelPara
 	return res, nil
 }
 
+func (r *barrel) FindBarrel(ctx context.Context, p repository.FindBarrelParam) (*repository.FindBarrelResult, error) {
+	barrel := &Barrel{}
+
+	query := r.gormClient.
+		WithContext(ctx).
+		Clauses(dbresolver.Read)
+
+	findRes := query.
+		Select(`id, code, name, provider, status, created_at, updated_at`).
+		First(barrel, "id = ?", p.Id)
+	if findRes.Error != nil {
+		if errors.Is(findRes.Error, gorm.ErrRecordNotFound) {
+			return nil, repository.ErrNotFound
+		}
+		return nil, findRes.Error
+	}
+
+	var updatedAt *time.Time
+	if barrel.UpdatedAt.Valid {
+		updatedDate := time.UnixMilli(barrel.UpdatedAt.Int64).UTC()
+		updatedAt = &updatedDate
+	}
+
+	res := &repository.FindBarrelResult{
+		Id:        barrel.Id,
+		Code:      barrel.Code,
+		Name:      barrel.Name,
+		Provider:  barrel.Provider,
+		Status:    barrel.Status,
+		CreatedAt: time.UnixMilli(barrel.CreatedAt).UTC(),
+		UpdatedAt: updatedAt,
+	}
+	return res, nil
+}
+
 type BarrelParam struct {
 	GormClient *gorm.DB
 }
