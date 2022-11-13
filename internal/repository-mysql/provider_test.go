@@ -55,6 +55,25 @@ var _ = Describe("Repository Provider", func() {
 		})
 	})
 
+	Context("GetBarrel function", Label("unit"), func() {
+		var (
+			provider repository.Provider
+		)
+
+		BeforeEach(func() {
+			mOpt := repository_mysql.WithDbClient(&sql.DB{})
+			provider, _ = repository_mysql.NewRepository(mOpt)
+		})
+
+		When("function is called", func() {
+			It("should return result", func() {
+				res := provider.GetBarrel()
+
+				Expect(res).ToNot(BeNil())
+			})
+		})
+	})
+
 	Context("Init function", Label("unit"), func() {
 		var (
 			provider repository.Provider

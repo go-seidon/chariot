@@ -12,4 +12,5 @@ type Provider interface {
 	Init(ctx context.Context) error
 	Ping(ctx context.Context) error
 	GetAuth() Auth
+	GetBarrel() Barrel
 }
