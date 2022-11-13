@@ -132,6 +132,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		})
 		barrelGroup := echo.Group("/v1/barrel")
 		barrelGroup.POST("", barrelHandler.CreateBarrel)
+		barrelGroup.GET("/:id", barrelHandler.GetBarrelById)
 	}
 
 	app := &restApp{
