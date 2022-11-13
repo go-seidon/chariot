@@ -16,6 +16,7 @@ import (
 type Barrel interface {
 	CreateBarrel(ctx context.Context, p CreateBarrelParam) (*CreateBarrelResult, *system.SystemError)
 	FindBarrelById(ctx context.Context, p FindBarrelByIdParam) (*FindBarrelByIdResult, *system.SystemError)
+	UpdateBarrelById(ctx context.Context, p UpdateBarrelByIdParam) (*UpdateBarrelByIdResult, *system.SystemError)
 }
 
 type CreateBarrelParam struct {
@@ -48,6 +49,25 @@ type FindBarrelByIdResult struct {
 	Status    string
 	CreatedAt time.Time
 	UpdatedAt *time.Time
+}
+
+type UpdateBarrelByIdParam struct {
+	Id       string `validate:"required,min=5,max=64" label:"id"`
+	Code     string `validate:"required,lowercase,alphanum,min=6,max=128" label:"code"`
+	Name     string `validate:"required,printascii,min=3,max=64" label:"name"`
+	Provider string `validate:"required,oneof='goseidon_hippo' 'aws_s3' 'gcloud_storage' 'alicloud_oss'" label:"provider"`
+	Status   string `validate:"required,oneof='active' 'inactive'" label:"status"`
+}
+
+type UpdateBarrelByIdResult struct {
+	Success   system.SystemSuccess
+	Id        string
+	Code      string
+	Name      string
+	Provider  string
+	Status    string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type barrel struct {
@@ -148,6 +168,53 @@ func (b *barrel) FindBarrelById(ctx context.Context, p FindBarrelByIdParam) (*Fi
 		Status:    authClient.Status,
 		CreatedAt: authClient.CreatedAt,
 		UpdatedAt: authClient.UpdatedAt,
+	}
+	return res, nil
+}
+
+func (b *barrel) UpdateBarrelById(ctx context.Context, p UpdateBarrelByIdParam) (*UpdateBarrelByIdResult, *system.SystemError) {
+	err := b.validator.Validate(p)
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.INVALID_PARAM,
+			Message: err.Error(),
+		}
+	}
+
+	currentTs := b.clock.Now()
+	updateRes, err := b.barrelRepo.UpdateBarrel(ctx, repository.UpdateBarrelParam{
+		Id:        p.Id,
+		Code:      p.Code,
+		Name:      p.Name,
+		Provider:  p.Provider,
+		Status:    p.Status,
+		UpdatedAt: currentTs,
+	})
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, &system.SystemError{
+				Code:    status.RESOURCE_NOTFOUND,
+				Message: "barrel is not available",
+			}
+		}
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	res := &UpdateBarrelByIdResult{
+		Success: system.SystemSuccess{
+			Code:    status.ACTION_SUCCESS,
+			Message: "success update barrel",
+		},
+		Id:        updateRes.Id,
+		Code:      updateRes.Code,
+		Name:      updateRes.Name,
+		Provider:  updateRes.Provider,
+		Status:    updateRes.Status,
+		CreatedAt: updateRes.CreatedAt,
+		UpdatedAt: updateRes.UpdatedAt,
 	}
 	return res, nil
 }

@@ -65,3 +65,18 @@ func (mr *MockBarrelMockRecorder) FindBarrelById(ctx, p interface{}) *gomock.Cal
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindBarrelById", reflect.TypeOf((*MockBarrel)(nil).FindBarrelById), ctx, p)
 }
+
+// UpdateBarrelById mocks base method.
+func (m *MockBarrel) UpdateBarrelById(ctx context.Context, p barrel.UpdateBarrelByIdParam) (*barrel.UpdateBarrelByIdResult, *system.SystemError) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateBarrelById", ctx, p)
+	ret0, _ := ret[0].(*barrel.UpdateBarrelByIdResult)
+	ret1, _ := ret[1].(*system.SystemError)
+	return ret0, ret1
+}
+
+// UpdateBarrelById indicates an expected call of UpdateBarrelById.
+func (mr *MockBarrelMockRecorder) UpdateBarrelById(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBarrelById", reflect.TypeOf((*MockBarrel)(nil).UpdateBarrelById), ctx, p)
+}

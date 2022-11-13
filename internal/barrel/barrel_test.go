@@ -370,4 +370,166 @@ var _ = Describe("Barrel Package", func() {
 		})
 	})
 
+	Context("UpdateBarrelById function", Label("unit"), func() {
+
+		var (
+			ctx          context.Context
+			currentTs    time.Time
+			barrelClient barrel.Barrel
+			p            barrel.UpdateBarrelByIdParam
+			validator    *mock_validation.MockValidator
+			identifier   *mock_identifier.MockIdentifier
+			clock        *mock_datetime.MockClock
+			barrelRepo   *mock_repository.MockBarrel
+			updateParam  repository.UpdateBarrelParam
+			updateRes    *repository.UpdateBarrelResult
+		)
+
+		BeforeEach(func() {
+			ctx = context.Background()
+			currentTs = time.Now().UTC()
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			validator = mock_validation.NewMockValidator(ctrl)
+			identifier = mock_identifier.NewMockIdentifier(ctrl)
+			clock = mock_datetime.NewMockClock(ctrl)
+			barrelRepo = mock_repository.NewMockBarrel(ctrl)
+			barrelClient = barrel.NewBarrel(barrel.BarrelParam{
+				Validator:  validator,
+				Identifier: identifier,
+				Clock:      clock,
+				BarrelRepo: barrelRepo,
+			})
+			p = barrel.UpdateBarrelByIdParam{
+				Id:       "id",
+				Code:     "code",
+				Name:     "name",
+				Provider: "goseidon_hippo",
+				Status:   "active",
+			}
+			updateParam = repository.UpdateBarrelParam{
+				Id:        "id",
+				Code:      p.Code,
+				Name:      p.Name,
+				Provider:  p.Provider,
+				Status:    p.Status,
+				UpdatedAt: currentTs,
+			}
+			updateRes = &repository.UpdateBarrelResult{
+				Id:        "id",
+				Code:      p.Code,
+				Name:      p.Name,
+				Provider:  p.Provider,
+				Status:    p.Status,
+				CreatedAt: currentTs,
+				UpdatedAt: currentTs,
+			}
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(fmt.Errorf("invalid data")).
+					Times(1)
+
+				res, err := barrelClient.UpdateBarrelById(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1002)))
+				Expect(err.Message).To(Equal("invalid data"))
+			})
+		})
+
+		When("failed update client", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				barrelRepo.
+					EXPECT().
+					UpdateBarrel(gomock.Eq(ctx), gomock.Eq(updateParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := barrelClient.UpdateBarrelById(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("network error"))
+			})
+		})
+
+		When("client is not available", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				barrelRepo.
+					EXPECT().
+					UpdateBarrel(gomock.Eq(ctx), gomock.Eq(updateParam)).
+					Return(nil, repository.ErrNotFound).
+					Times(1)
+
+				res, err := barrelClient.UpdateBarrelById(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1004)))
+				Expect(err.Message).To(Equal("barrel is not available"))
+			})
+		})
+
+		When("success update client", func() {
+			It("should return result", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				barrelRepo.
+					EXPECT().
+					UpdateBarrel(gomock.Eq(ctx), gomock.Eq(updateParam)).
+					Return(updateRes, nil).
+					Times(1)
+
+				res, err := barrelClient.UpdateBarrelById(ctx, p)
+
+				Expect(res.Success.Code).To(Equal(int32(1000)))
+				Expect(res.Success.Message).To(Equal("success update barrel"))
+				Expect(res.Id).To(Equal("id"))
+				Expect(res.Name).To(Equal("name"))
+				Expect(res.Status).To(Equal("active"))
+				Expect(res.Provider).To(Equal("goseidon_hippo"))
+				Expect(res.CreatedAt).To(Equal(currentTs))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
+
 })
