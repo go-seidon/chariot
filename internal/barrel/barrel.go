@@ -15,6 +15,7 @@ import (
 
 type Barrel interface {
 	CreateBarrel(ctx context.Context, p CreateBarrelParam) (*CreateBarrelResult, *system.SystemError)
+	FindBarrelById(ctx context.Context, p FindBarrelByIdParam) (*FindBarrelByIdResult, *system.SystemError)
 }
 
 type CreateBarrelParam struct {
@@ -32,6 +33,21 @@ type CreateBarrelResult struct {
 	Provider  string
 	Status    string
 	CreatedAt time.Time
+}
+
+type FindBarrelByIdParam struct {
+	Id string `validate:"required,min=5,max=64" label:"id"`
+}
+
+type FindBarrelByIdResult struct {
+	Success   system.SystemSuccess
+	Id        string
+	Code      string
+	Name      string
+	Provider  string
+	Status    string
+	CreatedAt time.Time
+	UpdatedAt *time.Time
 }
 
 type barrel struct {
@@ -91,6 +107,47 @@ func (b *barrel) CreateBarrel(ctx context.Context, p CreateBarrelParam) (*Create
 		Provider:  createRes.Provider,
 		Status:    createRes.Status,
 		CreatedAt: createRes.CreatedAt,
+	}
+	return res, nil
+}
+
+func (b *barrel) FindBarrelById(ctx context.Context, p FindBarrelByIdParam) (*FindBarrelByIdResult, *system.SystemError) {
+	err := b.validator.Validate(p)
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.INVALID_PARAM,
+			Message: err.Error(),
+		}
+	}
+
+	authClient, err := b.barrelRepo.FindBarrel(ctx, repository.FindBarrelParam{
+		Id: p.Id,
+	})
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, &system.SystemError{
+				Code:    status.RESOURCE_NOTFOUND,
+				Message: "barrel is not available",
+			}
+		}
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	res := &FindBarrelByIdResult{
+		Success: system.SystemSuccess{
+			Code:    status.ACTION_SUCCESS,
+			Message: "success find barrel",
+		},
+		Id:        authClient.Id,
+		Code:      authClient.Code,
+		Name:      authClient.Name,
+		Provider:  authClient.Provider,
+		Status:    authClient.Status,
+		CreatedAt: authClient.CreatedAt,
+		UpdatedAt: authClient.UpdatedAt,
 	}
 	return res, nil
 }

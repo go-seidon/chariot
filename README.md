@@ -77,9 +77,9 @@ TBA
 ```
 
 ## Todo
-2. Admin: GetBarrelById
-3. Admin: UpdateBarrelById
-4. Admin: SearchBarrels
+2. Admin: UpdateBarrelById
+3. Admin: SearchBarrels
+4. Enhance typeconv (add more type conversion based on current problems)
 
 5. Client: UploadFile
 - *file

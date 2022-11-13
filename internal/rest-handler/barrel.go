@@ -56,6 +56,51 @@ func (h *barrelHandler) CreateBarrel(ctx echo.Context) error {
 	})
 }
 
+func (h *barrelHandler) GetBarrelById(ctx echo.Context) error {
+	findRes, err := h.barrelClient.FindBarrelById(ctx.Request().Context(), barrel.FindBarrelByIdParam{
+		Id: ctx.Param("id"),
+	})
+	if err != nil {
+		switch err.Code {
+		case status.INVALID_PARAM:
+			return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+				Code:    err.Code,
+				Message: err.Message,
+			})
+		case status.RESOURCE_NOTFOUND:
+			return echo.NewHTTPError(http.StatusNotFound, &rest_app.ResponseBodyInfo{
+				Code:    err.Code,
+				Message: err.Message,
+			})
+		}
+
+		return echo.NewHTTPError(http.StatusInternalServerError, &rest_app.ResponseBodyInfo{
+			Code:    err.Code,
+			Message: err.Message,
+		})
+	}
+
+	var updatedAt *int64
+	if findRes.UpdatedAt != nil {
+		updatedDate := findRes.UpdatedAt.UnixMilli()
+		updatedAt = &updatedDate
+	}
+
+	return ctx.JSON(http.StatusOK, &rest_app.GetBarrelByIdResponse{
+		Code:    findRes.Success.Code,
+		Message: findRes.Success.Message,
+		Data: rest_app.GetBarrelByIdData{
+			Id:        findRes.Id,
+			Code:      findRes.Code,
+			Name:      findRes.Name,
+			Provider:  findRes.Provider,
+			Status:    findRes.Status,
+			CreatedAt: findRes.CreatedAt.UnixMilli(),
+			UpdatedAt: updatedAt,
+		},
+	})
+}
+
 type BarrelParam struct {
 	Barrel barrel.Barrel
 }
