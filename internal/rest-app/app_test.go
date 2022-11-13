@@ -78,6 +78,11 @@ var _ = Describe("App Package", func() {
 					GetAuth().
 					Times(1)
 
+				repo.
+					EXPECT().
+					GetBarrel().
+					Times(1)
+
 				res, err := rest_app.NewRestApp(
 					rest_app.WithConfig(config),
 					rest_app.WithRepository(repo),

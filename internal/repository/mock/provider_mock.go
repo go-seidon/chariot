@@ -49,6 +49,20 @@ func (mr *MockProviderMockRecorder) GetAuth() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAuth", reflect.TypeOf((*MockProvider)(nil).GetAuth))
 }
 
+// GetBarrel mocks base method.
+func (m *MockProvider) GetBarrel() repository.Barrel {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBarrel")
+	ret0, _ := ret[0].(repository.Barrel)
+	return ret0
+}
+
+// GetBarrel indicates an expected call of GetBarrel.
+func (mr *MockProviderMockRecorder) GetBarrel() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBarrel", reflect.TypeOf((*MockProvider)(nil).GetBarrel))
+}
+
 // Init mocks base method.
 func (m *MockProvider) Init(ctx context.Context) error {
 	m.ctrl.T.Helper()

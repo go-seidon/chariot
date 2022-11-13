@@ -18,7 +18,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Basic Handler", func() {
+var _ = Describe("Auth Handler", func() {
 	Context("CreateClient function", Label("unit"), func() {
 		var (
 			currentTs   time.Time

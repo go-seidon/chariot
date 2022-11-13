@@ -8,8 +8,9 @@ import (
 )
 
 type provider struct {
-	dbClient db_mysql.Pingable
-	authRepo *auth
+	dbClient   db_mysql.Pingable
+	authRepo   *auth
+	barrelRepo *barrel
 }
 
 func (p *provider) Init(ctx context.Context) error {
@@ -22,4 +23,8 @@ func (p *provider) Ping(ctx context.Context) error {
 
 func (p *provider) GetAuth() repository.Auth {
 	return p.authRepo
+}
+
+func (p *provider) GetBarrel() repository.Barrel {
+	return p.barrelRepo
 }

@@ -77,18 +77,15 @@ TBA
 ```
 
 ## Todo
-1. Admin: CreateBarrel
-- hippo
-- aws-s3
-- google-storage
-- alicloud-oss
 2. Admin: GetBarrelById
 3. Admin: UpdateBarrelById
 4. Admin: SearchBarrels
 
 5. Client: UploadFile
 - *file
-- *barrels (hippo, min: 1, max: 10, order define priority)
+- *barrels 
+-- (min: 1, max: 10, order define priority) 
+-- [goseidon_hippo, aws_s3, gcloud_storage, alicloud_oss]
 - *visibility (public, protected)
 - metadata (min: 0, max: 30, key-value pairs)
 -> return `file_id`, `uploaded_at` for protected file

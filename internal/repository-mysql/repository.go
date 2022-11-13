@@ -36,10 +36,6 @@ func NewRepository(opts ...RepoOption) (*provider, error) {
 		return nil, fmt.Errorf("invalid db client")
 	}
 
-	authRepo := &auth{
-		gormClient: p.gormClient,
-	}
-
 	var err error
 	dbClient := p.dbClient
 	if dbClient == nil {
@@ -49,9 +45,17 @@ func NewRepository(opts ...RepoOption) (*provider, error) {
 		}
 	}
 
+	authRepo := &auth{
+		gormClient: p.gormClient,
+	}
+	barrelRepo := &barrel{
+		gormClient: p.gormClient,
+	}
+
 	repo := &provider{
-		dbClient: dbClient,
-		authRepo: authRepo,
+		dbClient:   dbClient,
+		authRepo:   authRepo,
+		barrelRepo: barrelRepo,
 	}
 	return repo, nil
 }

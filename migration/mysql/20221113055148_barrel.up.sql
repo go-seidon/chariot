@@ -1,16 +1,16 @@
 
-CREATE TABLE IF NOT EXISTS `auth_client` (
+CREATE TABLE IF NOT EXISTS `barrel` (
   `id` VARCHAR(128) NOT NULL,
-  `client_id` VARCHAR(256) NOT NULL,
-  `client_secret` TEXT NOT NULL,
+  `code` VARCHAR(256) NOT NULL,
   `name` VARCHAR(128) NOT NULL,
-  `type` VARCHAR(32) NOT NULL,
+  `provider` VARCHAR(32) NOT NULL,
   `status` VARCHAR(16) NOT NULL,
   `created_at` BIGINT(20) NOT NULL,
   `updated_at` BIGINT(20) NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE uq_client_id(`client_id`)
+  UNIQUE uq_code(`code`)
 ) 
 DEFAULT CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci
 ENGINE = InnoDB;
+
