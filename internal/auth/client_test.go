@@ -419,7 +419,7 @@ var _ = Describe("Client Package", func() {
 		})
 	})
 
-	Context("UpdateClient function", Label("unit"), func() {
+	Context("UpdateClientById function", Label("unit"), func() {
 
 		var (
 			ctx         context.Context
