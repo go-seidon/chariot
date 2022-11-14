@@ -317,6 +317,12 @@ type SearchAuthClientSummary struct {
 	TotalItems int64 `json:"total_items"`
 }
 
+// SearchBarrelData defines model for SearchBarrelData.
+type SearchBarrelData struct {
+	Items   []SearchBarrelItem  `json:"items"`
+	Summary SearchBarrelSummary `json:"summary"`
+}
+
 // SearchBarrelFilter defines model for SearchBarrelFilter.
 type SearchBarrelFilter struct {
 	ProviderIn *[]SearchBarrelFilterProviderIn `json:"provider_in,omitempty"`
@@ -351,9 +357,18 @@ type SearchBarrelRequest struct {
 
 // SearchBarrelResponse defines model for SearchBarrelResponse.
 type SearchBarrelResponse struct {
-	Code    int32              `json:"code"`
-	Data    []SearchBarrelItem `json:"data"`
-	Message string             `json:"message"`
+	Code    int32            `json:"code"`
+	Data    SearchBarrelData `json:"data"`
+	Message string           `json:"message"`
+}
+
+// SearchBarrelSummary defines model for SearchBarrelSummary.
+type SearchBarrelSummary struct {
+	// current page
+	Page int64 `json:"page"`
+
+	// total matched items with a given parameter
+	TotalItems int64 `json:"total_items"`
 }
 
 // SearchFileFilter defines model for SearchFileFilter.

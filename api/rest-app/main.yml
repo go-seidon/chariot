@@ -82,6 +82,10 @@ components:
       $ref: "./operation/search-barrel/request_filter.yml"
     SearchBarrelResponse:
       $ref: "./operation/search-barrel/response_body.yml"
+    SearchBarrelData:
+      $ref: "./operation/search-barrel/response_data.yml"
+    SearchBarrelSummary:
+      $ref: "./operation/search-barrel/response_summary.yml"
     SearchBarrelItem:
       $ref: "./operation/search-barrel/response_item.yml"
 

@@ -1056,9 +1056,33 @@ components:
         message:
           type: string
         data:
+          $ref: '#/components/schemas/SearchBarrelData'
+    SearchBarrelData:
+      type: object
+      required:
+        - items
+        - summary
+      properties:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/SearchBarrelItem'
+        summary:
+          $ref: '#/components/schemas/SearchBarrelSummary'
+    SearchBarrelSummary:
+      type: object
+      required:
+        - total_items
+        - page
+      properties:
+        total_items:
+          type: integer
+          format: int64
+          description: total matched items with a given parameter
+        page:
+          type: integer
+          format: int64
+          description: current page
     SearchBarrelItem:
       type: object
       required:

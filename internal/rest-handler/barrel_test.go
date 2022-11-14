@@ -512,4 +512,296 @@ var _ = Describe("Auth Handler", func() {
 			})
 		})
 	})
+
+	Context("SearchBarrel function", Label("unit"), func() {
+		var (
+			currentTs    time.Time
+			ctx          echo.Context
+			h            func(ctx echo.Context) error
+			rec          *httptest.ResponseRecorder
+			barrelClient *mock_barrel.MockBarrel
+			searchParam  barrel.SearchBarrelParam
+			searchRes    *barrel.SearchBarrelResult
+		)
+
+		BeforeEach(func() {
+			currentTs = time.Now().UTC()
+			keyword := "goseidon"
+			reqBody := &rest_app.SearchBarrelRequest{
+				Filter: &rest_app.SearchBarrelFilter{
+					StatusIn:   &[]rest_app.SearchBarrelFilterStatusIn{"active"},
+					ProviderIn: &[]rest_app.SearchBarrelFilterProviderIn{"goseidon_hippo"},
+				},
+				Keyword: &keyword,
+				Pagination: &rest_app.RequestPagination{
+					Page:       2,
+					TotalItems: 24,
+				},
+			}
+			body, _ := json.Marshal(reqBody)
+			buffer := bytes.NewBuffer(body)
+			req := httptest.NewRequest(http.MethodPost, "/", buffer)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec = httptest.NewRecorder()
+
+			e := echo.New()
+			ctx = e.NewContext(req, rec)
+
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			barrelClient = mock_barrel.NewMockBarrel(ctrl)
+			barrelHandler := rest_handler.NewBarrel(rest_handler.BarrelParam{
+				Barrel: barrelClient,
+			})
+			h = barrelHandler.SearchBarrel
+			searchParam = barrel.SearchBarrelParam{
+				Keyword:    "goseidon",
+				TotalItems: 24,
+				Page:       2,
+				Statuses:   []string{"active"},
+				Providers:  []string{"goseidon_hippo"},
+			}
+			searchRes = &barrel.SearchBarrelResult{
+				Success: system.SystemSuccess{
+					Code:    1000,
+					Message: "success search barrel",
+				},
+				Items: []barrel.SearchBarrelItem{
+					{
+						Id:        "id-1",
+						Code:      "code-1",
+						Name:      "name-1",
+						Provider:  "goseidon_hippo",
+						Status:    "inactive",
+						CreatedAt: currentTs,
+						UpdatedAt: nil,
+					},
+					{
+						Id:        "id-2",
+						Code:      "code-2",
+						Name:      "name-2",
+						Provider:  "goseidon_hippo",
+						Status:    "active",
+						CreatedAt: currentTs,
+						UpdatedAt: &currentTs,
+					},
+				},
+				Summary: barrel.SearchBarrelSummary{
+					TotalItems: 2,
+					Page:       2,
+				},
+			}
+		})
+
+		When("failed binding request body", func() {
+			It("should return error", func() {
+				reqBody, _ := json.Marshal(struct {
+					Filter int `json:"filter"`
+				}{
+					Filter: 1,
+				})
+				buffer := bytes.NewBuffer(reqBody)
+
+				req := httptest.NewRequest(http.MethodPost, "/", buffer)
+				req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+				rec := httptest.NewRecorder()
+
+				e := echo.New()
+				ctx := e.NewContext(req, rec)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 400,
+					Message: &rest_app.ResponseBodyInfo{
+						Code:    1002,
+						Message: "invalid request",
+					},
+				}))
+			})
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				barrelClient.
+					EXPECT().
+					SearchBarrel(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
+					Return(nil, &system.SystemError{
+						Code:    1002,
+						Message: "invalid data",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 400,
+					Message: &rest_app.ResponseBodyInfo{
+						Code:    1002,
+						Message: "invalid data",
+					},
+				}))
+			})
+		})
+
+		When("failed search barrel", func() {
+			It("should return error", func() {
+				barrelClient.
+					EXPECT().
+					SearchBarrel(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
+					Return(nil, &system.SystemError{
+						Code:    1001,
+						Message: "network error",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 500,
+					Message: &rest_app.ResponseBodyInfo{
+						Code:    1001,
+						Message: "network error",
+					},
+				}))
+			})
+		})
+
+		When("there is no barrel", func() {
+			It("should return empty result", func() {
+				searchRes := &barrel.SearchBarrelResult{
+					Success: system.SystemSuccess{
+						Code:    1000,
+						Message: "success search barrel",
+					},
+					Items: []barrel.SearchBarrelItem{},
+					Summary: barrel.SearchBarrelSummary{
+						TotalItems: 0,
+						Page:       2,
+					},
+				}
+				barrelClient.
+					EXPECT().
+					SearchBarrel(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				err := h(ctx)
+
+				res := &rest_app.SearchBarrelResponse{}
+				json.Unmarshal(rec.Body.Bytes(), res)
+
+				Expect(err).To(BeNil())
+				Expect(rec.Code).To(Equal(http.StatusOK))
+				Expect(res.Code).To(Equal(int32(1000)))
+				Expect(res.Message).To(Equal("success search barrel"))
+				Expect(res.Data.Summary).To(Equal(rest_app.SearchBarrelSummary{
+					Page:       2,
+					TotalItems: 0,
+				}))
+				Expect(res.Data.Items).To(Equal([]rest_app.SearchBarrelItem{}))
+			})
+		})
+
+		When("there is one barrel", func() {
+			It("should return result", func() {
+				searchRes := &barrel.SearchBarrelResult{
+					Success: system.SystemSuccess{
+						Code:    1000,
+						Message: "success search barrel",
+					},
+					Items: []barrel.SearchBarrelItem{
+						{
+							Id:        "id-1",
+							Code:      "code-1",
+							Name:      "name-1",
+							Provider:  "goseidon_hippo",
+							Status:    "active",
+							CreatedAt: currentTs,
+							UpdatedAt: nil,
+						},
+					},
+					Summary: barrel.SearchBarrelSummary{
+						TotalItems: 1,
+						Page:       2,
+					},
+				}
+				barrelClient.
+					EXPECT().
+					SearchBarrel(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				err := h(ctx)
+
+				res := &rest_app.SearchBarrelResponse{}
+				json.Unmarshal(rec.Body.Bytes(), res)
+
+				Expect(err).To(BeNil())
+				Expect(rec.Code).To(Equal(http.StatusOK))
+				Expect(res.Code).To(Equal(int32(1000)))
+				Expect(res.Message).To(Equal("success search barrel"))
+				Expect(res.Data.Summary).To(Equal(rest_app.SearchBarrelSummary{
+					Page:       2,
+					TotalItems: 1,
+				}))
+				Expect(res.Data.Items).To(Equal([]rest_app.SearchBarrelItem{
+					{
+						Id:        "id-1",
+						Code:      "code-1",
+						Name:      "name-1",
+						Provider:  "goseidon_hippo",
+						Status:    "active",
+						CreatedAt: currentTs.UnixMilli(),
+						UpdatedAt: nil,
+					},
+				}))
+			})
+		})
+
+		When("there are some barrels", func() {
+			It("should return result", func() {
+				barrelClient.
+					EXPECT().
+					SearchBarrel(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				err := h(ctx)
+
+				res := &rest_app.SearchBarrelResponse{}
+				json.Unmarshal(rec.Body.Bytes(), res)
+
+				updatedAt := currentTs.UnixMilli()
+				Expect(err).To(BeNil())
+				Expect(rec.Code).To(Equal(http.StatusOK))
+				Expect(res.Code).To(Equal(int32(1000)))
+				Expect(res.Message).To(Equal("success search barrel"))
+				Expect(res.Data.Summary).To(Equal(rest_app.SearchBarrelSummary{
+					Page:       2,
+					TotalItems: 2,
+				}))
+				Expect(res.Data.Items).To(Equal([]rest_app.SearchBarrelItem{
+					{
+						Id:        "id-1",
+						Code:      "code-1",
+						Name:      "name-1",
+						Provider:  "goseidon_hippo",
+						Status:    "inactive",
+						CreatedAt: currentTs.UnixMilli(),
+						UpdatedAt: nil,
+					},
+					{
+						Id:        "id-2",
+						Code:      "code-2",
+						Name:      "name-2",
+						Provider:  "goseidon_hippo",
+						Status:    "active",
+						CreatedAt: currentTs.UnixMilli(),
+						UpdatedAt: &updatedAt,
+					},
+				}))
+			})
+		})
+	})
 })

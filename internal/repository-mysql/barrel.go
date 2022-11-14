@@ -190,6 +190,80 @@ func (r *barrel) UpdateBarrel(ctx context.Context, p repository.UpdateBarrelPara
 	return res, nil
 }
 
+func (r *barrel) SearchBarrel(ctx context.Context, p repository.SearchBarrelParam) (*repository.SearchBarrelResult, error) {
+	query := r.gormClient.
+		WithContext(ctx).
+		Clauses(dbresolver.Read)
+
+	searchQuery := query
+	if p.Keyword != "" {
+		searchQuery = searchQuery.
+			Where("name LIKE ?", "%"+p.Keyword+"%").
+			Or("code LIKE ?", "%"+p.Keyword+"%")
+	}
+
+	if len(p.Statuses) > 0 {
+		searchQuery = searchQuery.
+			Where("status IN ?", p.Statuses)
+	}
+
+	if len(p.Providers) > 0 {
+		searchQuery = searchQuery.
+			Where("provider IN ?", p.Providers)
+	}
+
+	countQuery := searchQuery.Table("barrel")
+
+	if p.Limit > 0 {
+		searchQuery = searchQuery.Limit(int(p.Limit))
+	}
+
+	if p.Offset > 0 {
+		searchQuery = searchQuery.Offset(int(p.Offset))
+	}
+
+	res := &repository.SearchBarrelResult{
+		Summary: repository.SearchBarrelSummary{},
+		Items:   []repository.SearchBarrelItem{},
+	}
+	barrels := []Barrel{}
+
+	searchRes := searchQuery.
+		Select(`id, code, name, provider, status, created_at, updated_at`).
+		Find(&barrels)
+
+	if searchRes.Error != nil {
+		if errors.Is(searchRes.Error, gorm.ErrRecordNotFound) {
+			return res, nil
+		}
+		return nil, searchRes.Error
+	}
+
+	for _, barrel := range barrels {
+		var updatedAt *time.Time
+		if barrel.UpdatedAt.Valid {
+			updated := time.UnixMilli(barrel.UpdatedAt.Int64).UTC()
+			updatedAt = &updated
+		}
+
+		res.Items = append(res.Items, repository.SearchBarrelItem{
+			Id:        barrel.Id,
+			Code:      barrel.Code,
+			Name:      barrel.Name,
+			Provider:  barrel.Provider,
+			Status:    barrel.Status,
+			CreatedAt: time.UnixMilli(barrel.CreatedAt).UTC(),
+			UpdatedAt: updatedAt,
+		})
+	}
+
+	countRes := countQuery.Count(&res.Summary.TotalItems)
+	if countRes.Error != nil {
+		return nil, countRes.Error
+	}
+	return res, nil
+}
+
 type BarrelParam struct {
 	GormClient *gorm.DB
 }

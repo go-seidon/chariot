@@ -151,6 +151,98 @@ func (h *barrelHandler) UpdateBarrelById(ctx echo.Context) error {
 	})
 }
 
+func (h *barrelHandler) SearchBarrel(ctx echo.Context) error {
+	req := &rest_app.SearchBarrelRequest{}
+	if err := ctx.Bind(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+			Code:    status.INVALID_PARAM,
+			Message: "invalid request",
+		})
+	}
+
+	keyword := ""
+	if req.Keyword != nil {
+		keyword = *req.Keyword
+	}
+
+	statuses := []string{}
+	if req.Filter != nil {
+		if req.Filter.StatusIn != nil {
+			for _, status := range *req.Filter.StatusIn {
+				statuses = append(statuses, string(status))
+			}
+		}
+	}
+
+	providers := []string{}
+	if req.Filter != nil {
+		if req.Filter.ProviderIn != nil {
+			for _, provider := range *req.Filter.ProviderIn {
+				providers = append(providers, string(provider))
+			}
+		}
+	}
+
+	totalItems := int32(0)
+	page := int64(0)
+	if req.Pagination != nil {
+		totalItems = req.Pagination.TotalItems
+		page = req.Pagination.Page
+	}
+
+	searchRes, err := h.barrelClient.SearchBarrel(ctx.Request().Context(), barrel.SearchBarrelParam{
+		Keyword:    keyword,
+		Statuses:   statuses,
+		Providers:  providers,
+		TotalItems: totalItems,
+		Page:       page,
+	})
+	if err != nil {
+		switch err.Code {
+		case status.INVALID_PARAM:
+			return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+				Code:    err.Code,
+				Message: err.Message,
+			})
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, &rest_app.ResponseBodyInfo{
+			Code:    err.Code,
+			Message: err.Message,
+		})
+	}
+
+	items := []rest_app.SearchBarrelItem{}
+	for _, searchItem := range searchRes.Items {
+		var updatedAt *int64
+		if searchItem.UpdatedAt != nil {
+			updated := searchItem.UpdatedAt.UnixMilli()
+			updatedAt = &updated
+		}
+
+		items = append(items, rest_app.SearchBarrelItem{
+			Id:        searchItem.Id,
+			Code:      searchItem.Code,
+			Name:      searchItem.Name,
+			Provider:  searchItem.Provider,
+			Status:    searchItem.Status,
+			CreatedAt: searchItem.CreatedAt.UnixMilli(),
+			UpdatedAt: updatedAt,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, &rest_app.SearchBarrelResponse{
+		Code:    searchRes.Success.Code,
+		Message: searchRes.Success.Message,
+		Data: rest_app.SearchBarrelData{
+			Items: items,
+			Summary: rest_app.SearchBarrelSummary{
+				Page:       searchRes.Summary.Page,
+				TotalItems: searchRes.Summary.TotalItems,
+			},
+		},
+	})
+}
+
 type BarrelParam struct {
 	Barrel barrel.Barrel
 }

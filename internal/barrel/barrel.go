@@ -17,6 +17,7 @@ type Barrel interface {
 	CreateBarrel(ctx context.Context, p CreateBarrelParam) (*CreateBarrelResult, *system.SystemError)
 	FindBarrelById(ctx context.Context, p FindBarrelByIdParam) (*FindBarrelByIdResult, *system.SystemError)
 	UpdateBarrelById(ctx context.Context, p UpdateBarrelByIdParam) (*UpdateBarrelByIdResult, *system.SystemError)
+	SearchBarrel(ctx context.Context, p SearchBarrelParam) (*SearchBarrelResult, *system.SystemError)
 }
 
 type CreateBarrelParam struct {
@@ -68,6 +69,35 @@ type UpdateBarrelByIdResult struct {
 	Status    string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+}
+
+type SearchBarrelParam struct {
+	Keyword    string   `validate:"omitempty,printascii,min=2,max=64" label:"keyword"`
+	TotalItems int32    `validate:"numeric,min=1,max=100" label:"total_items"`
+	Page       int64    `validate:"numeric,min=1" label:"page"`
+	Statuses   []string `validate:"unique,min=0,max=2,dive,oneof='active' 'inactive'" label:"statuses"`
+	Providers  []string `validate:"unique,min=0,max=4,dive,oneof='goseidon_hippo' 'aws_s3' 'gcloud_storage' 'alicloud_oss'" label:"providers"`
+}
+
+type SearchBarrelResult struct {
+	Success system.SystemSuccess
+	Items   []SearchBarrelItem
+	Summary SearchBarrelSummary
+}
+
+type SearchBarrelItem struct {
+	Id        string
+	Code      string
+	Name      string
+	Provider  string
+	Status    string
+	CreatedAt time.Time
+	UpdatedAt *time.Time
+}
+
+type SearchBarrelSummary struct {
+	TotalItems int64
+	Page       int64
 }
 
 type barrel struct {
@@ -215,6 +245,61 @@ func (b *barrel) UpdateBarrelById(ctx context.Context, p UpdateBarrelByIdParam) 
 		Status:    updateRes.Status,
 		CreatedAt: updateRes.CreatedAt,
 		UpdatedAt: updateRes.UpdatedAt,
+	}
+	return res, nil
+}
+
+func (b *barrel) SearchBarrel(ctx context.Context, p SearchBarrelParam) (*SearchBarrelResult, *system.SystemError) {
+	err := b.validator.Validate(p)
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.INVALID_PARAM,
+			Message: err.Error(),
+		}
+	}
+
+	offset := int64(0)
+	if p.Page > 1 {
+		offset = (p.Page - 1) * int64(p.TotalItems)
+	}
+
+	searchRes, err := b.barrelRepo.SearchBarrel(ctx, repository.SearchBarrelParam{
+		Keyword:   p.Keyword,
+		Statuses:  p.Statuses,
+		Providers: p.Providers,
+		Limit:     p.TotalItems,
+		Offset:    offset,
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	items := []SearchBarrelItem{}
+	for _, barrel := range searchRes.Items {
+		items = append(items, SearchBarrelItem{
+			Id:        barrel.Id,
+			Code:      barrel.Code,
+			Name:      barrel.Name,
+			Provider:  barrel.Provider,
+			Status:    barrel.Status,
+			CreatedAt: barrel.CreatedAt,
+			UpdatedAt: barrel.UpdatedAt,
+		})
+	}
+
+	res := &SearchBarrelResult{
+		Success: system.SystemSuccess{
+			Code:    status.ACTION_SUCCESS,
+			Message: "success search barrel",
+		},
+		Items: items,
+		Summary: SearchBarrelSummary{
+			TotalItems: searchRes.Summary.TotalItems,
+			Page:       p.Page,
+		},
 	}
 	return res, nil
 }
