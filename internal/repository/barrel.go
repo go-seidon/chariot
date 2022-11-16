@@ -69,6 +69,7 @@ type SearchBarrelParam struct {
 	Keyword   string
 	Statuses  []string
 	Providers []string
+	Codes     []string
 }
 
 type SearchBarrelResult struct {
