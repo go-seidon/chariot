@@ -952,6 +952,7 @@ var _ = Describe("Barrel Repository", func() {
 				Keyword:   "goseidon",
 				Statuses:  []string{"active"},
 				Providers: []string{"goseidon_hippo"},
+				Codes:     []string{"hippo1"},
 			}
 			updatedAt := time.UnixMilli(currentTs.UnixMilli()).UTC()
 			r = &repository.SearchBarrelResult{
@@ -984,6 +985,7 @@ var _ = Describe("Barrel Repository", func() {
 				WHERE name LIKE ? OR code LIKE ?
 				AND status IN (?)
 				AND provider IN (?)
+				AND code IN (?)
 				LIMIT 24
 				OFFSET 48
 			`))
@@ -993,6 +995,7 @@ var _ = Describe("Barrel Repository", func() {
 				WHERE name LIKE ? OR code LIKE ?
 				AND status IN (?)
 				AND provider IN (?)
+				AND code IN (?)
 			`))
 			searchRows = sqlmock.NewRows([]string{
 				"id", "code",
@@ -1028,6 +1031,7 @@ var _ = Describe("Barrel Repository", func() {
 						"%"+p.Keyword+"%",
 						p.Statuses[0],
 						p.Providers[0],
+						p.Codes[0],
 					).
 					WillReturnError(fmt.Errorf("network error"))
 
@@ -1047,6 +1051,7 @@ var _ = Describe("Barrel Repository", func() {
 						"%"+p.Keyword+"%",
 						p.Statuses[0],
 						p.Providers[0],
+						p.Codes[0],
 					).
 					WillReturnError(gorm.ErrRecordNotFound)
 
@@ -1081,6 +1086,7 @@ var _ = Describe("Barrel Repository", func() {
 						"%"+p.Keyword+"%",
 						p.Statuses[0],
 						p.Providers[0],
+						p.Codes[0],
 					).
 					WillReturnRows(searchRows)
 
@@ -1091,6 +1097,7 @@ var _ = Describe("Barrel Repository", func() {
 						"%"+p.Keyword+"%",
 						p.Statuses[0],
 						p.Providers[0],
+						p.Codes[0],
 					).
 					WillReturnError(fmt.Errorf("network error"))
 
@@ -1119,6 +1126,7 @@ var _ = Describe("Barrel Repository", func() {
 						"%"+p.Keyword+"%",
 						p.Statuses[0],
 						p.Providers[0],
+						p.Codes[0],
 					).
 					WillReturnRows(searchRows)
 
@@ -1132,6 +1140,7 @@ var _ = Describe("Barrel Repository", func() {
 						"%"+p.Keyword+"%",
 						p.Statuses[0],
 						p.Providers[0],
+						p.Codes[0],
 					).
 					WillReturnRows(countRows)
 
@@ -1167,6 +1176,7 @@ var _ = Describe("Barrel Repository", func() {
 						"%"+p.Keyword+"%",
 						p.Statuses[0],
 						p.Providers[0],
+						p.Codes[0],
 					).
 					WillReturnRows(searchRows)
 
@@ -1177,6 +1187,7 @@ var _ = Describe("Barrel Repository", func() {
 						"%"+p.Keyword+"%",
 						p.Statuses[0],
 						p.Providers[0],
+						p.Codes[0],
 					).
 					WillReturnRows(countRows)
 

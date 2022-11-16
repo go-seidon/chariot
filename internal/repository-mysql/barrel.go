@@ -212,6 +212,11 @@ func (r *barrel) SearchBarrel(ctx context.Context, p repository.SearchBarrelPara
 			Where("provider IN ?", p.Providers)
 	}
 
+	if len(p.Codes) > 0 {
+		searchQuery = searchQuery.
+			Where("code IN ?", p.Codes)
+	}
+
 	countQuery := searchQuery.Table("barrel")
 
 	if p.Limit > 0 {
