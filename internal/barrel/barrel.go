@@ -13,6 +13,11 @@ import (
 	"github.com/go-seidon/provider/validation"
 )
 
+const (
+	STATUS_ACTIVE   = "active"
+	STATUS_INACTIVE = "inactive"
+)
+
 type Barrel interface {
 	CreateBarrel(ctx context.Context, p CreateBarrelParam) (*CreateBarrelResult, *system.SystemError)
 	FindBarrelById(ctx context.Context, p FindBarrelByIdParam) (*FindBarrelByIdResult, *system.SystemError)
