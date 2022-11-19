@@ -11,7 +11,7 @@ import (
 
 	"github.com/go-seidon/chariot/internal/repository"
 	repository_mysql "github.com/go-seidon/chariot/internal/repository-mysql"
-	mock_dbmysql "github.com/go-seidon/provider/db-mysql/mock"
+	mock_mysql "github.com/go-seidon/provider/mysql/mock"
 )
 
 var _ = Describe("Repository Provider", func() {
@@ -99,14 +99,14 @@ var _ = Describe("Repository Provider", func() {
 		var (
 			provider repository.Provider
 			ctx      context.Context
-			client   *mock_dbmysql.MockClient
+			client   *mock_mysql.MockClient
 		)
 
 		BeforeEach(func() {
 			ctx = context.Background()
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
-			client = mock_dbmysql.NewMockClient(ctrl)
+			client = mock_mysql.NewMockClient(ctrl)
 			provider, _ = repository_mysql.NewRepository(
 				repository_mysql.WithDbClient(client),
 			)
