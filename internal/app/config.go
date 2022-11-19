@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/go-seidon/provider/config"
+	"github.com/go-seidon/provider/config/viper"
 )
 
 type Config struct {
@@ -41,8 +41,8 @@ func NewDefaultConfig() (*Config, error) {
 	cfg := &Config{AppEnv: appEnv}
 
 	cfgFileName := fmt.Sprintf("config/%s.toml", cfg.AppEnv)
-	tomlConfig, err := config.NewViperConfig(
-		config.WithFileName(cfgFileName),
+	tomlConfig, err := viper.NewConfig(
+		viper.WithFileName(cfgFileName),
 	)
 	if err != nil {
 		return nil, err
