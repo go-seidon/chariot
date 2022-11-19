@@ -10,10 +10,10 @@ import (
 	"github.com/go-seidon/chariot/internal/repository"
 	rest_handler "github.com/go-seidon/chariot/internal/rest-handler"
 	"github.com/go-seidon/provider/datetime"
-	"github.com/go-seidon/provider/hashing"
-	"github.com/go-seidon/provider/identifier"
+	"github.com/go-seidon/provider/hashing/bcrypt"
+	"github.com/go-seidon/provider/identifier/ksuid"
 	"github.com/go-seidon/provider/logging"
-	"github.com/go-seidon/provider/validation"
+	"github.com/go-seidon/provider/validation/govalidator"
 	"github.com/labstack/echo/v4"
 )
 
@@ -100,15 +100,15 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		basicGroup := echo.Group("")
 		basicGroup.GET("/", basicHandler.GetAppInfo)
 
-		validator := validation.NewGoValidator()
-		hasher := hashing.NewBcryptHasher()
-		identifier := identifier.NewKsuid()
+		validator := govalidator.NewValidator()
+		bcryptHasher := bcrypt.NewHasher()
+		ksuidIdentifier := ksuid.NewIdentifier()
 		clock := datetime.NewClock()
 
 		authClient := auth.NewAuthClient(auth.AuthClientParam{
 			Validator:  validator,
-			Hasher:     hasher,
-			Identifier: identifier,
+			Hasher:     bcryptHasher,
+			Identifier: ksuidIdentifier,
 			Clock:      clock,
 			AuthRepo:   repo.GetAuth(),
 		})
@@ -123,7 +123,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 
 		barrelClient := barrel.NewBarrel(barrel.BarrelParam{
 			Validator:  validator,
-			Identifier: identifier,
+			Identifier: ksuidIdentifier,
 			Clock:      clock,
 			BarrelRepo: repo.GetBarrel(),
 		})
