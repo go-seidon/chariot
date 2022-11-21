@@ -26,10 +26,11 @@ type CreateFileParam struct {
 
 type CreateFileLocation struct {
 	BarrelId   string
-	ExternalId string
+	ExternalId *string
 	Priority   int32
+	Status     string
 	CreatedAt  time.Time
-	UploadedAt time.Time
+	UploadedAt *time.Time
 }
 
 type CreateFileResult struct {
