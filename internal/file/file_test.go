@@ -1,0 +1,634 @@
+package file_test
+
+import (
+	"context"
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/go-seidon/chariot/internal/file"
+	"github.com/go-seidon/chariot/internal/repository"
+	mock_repository "github.com/go-seidon/chariot/internal/repository/mock"
+	"github.com/go-seidon/chariot/internal/storage"
+	mock_storage "github.com/go-seidon/chariot/internal/storage/mock"
+	"github.com/go-seidon/chariot/internal/storage/router"
+	mock_datetime "github.com/go-seidon/provider/datetime/mock"
+	mock_identifier "github.com/go-seidon/provider/identifier/mock"
+	mock_io "github.com/go-seidon/provider/io/mock"
+	mock_slug "github.com/go-seidon/provider/slug/mock"
+	"github.com/go-seidon/provider/typeconv"
+	mock_validation "github.com/go-seidon/provider/validation/mock"
+	"github.com/golang/mock/gomock"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+func TestFile(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "File Package")
+}
+
+var _ = Describe("File Package", func() {
+
+	Context("UploadFile function", Label("unit"), func() {
+
+		var (
+			ctx             context.Context
+			currentTs       time.Time
+			fileClient      file.File
+			validator       *mock_validation.MockValidator
+			identifier      *mock_identifier.MockIdentifier
+			clock           *mock_datetime.MockClock
+			slugger         *mock_slug.MockSlugger
+			barrelRepo      *mock_repository.MockBarrel
+			fileRepo        *mock_repository.MockFile
+			storageRouter   *mock_storage.MockRouter
+			storagePrimary  *mock_storage.MockStorage
+			fileData        *mock_io.MockReader
+			p               file.UploadFileParam
+			searchParam     repository.SearchBarrelParam
+			searchRes       *repository.SearchBarrelResult
+			createStgParam  router.CreateStorageParam
+			uploadParam     storage.UploadFileParam
+			uploadRes       *storage.UploadFileResult
+			createFileParam repository.CreateFileParam
+			createFileRes   *repository.CreateFileResult
+		)
+
+		BeforeEach(func() {
+			ctx = context.Background()
+			currentTs = time.Now().UTC()
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			validator = mock_validation.NewMockValidator(ctrl)
+			identifier = mock_identifier.NewMockIdentifier(ctrl)
+			clock = mock_datetime.NewMockClock(ctrl)
+			slugger = mock_slug.NewMockSlugger(ctrl)
+			barrelRepo = mock_repository.NewMockBarrel(ctrl)
+			fileRepo = mock_repository.NewMockFile(ctrl)
+			storageRouter = mock_storage.NewMockRouter(ctrl)
+			storagePrimary = mock_storage.NewMockStorage(ctrl)
+			fileData = mock_io.NewMockReader(ctrl)
+			fileClient = file.NewFile(file.FileParam{
+				Validator:  validator,
+				Identifier: identifier,
+				Clock:      clock,
+				Slugger:    slugger,
+				BarrelRepo: barrelRepo,
+				FileRepo:   fileRepo,
+				Router:     storageRouter,
+			})
+			p = file.UploadFileParam{
+				Data: fileData,
+				Info: file.UploadFileInfo{
+					Name:      "Dolphin 22",
+					Mimetype:  "image/jpeg",
+					Extension: "jpg",
+					Size:      23343,
+					Meta: map[string]string{
+						"feature": "profile",
+						"user_id": "8c7ffa05-70c7-437e-8166-0f6a651a9575",
+					},
+				},
+				Setting: file.UploadFileSetting{
+					Visibility: "public",
+					Barrels:    []string{"hippo1", "s3backup"},
+				},
+			}
+			searchParam = repository.SearchBarrelParam{
+				Codes:    []string{"hippo1", "s3backup"},
+				Statuses: []string{"active"},
+			}
+			searchRes = &repository.SearchBarrelResult{
+				Summary: repository.SearchBarrelSummary{
+					TotalItems: 2,
+				},
+				Items: []repository.SearchBarrelItem{
+					{
+						Id:   "s1",
+						Code: "s3backup",
+					},
+					{
+						Id:   "h1",
+						Code: "hippo1",
+					},
+				},
+			}
+			createStgParam = router.CreateStorageParam{
+				BarrelCode: "hippo1",
+			}
+			uploadParam = storage.UploadFileParam{
+				Data:      p.Data,
+				Id:        typeconv.String("file-id"),
+				Name:      typeconv.String(p.Info.Name),
+				Mimetype:  typeconv.String(p.Info.Mimetype),
+				Extension: typeconv.String(p.Info.Extension),
+			}
+			uploadRes = &storage.UploadFileResult{
+				FileId:     "object-id",
+				UploadedAt: currentTs,
+			}
+			createFileParam = repository.CreateFileParam{
+				Id:         "file-id",
+				Slug:       "dolphin-22.jpg",
+				Name:       p.Info.Name,
+				Mimetype:   p.Info.Mimetype,
+				Extension:  p.Info.Extension,
+				Size:       p.Info.Size,
+				Visibility: p.Setting.Visibility,
+				Status:     "available",
+				Meta:       p.Info.Meta,
+				CreatedAt:  currentTs,
+				UploadedAt: currentTs,
+				Locations: []repository.CreateFileLocation{
+					{
+						BarrelId:   "h1",
+						ExternalId: typeconv.String("object-id"),
+						Priority:   1,
+						CreatedAt:  currentTs,
+						Status:     "available",
+						UploadedAt: &currentTs,
+					},
+					{
+						BarrelId:   "s1",
+						ExternalId: nil,
+						Priority:   2,
+						CreatedAt:  currentTs,
+						Status:     "uploading",
+						UploadedAt: nil,
+					},
+				},
+			}
+			createFileRes = &repository.CreateFileResult{
+				Id:         createFileParam.Id,
+				Slug:       createFileParam.Slug,
+				Name:       createFileParam.Name,
+				Mimetype:   createFileParam.Mimetype,
+				Extension:  createFileParam.Extension,
+				Size:       createFileParam.Size,
+				Visibility: createFileParam.Visibility,
+				Status:     createFileParam.Status,
+				Meta:       createFileParam.Meta,
+				CreatedAt:  createFileParam.CreatedAt,
+				UploadedAt: createFileParam.UploadedAt,
+			}
+		})
+
+		When("file data is not specified", func() {
+			It("should return error", func() {
+				p.Data = nil
+
+				res, err := fileClient.UploadFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1002)))
+				Expect(err.Message).To(Equal("file is not specified"))
+			})
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(fmt.Errorf("invalid data")).
+					Times(1)
+
+				res, err := fileClient.UploadFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1002)))
+				Expect(err.Message).To(Equal("invalid data"))
+			})
+		})
+
+		When("failed search barrels", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				barrelRepo.
+					EXPECT().
+					SearchBarrel(gomock.Eq(ctx), gomock.Eq(searchParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := fileClient.UploadFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("network error"))
+			})
+		})
+
+		When("there is invalid barrel", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				searchRes := &repository.SearchBarrelResult{
+					Summary: repository.SearchBarrelSummary{},
+					Items:   []repository.SearchBarrelItem{},
+				}
+				barrelRepo.
+					EXPECT().
+					SearchBarrel(gomock.Eq(ctx), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				res, err := fileClient.UploadFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1002)))
+				Expect(err.Message).To(Equal("there is invalid barrel"))
+			})
+		})
+
+		When("failed generate id", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				barrelRepo.
+					EXPECT().
+					SearchBarrel(gomock.Eq(ctx), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				identifier.
+					EXPECT().
+					GenerateId().
+					Return("file-id", nil).
+					Times(1)
+
+				identifier.
+					EXPECT().
+					GenerateId().
+					Return("", fmt.Errorf("disk error")).
+					Times(1)
+
+				res, err := fileClient.UploadFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("disk error"))
+			})
+		})
+
+		When("storage is not supported", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				barrelRepo.
+					EXPECT().
+					SearchBarrel(gomock.Eq(ctx), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				identifier.
+					EXPECT().
+					GenerateId().
+					Return("file-id", nil).
+					Times(2)
+
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(nil, router.ErrUnsupported).
+					Times(1)
+
+				res, err := fileClient.UploadFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("unsupported storage"))
+			})
+		})
+
+		When("failed upload file", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				barrelRepo.
+					EXPECT().
+					SearchBarrel(gomock.Eq(ctx), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				identifier.
+					EXPECT().
+					GenerateId().
+					Return("file-id", nil).
+					Times(2)
+
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(storagePrimary, nil).
+					Times(1)
+
+				storagePrimary.
+					EXPECT().
+					UploadFile(gomock.Eq(ctx), gomock.Eq(uploadParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := fileClient.UploadFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("network error"))
+			})
+		})
+
+		When("failed create file", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				barrelRepo.
+					EXPECT().
+					SearchBarrel(gomock.Eq(ctx), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				identifier.
+					EXPECT().
+					GenerateId().
+					Return("file-id", nil).
+					Times(2)
+
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(storagePrimary, nil).
+					Times(1)
+
+				storagePrimary.
+					EXPECT().
+					UploadFile(gomock.Eq(ctx), gomock.Eq(uploadParam)).
+					Return(uploadRes, nil).
+					Times(1)
+
+				slugger.
+					EXPECT().
+					GenerateSlug(gomock.Eq(p.Info.Name)).
+					Return("dolphin-22").
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					CreateFile(gomock.Eq(ctx), gomock.Eq(createFileParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := fileClient.UploadFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("network error"))
+			})
+		})
+
+		When("success upload file", func() {
+			It("should return result", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				barrelRepo.
+					EXPECT().
+					SearchBarrel(gomock.Eq(ctx), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				identifier.
+					EXPECT().
+					GenerateId().
+					Return("file-id", nil).
+					Times(2)
+
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(storagePrimary, nil).
+					Times(1)
+
+				storagePrimary.
+					EXPECT().
+					UploadFile(gomock.Eq(ctx), gomock.Eq(uploadParam)).
+					Return(uploadRes, nil).
+					Times(1)
+
+				slugger.
+					EXPECT().
+					GenerateSlug(gomock.Eq(p.Info.Name)).
+					Return("dolphin-22").
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					CreateFile(gomock.Eq(ctx), gomock.Eq(createFileParam)).
+					Return(createFileRes, nil).
+					Times(1)
+
+				res, err := fileClient.UploadFile(ctx, p)
+
+				Expect(err).To(BeNil())
+				Expect(res.Success.Code).To(Equal(int32(1000)))
+				Expect(res.Success.Message).To(Equal("success upload file"))
+				Expect(res.Id).To(Equal(createFileRes.Id))
+				Expect(res.Slug).To(Equal(createFileRes.Slug))
+				Expect(res.Name).To(Equal(createFileRes.Name))
+				Expect(res.Mimetype).To(Equal(createFileRes.Mimetype))
+				Expect(res.Extension).To(Equal(createFileRes.Extension))
+				Expect(res.Size).To(Equal(createFileRes.Size))
+				Expect(res.Visibility).To(Equal(createFileRes.Visibility))
+				Expect(res.Status).To(Equal(createFileRes.Status))
+				Expect(res.Meta).To(Equal(createFileRes.Meta))
+				Expect(res.UploadedAt).To(Equal(createFileRes.UploadedAt))
+			})
+		})
+
+		When("success upload to one barrel", func() {
+			It("should return result", func() {
+				p := file.UploadFileParam{
+					Data: fileData,
+					Info: file.UploadFileInfo{
+						Name:      "Dolphin 22",
+						Mimetype:  "image/jpeg",
+						Extension: "",
+						Size:      23343,
+						Meta: map[string]string{
+							"feature": "profile",
+							"user_id": "8c7ffa05-70c7-437e-8166-0f6a651a9575",
+						},
+					},
+					Setting: file.UploadFileSetting{
+						Visibility: "public",
+						Barrels:    []string{"hippo1"},
+					},
+				}
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				searchParam := repository.SearchBarrelParam{
+					Codes:    []string{"hippo1"},
+					Statuses: []string{"active"},
+				}
+				searchRes = &repository.SearchBarrelResult{
+					Summary: repository.SearchBarrelSummary{
+						TotalItems: 1,
+					},
+					Items: []repository.SearchBarrelItem{
+						{
+							Id:   "h1",
+							Code: "hippo1",
+						},
+					},
+				}
+				barrelRepo.
+					EXPECT().
+					SearchBarrel(gomock.Eq(ctx), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				identifier.
+					EXPECT().
+					GenerateId().
+					Return("file-id", nil).
+					Times(1)
+
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(storagePrimary, nil).
+					Times(1)
+
+				uploadParam := storage.UploadFileParam{
+					Data:      p.Data,
+					Id:        typeconv.String("file-id"),
+					Name:      typeconv.String(p.Info.Name),
+					Mimetype:  typeconv.String(p.Info.Mimetype),
+					Extension: typeconv.String(p.Info.Extension),
+				}
+				uploadRes := &storage.UploadFileResult{
+					FileId:     "object-id",
+					UploadedAt: currentTs,
+				}
+				storagePrimary.
+					EXPECT().
+					UploadFile(gomock.Eq(ctx), gomock.Eq(uploadParam)).
+					Return(uploadRes, nil).
+					Times(1)
+
+				slugger.
+					EXPECT().
+					GenerateSlug(gomock.Eq(p.Info.Name)).
+					Return("dolphin-22").
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				createFileParam = repository.CreateFileParam{
+					Id:         "file-id",
+					Slug:       "dolphin-22",
+					Name:       p.Info.Name,
+					Mimetype:   p.Info.Mimetype,
+					Extension:  p.Info.Extension,
+					Size:       p.Info.Size,
+					Visibility: p.Setting.Visibility,
+					Status:     "available",
+					Meta:       p.Info.Meta,
+					CreatedAt:  currentTs,
+					UploadedAt: currentTs,
+					Locations: []repository.CreateFileLocation{
+						{
+							BarrelId:   "h1",
+							ExternalId: typeconv.String("object-id"),
+							Priority:   1,
+							CreatedAt:  currentTs,
+							Status:     "available",
+							UploadedAt: &currentTs,
+						},
+					},
+				}
+				createFileRes = &repository.CreateFileResult{
+					Id:         createFileParam.Id,
+					Slug:       createFileParam.Slug,
+					Name:       createFileParam.Name,
+					Mimetype:   createFileParam.Mimetype,
+					Extension:  createFileParam.Extension,
+					Size:       createFileParam.Size,
+					Visibility: createFileParam.Visibility,
+					Status:     createFileParam.Status,
+					Meta:       createFileParam.Meta,
+					CreatedAt:  createFileParam.CreatedAt,
+					UploadedAt: createFileParam.UploadedAt,
+				}
+				fileRepo.
+					EXPECT().
+					CreateFile(gomock.Eq(ctx), gomock.Eq(createFileParam)).
+					Return(createFileRes, nil).
+					Times(1)
+
+				res, err := fileClient.UploadFile(ctx, p)
+
+				Expect(err).To(BeNil())
+				Expect(res.Success.Code).To(Equal(int32(1000)))
+				Expect(res.Success.Message).To(Equal("success upload file"))
+				Expect(res.Id).To(Equal(createFileRes.Id))
+				Expect(res.Slug).To(Equal(createFileRes.Slug))
+				Expect(res.Name).To(Equal(createFileRes.Name))
+				Expect(res.Mimetype).To(Equal(createFileRes.Mimetype))
+				Expect(res.Extension).To(Equal(createFileRes.Extension))
+				Expect(res.Size).To(Equal(createFileRes.Size))
+				Expect(res.Visibility).To(Equal(createFileRes.Visibility))
+				Expect(res.Status).To(Equal(createFileRes.Status))
+				Expect(res.Meta).To(Equal(createFileRes.Meta))
+				Expect(res.UploadedAt).To(Equal(createFileRes.UploadedAt))
+			})
+		})
+	})
+})
