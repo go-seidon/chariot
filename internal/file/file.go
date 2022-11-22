@@ -144,7 +144,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 		}
 	}
 
-	uploadFile, err := uploader.UploadFile(ctx, storage.UploadFileParam{
+	uploadFile, err := uploader.UploadObject(ctx, storage.UploadObjectParam{
 		Data:      p.Data,
 		Id:        typeconv.String(primaryBarrel.FileId),
 		Name:      typeconv.String(p.Info.Name),
@@ -166,7 +166,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 		var uploadedAt *time.Time
 		if i == 0 {
 			status = STATUS_AVAILABLE
-			externalId = typeconv.String(uploadFile.FileId)
+			externalId = typeconv.String(uploadFile.ObjectId)
 			uploadedAt = typeconv.Time(uploadFile.UploadedAt)
 		}
 

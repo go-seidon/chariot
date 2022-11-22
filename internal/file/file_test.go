@@ -49,8 +49,8 @@ var _ = Describe("File Package", func() {
 			searchParam     repository.SearchBarrelParam
 			searchRes       *repository.SearchBarrelResult
 			createStgParam  router.CreateStorageParam
-			uploadParam     storage.UploadFileParam
-			uploadRes       *storage.UploadFileResult
+			uploadParam     storage.UploadObjectParam
+			uploadRes       *storage.UploadObjectResult
 			createFileParam repository.CreateFileParam
 			createFileRes   *repository.CreateFileResult
 		)
@@ -117,15 +117,15 @@ var _ = Describe("File Package", func() {
 			createStgParam = router.CreateStorageParam{
 				BarrelCode: "hippo1",
 			}
-			uploadParam = storage.UploadFileParam{
+			uploadParam = storage.UploadObjectParam{
 				Data:      p.Data,
 				Id:        typeconv.String("file-id"),
 				Name:      typeconv.String(p.Info.Name),
 				Mimetype:  typeconv.String(p.Info.Mimetype),
 				Extension: typeconv.String(p.Info.Extension),
 			}
-			uploadRes = &storage.UploadFileResult{
-				FileId:     "object-id",
+			uploadRes = &storage.UploadObjectResult{
+				ObjectId:   "object-id",
 				UploadedAt: currentTs,
 			}
 			createFileParam = repository.CreateFileParam{
@@ -346,7 +346,7 @@ var _ = Describe("File Package", func() {
 
 				storagePrimary.
 					EXPECT().
-					UploadFile(gomock.Eq(ctx), gomock.Eq(uploadParam)).
+					UploadObject(gomock.Eq(ctx), gomock.Eq(uploadParam)).
 					Return(nil, fmt.Errorf("network error")).
 					Times(1)
 
@@ -386,7 +386,7 @@ var _ = Describe("File Package", func() {
 
 				storagePrimary.
 					EXPECT().
-					UploadFile(gomock.Eq(ctx), gomock.Eq(uploadParam)).
+					UploadObject(gomock.Eq(ctx), gomock.Eq(uploadParam)).
 					Return(uploadRes, nil).
 					Times(1)
 
@@ -444,7 +444,7 @@ var _ = Describe("File Package", func() {
 
 				storagePrimary.
 					EXPECT().
-					UploadFile(gomock.Eq(ctx), gomock.Eq(uploadParam)).
+					UploadObject(gomock.Eq(ctx), gomock.Eq(uploadParam)).
 					Return(uploadRes, nil).
 					Times(1)
 
@@ -542,20 +542,20 @@ var _ = Describe("File Package", func() {
 					Return(storagePrimary, nil).
 					Times(1)
 
-				uploadParam := storage.UploadFileParam{
+				uploadParam := storage.UploadObjectParam{
 					Data:      p.Data,
 					Id:        typeconv.String("file-id"),
 					Name:      typeconv.String(p.Info.Name),
 					Mimetype:  typeconv.String(p.Info.Mimetype),
 					Extension: typeconv.String(p.Info.Extension),
 				}
-				uploadRes := &storage.UploadFileResult{
-					FileId:     "object-id",
+				uploadRes := &storage.UploadObjectResult{
+					ObjectId:   "object-id",
 					UploadedAt: currentTs,
 				}
 				storagePrimary.
 					EXPECT().
-					UploadFile(gomock.Eq(ctx), gomock.Eq(uploadParam)).
+					UploadObject(gomock.Eq(ctx), gomock.Eq(uploadParam)).
 					Return(uploadRes, nil).
 					Times(1)
 
