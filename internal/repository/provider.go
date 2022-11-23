@@ -13,4 +13,5 @@ type Provider interface {
 	Ping(ctx context.Context) error
 	GetAuth() Auth
 	GetBarrel() Barrel
+	GetFile() File
 }

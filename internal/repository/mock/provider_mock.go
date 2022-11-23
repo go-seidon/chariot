@@ -63,6 +63,20 @@ func (mr *MockProviderMockRecorder) GetBarrel() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBarrel", reflect.TypeOf((*MockProvider)(nil).GetBarrel))
 }
 
+// GetFile mocks base method.
+func (m *MockProvider) GetFile() repository.File {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFile")
+	ret0, _ := ret[0].(repository.File)
+	return ret0
+}
+
+// GetFile indicates an expected call of GetFile.
+func (mr *MockProviderMockRecorder) GetFile() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFile", reflect.TypeOf((*MockProvider)(nil).GetFile))
+}
+
 // Init mocks base method.
 func (m *MockProvider) Init(ctx context.Context) error {
 	m.ctrl.T.Helper()

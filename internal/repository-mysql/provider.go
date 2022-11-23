@@ -11,6 +11,7 @@ type provider struct {
 	dbClient   mysql.Pingable
 	authRepo   *auth
 	barrelRepo *barrel
+	filerepo   *file
 }
 
 func (p *provider) Init(ctx context.Context) error {
@@ -27,4 +28,8 @@ func (p *provider) GetAuth() repository.Auth {
 
 func (p *provider) GetBarrel() repository.Barrel {
 	return p.barrelRepo
+}
+
+func (p *provider) GetFile() repository.File {
+	return p.filerepo
 }

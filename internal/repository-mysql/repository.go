@@ -51,11 +51,15 @@ func NewRepository(opts ...RepoOption) (*provider, error) {
 	barrelRepo := &barrel{
 		gormClient: p.gormClient,
 	}
+	fileRepo := &file{
+		gormClient: p.gormClient,
+	}
 
 	repo := &provider{
 		dbClient:   dbClient,
 		authRepo:   authRepo,
 		barrelRepo: barrelRepo,
+		filerepo:   fileRepo,
 	}
 	return repo, nil
 }
