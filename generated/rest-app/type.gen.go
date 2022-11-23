@@ -90,10 +90,24 @@ const (
 	UpdateAuthClientByIdRequestTypeBasicAuth UpdateAuthClientByIdRequestType = "basic_auth"
 )
 
+// Defines values for UploadFileDataStatus.
+const (
+	Available UploadFileDataStatus = "available"
+	Deleted   UploadFileDataStatus = "deleted"
+	Deleting  UploadFileDataStatus = "deleting"
+	Uploading UploadFileDataStatus = "uploading"
+)
+
+// Defines values for UploadFileDataVisibility.
+const (
+	UploadFileDataVisibilityProtected UploadFileDataVisibility = "protected"
+	UploadFileDataVisibilityPublic    UploadFileDataVisibility = "public"
+)
+
 // Defines values for UploadFileRequestVisibility.
 const (
-	UploadFileRequestVisibilityProtected UploadFileRequestVisibility = "protected"
-	UploadFileRequestVisibilityPublic    UploadFileRequestVisibility = "public"
+	Protected UploadFileRequestVisibility = "protected"
+	Public    UploadFileRequestVisibility = "public"
 )
 
 // CreateAuthClientData defines model for CreateAuthClientData.
@@ -492,10 +506,28 @@ type UpdateBarrelByIdResponse struct {
 
 // UploadFileData defines model for UploadFileData.
 type UploadFileData struct {
-	FileId     string  `json:"file_id"`
-	FileUrl    *string `json:"file_url,omitempty"`
-	UploadedAt int64   `json:"uploaded_at"`
+	Extension  string                   `json:"extension"`
+	Id         string                   `json:"id"`
+	Meta       *UploadFileData_Meta     `json:"meta,omitempty"`
+	Mimetype   string                   `json:"mimetype"`
+	Name       string                   `json:"name"`
+	Size       int64                    `json:"size"`
+	Slug       string                   `json:"slug"`
+	Status     UploadFileDataStatus     `json:"status"`
+	UploadedAt int64                    `json:"uploaded_at"`
+	Visibility UploadFileDataVisibility `json:"visibility"`
 }
+
+// UploadFileData_Meta defines model for UploadFileData.Meta.
+type UploadFileData_Meta struct {
+	AdditionalProperties map[string]string `json:"-"`
+}
+
+// UploadFileDataStatus defines model for UploadFileData.Status.
+type UploadFileDataStatus string
+
+// UploadFileDataVisibility defines model for UploadFileData.Visibility.
+type UploadFileDataVisibility string
 
 // UploadFileRequest defines model for UploadFileRequest.
 type UploadFileRequest struct {
@@ -504,10 +536,7 @@ type UploadFileRequest struct {
 	File    string `json:"file"`
 
 	// json metadata
-	Meta *string `json:"meta,omitempty"`
-
-	// rule code
-	Rule       *string                     `json:"rule,omitempty"`
+	Meta       *string                     `json:"meta,omitempty"`
 	Visibility UploadFileRequestVisibility `json:"visibility"`
 }
 
@@ -765,6 +794,59 @@ func (a *SearchFileItem_Meta) UnmarshalJSON(b []byte) error {
 
 // Override default JSON handling for SearchFileItem_Meta to handle AdditionalProperties
 func (a SearchFileItem_Meta) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for UploadFileData_Meta. Returns the specified
+// element and whether it was found
+func (a UploadFileData_Meta) Get(fieldName string) (value string, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for UploadFileData_Meta
+func (a *UploadFileData_Meta) Set(fieldName string, value string) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]string)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for UploadFileData_Meta to handle AdditionalProperties
+func (a *UploadFileData_Meta) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]string)
+		for fieldName, fieldBuf := range object {
+			var fieldVal string
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for UploadFileData_Meta to handle AdditionalProperties
+func (a UploadFileData_Meta) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 

@@ -14,7 +14,7 @@ requestBody:
       schema:
         $ref: "./request_body.yml"
 responses:
-  '200':
+  '201':
     description: success upload file
     content: 
       application/json:

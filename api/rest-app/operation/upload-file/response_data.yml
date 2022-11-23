@@ -1,12 +1,44 @@
 type: object
 required:
-- file_id
+- id
+- slug
+- name
+- mimetype
+- extension
+- size
+- visibility
+- status
 - uploaded_at
 properties:
-  file_id:
+  id:
     type: string
-  file_url:
+  slug:
     type: string
+  name:
+    type: string
+  mimetype:
+    type: string
+  extension:
+    type: string
+  size:
+    type: integer
+    format: int64
+  visibility:
+    type: string
+    enum:
+    - public
+    - protected
+  status:
+    type: string
+    enum:
+    - uploading
+    - available
+    - deleting
+    - deleted
   uploaded_at:
     type: integer
     format: int64
+  meta:
+    type: object
+    additionalProperties:
+      type: string
