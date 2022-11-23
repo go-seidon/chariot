@@ -35,7 +35,7 @@ type UploadFileInfo struct {
 	Mimetype  string            `validate:"max=128" label:"mimetype"`
 	Extension string            `validate:"max=32" label:"extension"`
 	Size      int64             `validate:"min=1" label:"size"`
-	Meta      map[string]string `validate:"min=0,max=24,dive,keys,alphanum,min=1,max=64,endkeys,required,printascii,min=1,max=128" label:"meta"`
+	Meta      map[string]string `validate:"min=0,max=24,dive,keys,printascii,min=1,max=64,endkeys,required,printascii,min=1,max=128" label:"meta"`
 }
 
 type UploadFileSetting struct {
