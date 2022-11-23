@@ -29,7 +29,7 @@ install:
 
 .PHONY: test
 test:
-	go test ./... -coverprofile coverage.out
+	go test ./.../ -p 1 -race -coverprofile coverage.out
 	go tool cover -func coverage.out | grep ^total:
 
 .PHONY: test-coverage
@@ -56,10 +56,14 @@ test-watch-integration:
 generate-mock:
 	mockgen -package=mock_auth -source internal/auth/client.go -destination=internal/auth/mock/client_mock.go
 	mockgen -package=mock_barrel -source internal/barrel/barrel.go -destination=internal/barrel/mock/barrel_mock.go
+	mockgen -package=mock_file -source internal/file/file.go -destination=internal/file/mock/file_mock.go
 	mockgen -package=mock_repository -source internal/repository/auth.go -destination=internal/repository/mock/auth_mock.go
 	mockgen -package=mock_repository -source internal/repository/barrel.go -destination=internal/repository/mock/barrel_mock.go
+	mockgen -package=mock_repository -source internal/repository/file.go -destination=internal/repository/mock/file_mock.go
 	mockgen -package=mock_repository -source internal/repository/provider.go -destination=internal/repository/mock/provider_mock.go
 	mockgen -package=mock_restapp -source internal/rest-app/server.go -destination=internal/rest-app/mock/server_mock.go
+	mockgen -package=mock_storage -source internal/storage/storage.go -destination=internal/storage/mock/storage_mock.go
+	mockgen -package=mock_storage -source internal/storage/router/router.go -destination=internal/storage/mock/router_mock.go
 
 .PHONY: generate-proto
 generate-proto:
