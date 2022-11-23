@@ -5,12 +5,13 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"mime/multipart"
+	mime_multipart "mime/multipart"
 	"testing"
 	"time"
 
 	"github.com/go-seidon/chariot/internal/storage"
 	"github.com/go-seidon/chariot/internal/storage/hippo"
+	"github.com/go-seidon/chariot/internal/storage/multipart"
 	mock_encoding "github.com/go-seidon/provider/encoding/mock"
 	"github.com/go-seidon/provider/http"
 	mock_http "github.com/go-seidon/provider/http/mock"
@@ -41,7 +42,7 @@ var _ = Describe("Hippo Storage", func() {
 			basicAuth  string
 			auth       *hippo.StorageAuth
 			config     *hippo.StorageConfig
-			writer     hippo.Writer
+			writer     multipart.Writer
 			httpClient *mock_http.MockClient
 			serializer *mock_serialization.MockSerializer
 			p          storage.UploadObjectParam
@@ -61,8 +62,8 @@ var _ = Describe("Hippo Storage", func() {
 			config = &hippo.StorageConfig{
 				Host: "host",
 			}
-			writer = func(p hippo.WriterParam) (*multipart.Writer, error) {
-				return &multipart.Writer{}, nil
+			writer = func(p multipart.WriterParam) (*mime_multipart.Writer, error) {
+				return &mime_multipart.Writer{}, nil
 			}
 			httpClient = mock_http.NewMockClient(ctrl)
 			serializer = mock_serialization.NewMockSerializer(ctrl)
@@ -121,7 +122,7 @@ var _ = Describe("Hippo Storage", func() {
 					Return(basicAuth, nil).
 					Times(1)
 
-				writer = func(p hippo.WriterParam) (*multipart.Writer, error) {
+				writer = func(p multipart.WriterParam) (*mime_multipart.Writer, error) {
 					return nil, fmt.Errorf("disk error")
 				}
 				s := hippo.NewStorage(

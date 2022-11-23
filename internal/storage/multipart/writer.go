@@ -1,4 +1,4 @@
-package hippo
+package multipart
 
 import (
 	"io"

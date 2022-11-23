@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-seidon/chariot/internal/storage"
+	"github.com/go-seidon/chariot/internal/storage/multipart"
 	"github.com/go-seidon/provider/encoding"
 	"github.com/go-seidon/provider/http"
 	"github.com/go-seidon/provider/serialization"
@@ -19,7 +20,7 @@ import (
 type hippoStorage struct {
 	auth       *StorageAuth
 	config     *StorageConfig
-	fileWriter Writer
+	fileWriter multipart.Writer
 	serializer serialization.Serializer
 	encoder    encoding.Encoder
 	httpClient http.Client
@@ -32,7 +33,7 @@ func (s *hippoStorage) UploadObject(ctx context.Context, p storage.UploadObjectP
 	}
 
 	body := bytes.NewBuffer([]byte{})
-	writer, err := s.fileWriter(WriterParam{
+	writer, err := s.fileWriter(multipart.WriterParam{
 		Writer:    body,
 		Reader:    p.Data,
 		FieldName: "file",
