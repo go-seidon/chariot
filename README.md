@@ -77,40 +77,33 @@ TBA
 ```
 
 ## Todo
-4. Enhance typeconv (add more type conversion based on current problems)
+1. Devs: Adjustment code structure
+- Move mysql repo as repository subfolder
+- Remove dash foldering name
 
-5. Client: UploadFile
-- *file
-- *barrels 
--- (min: 1, max: 10, order define priority) 
--- [goseidon_hippo, aws_s3, gcloud_storage, alicloud_oss]
-- *visibility (public, protected)
-- metadata (min: 0, max: 30, key-value pairs)
--> return `file_id`, `uploaded_at` for protected file
--> return `file_id`, `uploaded_at` and `file_url` for public file
-
-6. Client: Secure UploadFile (using auth)
-- secure upload (e.g: presigned url, upload session, etc)
-7. Client: RetrieveFile
+2. Client: RetrieveFile
 - auto failover
-8. Client: File access control (visibility, secret meta: user_id)
-
-9. Admin: GetFileById
-10. Admin: SearchFiles
-11. Admin: DeleteFile
-
-12. Client: Upload rule (size, resolution, extension)
+3. Client: GenerateAccessToken
+4. Client: RetrieveFile 
+- secure access (file_url on upload file result)
+- add file config (access_host)
+5. Admin: GetFileById
+6. Admin: SearchFiles
+7. Admin: DeleteFile
+8. Daemon: ProceedPendingUpload
+9. Client: Secure UploadFile (using auth)
+- secure upload (e.g: presigned url, upload session, etc)
+10. Client: Upload rule (size, resolution, extension)
 - rule is required
 - rule may have no attribute (free rule)
 - rule may have multiple attribute
 - if rule have multiple attribute than it's mean we're matching at least one rule (or clause)
-
-13. Admin: dashboard monitoring
+11. Admin: dashboard monitoring
 - data exporter: CollectMetris
 - prometheus (rest exporter)
 - grafana
-14. Enhance rest app (echo router)
-- Override default error handler
+12. Devs: Enhance rest app
+- Override default error handler (echo router)
 
 ## Nice to have
 1. Custom file access (custom link with certain limitation, e.g: access duration)
