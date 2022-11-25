@@ -118,7 +118,7 @@ dummy: ## used by migrate script as do-nothing targets
 	@:
 
 
-MYSQL_DB_URI=mysql://admin:123456@tcp(localhost:3311)/chariot?x-tls-insecure-skip-verify=true
+MYSQL_DB_URI=mysql://admin:123456@tcp(localhost:3411)/chariot?x-tls-insecure-skip-verify=true
 
 .PHONY: migrate-mysql
 migrate-mysql:
