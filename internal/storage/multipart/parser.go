@@ -53,9 +53,6 @@ func FileParser(p ParserParam) (*FileInfo, error) {
 
 func FileName(fh *multipart.FileHeader) string {
 	names := strings.Split(fh.Filename, ".")
-	if len(names) == 0 {
-		return ""
-	}
 	return names[0]
 }
 

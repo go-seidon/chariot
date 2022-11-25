@@ -14,7 +14,7 @@ type WriterParam struct {
 	FileName  string
 }
 
-// @todo: add test if necessary
+// @todo: add test
 func FileWriter(p WriterParam) (*multipart.Writer, error) {
 	writer := multipart.NewWriter(p.Writer)
 	part, err := writer.CreateFormFile(p.FieldName, p.FileName)

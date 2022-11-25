@@ -124,6 +124,30 @@ var _ = Describe("Parser Package", func() {
 			}
 		})
 
+		When("header is not specified", func() {
+			It("should return error", func() {
+				res, err := multipart.FileParser(multipart.ParserParam{
+					Header: nil,
+					Data:   f,
+				})
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("invalid header")))
+			})
+		})
+
+		When("data is not specified", func() {
+			It("should return error", func() {
+				res, err := multipart.FileParser(multipart.ParserParam{
+					Header: fh,
+					Data:   nil,
+				})
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("invalid data")))
+			})
+		})
+
 		When("failed read file", func() {
 			It("should return error", func() {
 				buff := make([]byte, 512)
