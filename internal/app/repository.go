@@ -5,8 +5,8 @@ import (
 
 	"github.com/go-seidon/chariot/internal/repository"
 	repository_mysql "github.com/go-seidon/chariot/internal/repository-mysql"
-	db_mysql "github.com/go-seidon/provider/db-mysql"
-	"gorm.io/driver/mysql"
+	"github.com/go-seidon/provider/mysql"
+	gorm_mysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/plugin/dbresolver"
 )
@@ -22,27 +22,27 @@ func NewDefaultRepository(config *Config) (repository.Provider, error) {
 
 	var repo repository.Provider
 	if config.RepositoryProvider == repository.PROVIDER_MYSQL {
-		dbPrimary, err := db_mysql.NewClient(
-			db_mysql.WithAuth(config.MySQLPrimaryUser, config.MySQLPrimaryPassword),
-			db_mysql.WithConfig(db_mysql.ClientConfig{DbName: config.MySQLPrimaryDBName}),
-			db_mysql.WithLocation(config.MySQLPrimaryHost, config.MySQLPrimaryPort),
-			db_mysql.ParseTime(),
+		dbPrimary, err := mysql.NewClient(
+			mysql.WithAuth(config.MySQLPrimaryUser, config.MySQLPrimaryPassword),
+			mysql.WithConfig(mysql.ClientConfig{DbName: config.MySQLPrimaryDBName}),
+			mysql.WithLocation(config.MySQLPrimaryHost, config.MySQLPrimaryPort),
+			mysql.ParseTime(),
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		dbSecondary, err := db_mysql.NewClient(
-			db_mysql.WithAuth(config.MySQLSecondaryUser, config.MySQLSecondaryPassword),
-			db_mysql.WithConfig(db_mysql.ClientConfig{DbName: config.MySQLSecondaryDBName}),
-			db_mysql.WithLocation(config.MySQLSecondaryHost, config.MySQLSecondaryPort),
-			db_mysql.ParseTime(),
+		dbSecondary, err := mysql.NewClient(
+			mysql.WithAuth(config.MySQLSecondaryUser, config.MySQLSecondaryPassword),
+			mysql.WithConfig(mysql.ClientConfig{DbName: config.MySQLSecondaryDBName}),
+			mysql.WithLocation(config.MySQLSecondaryHost, config.MySQLSecondaryPort),
+			mysql.ParseTime(),
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		dbClient, err := gorm.Open(mysql.New(mysql.Config{
+		dbClient, err := gorm.Open(gorm_mysql.New(gorm_mysql.Config{
 			Conn:                      dbPrimary,
 			SkipInitializeWithVersion: true,
 		}), &gorm.Config{
@@ -54,7 +54,7 @@ func NewDefaultRepository(config *Config) (repository.Provider, error) {
 
 		err = dbClient.Use(dbresolver.Register(dbresolver.Config{
 			Replicas: []gorm.Dialector{
-				mysql.New(mysql.Config{
+				gorm_mysql.New(gorm_mysql.Config{
 					Conn:                      dbSecondary,
 					SkipInitializeWithVersion: true,
 				}),

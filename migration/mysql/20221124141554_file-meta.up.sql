@@ -1,0 +1,10 @@
+
+CREATE TABLE IF NOT EXISTS `file_meta` (
+  `file_id` VARCHAR(128) NOT NULL,
+  `key` VARCHAR(256) NOT NULL,
+  `value` VARCHAR(1024) NOT NULL
+) 
+DEFAULT CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci
+ENGINE = InnoDB;
+

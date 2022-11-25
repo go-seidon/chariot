@@ -11,10 +11,10 @@ services:
       - mysql-db-1-data:/var/lib/mysql
       # - ./mysql/h1.conf.cnf:/etc/mysql/conf.d/mysql.conf.cnf:ro
     ports:
-      - 3311:3306
+      - 3411:3306
     networks:
       mysql-net:
-        ipv4_address: 172.20.0.11
+        ipv4_address: 172.40.0.11
   mysql-db-test:
     image: "mysql:8.0"
     environment:
@@ -23,15 +23,15 @@ services:
       - MYSQL_DATABASE=chariot_test
       - MYSQL_ROOT_PASSWORD=toor
     ports:
-      - 3307:3306
+      - 3407:3306
     networks:
       mysql-net:
-        ipv4_address: 172.20.0.99
+        ipv4_address: 172.40.0.99
   phpmyadmin:
     image: "phpmyadmin:5.2"
     restart: always
     ports:
-      - 8010:80
+      - 8041:80
     environment:
       - PMA_HOSTS=mysql-db-1,mysql-db-test
     depends_on:
@@ -39,19 +39,19 @@ services:
       - mysql-db-test
     networks:
       mysql-net:
-        ipv4_address: 172.20.0.101
+        ipv4_address: 172.40.0.101
   proxy:
     image: "haproxy:2.6"
     restart: always
     volumes:
       - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     ports:
-      - 8020:80 # stats
-      - 3300:3300 # mysql primary
-      - 3301:3301 # mysql secondary
+      - 8040:80 # stats
+      - 3400:3300 # mysql primary
+      - 3401:3301 # mysql secondary
     networks:
       mysql-net:
-        ipv4_address: 172.20.0.102
+        ipv4_address: 172.40.0.102
 volumes:
   mysql-db-1-data:
 networks:
@@ -59,4 +59,4 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.0.0/16
+        - subnet: 172.40.0.0/16

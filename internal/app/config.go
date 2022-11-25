@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/go-seidon/provider/config"
+	"github.com/go-seidon/provider/config/viper"
 )
 
 type Config struct {
@@ -31,6 +31,15 @@ type Config struct {
 	MySQLSecondaryDBName   string `env:"MYSQL_SECONDARY_DB_NAME"`
 
 	UploadFormSize int64 `env:"UPLOAD_FORM_SIZE"`
+
+	Barrels map[string]BarrelConfig `env:"BARRELS"`
+}
+
+type BarrelConfig struct {
+	Provider          string `env:"PROVIDER"`
+	HippoServerHost   string `env:"HIPPO_SERVER_HOST"`
+	HippoClientId     string `env:"HIPPO_CLIENT_ID"`
+	HippoClientSecret string `env:"HIPPO_CLIENT_SECRET"`
 }
 
 func NewDefaultConfig() (*Config, error) {
@@ -41,8 +50,8 @@ func NewDefaultConfig() (*Config, error) {
 	cfg := &Config{AppEnv: appEnv}
 
 	cfgFileName := fmt.Sprintf("config/%s.toml", cfg.AppEnv)
-	tomlConfig, err := config.NewViperConfig(
-		config.WithFileName(cfgFileName),
+	tomlConfig, err := viper.NewConfig(
+		viper.WithFileName(cfgFileName),
 	)
 	if err != nil {
 		return nil, err

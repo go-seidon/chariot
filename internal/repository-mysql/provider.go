@@ -4,13 +4,14 @@ import (
 	"context"
 
 	"github.com/go-seidon/chariot/internal/repository"
-	db_mysql "github.com/go-seidon/provider/db-mysql"
+	"github.com/go-seidon/provider/mysql"
 )
 
 type provider struct {
-	dbClient   db_mysql.Pingable
+	dbClient   mysql.Pingable
 	authRepo   *auth
 	barrelRepo *barrel
+	filerepo   *file
 }
 
 func (p *provider) Init(ctx context.Context) error {
@@ -27,4 +28,8 @@ func (p *provider) GetAuth() repository.Auth {
 
 func (p *provider) GetBarrel() repository.Barrel {
 	return p.barrelRepo
+}
+
+func (p *provider) GetFile() repository.File {
+	return p.filerepo
 }

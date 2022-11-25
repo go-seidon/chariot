@@ -3,13 +3,13 @@ package repository_mysql
 import (
 	"fmt"
 
-	db_mysql "github.com/go-seidon/provider/db-mysql"
+	"github.com/go-seidon/provider/mysql"
 	"gorm.io/gorm"
 )
 
 type RepositoryParam struct {
 	gormClient *gorm.DB
-	dbClient   db_mysql.Client
+	dbClient   mysql.Client
 }
 
 type RepoOption = func(*RepositoryParam)
@@ -20,7 +20,7 @@ func WithGormClient(g *gorm.DB) RepoOption {
 	}
 }
 
-func WithDbClient(c db_mysql.Client) RepoOption {
+func WithDbClient(c mysql.Client) RepoOption {
 	return func(p *RepositoryParam) {
 		p.dbClient = c
 	}
@@ -51,11 +51,15 @@ func NewRepository(opts ...RepoOption) (*provider, error) {
 	barrelRepo := &barrel{
 		gormClient: p.gormClient,
 	}
+	fileRepo := &file{
+		gormClient: p.gormClient,
+	}
 
 	repo := &provider{
 		dbClient:   dbClient,
 		authRepo:   authRepo,
 		barrelRepo: barrelRepo,
+		filerepo:   fileRepo,
 	}
 	return repo, nil
 }

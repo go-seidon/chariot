@@ -7,13 +7,19 @@ import (
 	"github.com/go-seidon/chariot/internal/app"
 	"github.com/go-seidon/chariot/internal/auth"
 	"github.com/go-seidon/chariot/internal/barrel"
+	"github.com/go-seidon/chariot/internal/file"
 	"github.com/go-seidon/chariot/internal/repository"
 	rest_handler "github.com/go-seidon/chariot/internal/rest-handler"
+	"github.com/go-seidon/chariot/internal/storage/multipart"
 	"github.com/go-seidon/provider/datetime"
-	"github.com/go-seidon/provider/hashing"
-	"github.com/go-seidon/provider/identifier"
+	"github.com/go-seidon/provider/encoding/base64"
+	"github.com/go-seidon/provider/hashing/bcrypt"
+	"github.com/go-seidon/provider/http"
+	"github.com/go-seidon/provider/identifier/ksuid"
 	"github.com/go-seidon/provider/logging"
-	"github.com/go-seidon/provider/validation"
+	"github.com/go-seidon/provider/serialization/json"
+	"github.com/go-seidon/provider/slug/goslug"
+	"github.com/go-seidon/provider/validation/govalidator"
 	"github.com/labstack/echo/v4"
 )
 
@@ -91,6 +97,25 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		echo := echo.New()
 		server = &echoServer{echo}
 
+		goValidator := govalidator.NewValidator()
+		bcryptHasher := bcrypt.NewHasher()
+		ksuidIdentifier := ksuid.NewIdentifier()
+		goSlugger := goslug.NewSlugger()
+		jsonSerializer := json.NewSerializer()
+		base64Encoder := base64.NewEncoder()
+		httpClient := http.NewClient()
+		clock := datetime.NewClock()
+
+		storageRouter, err := app.NewDefaultStorageRouter(app.StorageRouterParam{
+			Config:     p.Config,
+			Serializer: jsonSerializer,
+			Encoder:    base64Encoder,
+			HttpClient: httpClient,
+		})
+		if err != nil {
+			return nil, err
+		}
+
 		basicHandler := rest_handler.NewBasic(rest_handler.BasicParam{
 			Config: &rest_handler.BasicConfig{
 				AppName:    config.AppName,
@@ -100,15 +125,10 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		basicGroup := echo.Group("")
 		basicGroup.GET("/", basicHandler.GetAppInfo)
 
-		validator := validation.NewGoValidator()
-		hasher := hashing.NewBcryptHasher()
-		identifier := identifier.NewKsuid()
-		clock := datetime.NewClock()
-
 		authClient := auth.NewAuthClient(auth.AuthClientParam{
-			Validator:  validator,
-			Hasher:     hasher,
-			Identifier: identifier,
+			Validator:  goValidator,
+			Hasher:     bcryptHasher,
+			Identifier: ksuidIdentifier,
 			Clock:      clock,
 			AuthRepo:   repo.GetAuth(),
 		})
@@ -122,8 +142,8 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		authClientGroup.PUT("/:id", authHandler.UpdateClientById)
 
 		barrelClient := barrel.NewBarrel(barrel.BarrelParam{
-			Validator:  validator,
-			Identifier: identifier,
+			Validator:  goValidator,
+			Identifier: ksuidIdentifier,
 			Clock:      clock,
 			BarrelRepo: repo.GetBarrel(),
 		})
@@ -135,6 +155,23 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		barrelGroup.POST("/search", barrelHandler.SearchBarrel)
 		barrelGroup.GET("/:id", barrelHandler.GetBarrelById)
 		barrelGroup.PUT("/:id", barrelHandler.UpdateBarrelById)
+
+		fileClient := file.NewFile(file.FileParam{
+			Validator:  goValidator,
+			Identifier: ksuidIdentifier,
+			Clock:      clock,
+			Slugger:    goSlugger,
+			Router:     storageRouter,
+			BarrelRepo: repo.GetBarrel(),
+			FileRepo:   repo.GetFile(),
+		})
+		fileHandler := rest_handler.NewFile(rest_handler.FileParam{
+			File:       fileClient,
+			Serializer: jsonSerializer,
+			FileParser: multipart.FileParser,
+		})
+		fileAccessGroup := echo.Group("/file")
+		fileAccessGroup.POST("", fileHandler.UploadFile)
 	}
 
 	app := &restApp{

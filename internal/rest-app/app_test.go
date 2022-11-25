@@ -81,6 +81,11 @@ var _ = Describe("App Package", func() {
 				repo.
 					EXPECT().
 					GetBarrel().
+					Times(2)
+
+				repo.
+					EXPECT().
+					GetFile().
 					Times(1)
 
 				res, err := rest_app.NewRestApp(

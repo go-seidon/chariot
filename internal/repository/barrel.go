@@ -69,11 +69,38 @@ type SearchBarrelParam struct {
 	Keyword   string
 	Statuses  []string
 	Providers []string
+	Codes     []string
 }
 
 type SearchBarrelResult struct {
 	Summary SearchBarrelSummary
 	Items   []SearchBarrelItem
+}
+
+// @note: return non-nil search items sorted by a given codes
+func (r *SearchBarrelResult) SortCodes(codes []string) []SearchBarrelItem {
+	if len(r.Items) == 0 {
+		return r.Items
+	}
+
+	dc := map[string]SearchBarrelItem{}
+	for _, item := range r.Items {
+		dc[item.Code] = SearchBarrelItem{
+			Id:        item.Id,
+			Code:      item.Code,
+			Name:      item.Name,
+			Provider:  item.Provider,
+			Status:    item.Status,
+			CreatedAt: item.CreatedAt,
+			UpdatedAt: item.UpdatedAt,
+		}
+	}
+
+	barrels := []SearchBarrelItem{}
+	for _, code := range codes {
+		barrels = append(barrels, dc[code])
+	}
+	return barrels
 }
 
 type SearchBarrelSummary struct {

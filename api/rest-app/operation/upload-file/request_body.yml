@@ -16,9 +16,9 @@ properties:
   barrels:
     type: string
     description: csv of barrel code
-  rule:
-    type: string
-    description: rule code
   meta:
     type: string
     description: json metadata
+  # rule:
+  #   type: string
+  #   description: rule code

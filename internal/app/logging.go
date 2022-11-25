@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/go-seidon/provider/logging"
+	"github.com/go-seidon/provider/logging/logrus"
 )
 
 func NewDefaultLog(config *Config, appName string) (logging.Logger, error) {
@@ -14,25 +15,25 @@ func NewDefaultLog(config *Config, appName string) (logging.Logger, error) {
 		return nil, fmt.Errorf("invalid app name")
 	}
 
-	opts := []logging.LogOption{}
+	opts := []logrus.LogOption{}
 
-	appOpt := logging.WithAppContext(appName, config.AppVersion)
+	appOpt := logrus.WithAppContext(appName, config.AppVersion)
 	opts = append(opts, appOpt)
 
 	if config.AppDebug {
-		debugOpt := logging.EnableDebugging()
+		debugOpt := logrus.EnableDebugging()
 		opts = append(opts, debugOpt)
 	}
 
 	if config.AppEnv == ENV_LOCAL || config.AppEnv == ENV_TEST {
-		prettyOpt := logging.EnablePrettyPrint()
+		prettyOpt := logrus.EnablePrettyPrint()
 		opts = append(opts, prettyOpt)
 	}
 
-	skipApp := logging.AddStackSkip("github.com/go-seidon/chariot/internal/app")
-	skipLog := logging.AddStackSkip("github.com/go-seidon/provider/logging")
+	skipApp := logrus.AddStackSkip("github.com/go-seidon/chariot/internal/app")
+	skipLog := logrus.AddStackSkip("github.com/go-seidon/provider/logging/logrus")
 	opts = append(opts, skipApp)
 	opts = append(opts, skipLog)
 
-	return logging.NewLogrusLog(opts...), nil
+	return logrus.NewLogger(opts...), nil
 }

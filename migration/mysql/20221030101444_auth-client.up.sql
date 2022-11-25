@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS `auth_client` (
   `created_at` BIGINT(20) NOT NULL,
   `updated_at` BIGINT(20) NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE uq_client_id(`client_id`)
+  UNIQUE uk_client_id(`client_id`)
 ) 
 DEFAULT CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci

@@ -57,7 +57,7 @@ paths:
             schema:
               $ref: '#/components/schemas/UploadFileRequest'
       responses:
-        '200':
+        '201':
           description: success upload file
           content:
             application/json:
@@ -69,8 +69,17 @@ paths:
                     code: 1000
                     message: success upload file
                     data:
-                      file_id: 2FfnA2ifBQDT5bMFRCvcdnIhVmg
-                      file_url: 'http://localhost:3030/file/lumba-lumba.jpg'
+                      id: 2FfnA2ifBQDT5bMFRCvcdnIhVmg
+                      slug: lumba-lumba.jpg
+                      name: Lumba Lumba
+                      mimetype: image/jpeg
+                      extension: jpg
+                      size: 2334
+                      visibility: public
+                      status: available
+                      meta:
+                        feature: profile
+                        user_id: 8c7ffa05-70c7-437e-8166-0f6a651a9575
                       uploaded_at: 1664891858856
         '400':
           $ref: '#/components/responses/BadRequest'
@@ -1377,9 +1386,6 @@ components:
         barrels:
           type: string
           description: csv of barrel code
-        rule:
-          type: string
-          description: rule code
         meta:
           type: string
           description: json metadata
@@ -1400,16 +1406,48 @@ components:
     UploadFileData:
       type: object
       required:
-        - file_id
+        - id
+        - slug
+        - name
+        - mimetype
+        - extension
+        - size
+        - visibility
+        - status
         - uploaded_at
       properties:
-        file_id:
+        id:
           type: string
-        file_url:
+        slug:
           type: string
+        name:
+          type: string
+        mimetype:
+          type: string
+        extension:
+          type: string
+        size:
+          type: integer
+          format: int64
+        visibility:
+          type: string
+          enum:
+            - public
+            - protected
+        status:
+          type: string
+          enum:
+            - uploading
+            - available
+            - deleting
+            - deleted
         uploaded_at:
           type: integer
           format: int64
+        meta:
+          type: object
+          additionalProperties:
+            type: string
     RetrieveFileBySlugResponse:
       type: string
       format: binary
