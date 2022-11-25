@@ -78,8 +78,9 @@ var _ = Describe("Hippo Storage", func() {
 			file = mock_io.NewMockReader(ctrl)
 			basicAuth = "auth-token"
 			p = storage.UploadObjectParam{
-				Data: file,
-				Id:   typeconv.String("object-id"),
+				Data:      file,
+				Id:        typeconv.String("object-id"),
+				Extension: typeconv.String("jpg"),
 			}
 			response := &hippo.UploadObjectResponseBody{
 				Code:    1000,

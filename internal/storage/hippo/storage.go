@@ -32,19 +32,24 @@ func (s *hippoStorage) UploadObject(ctx context.Context, p storage.UploadObjectP
 		return nil, err
 	}
 
+	fileName := typeconv.StringVal(p.Name)
+	if p.Extension != nil {
+		fileName = fmt.Sprintf("%s.%s", fileName, typeconv.StringVal(p.Extension))
+	}
+
 	body := bytes.NewBuffer([]byte{})
 	writer, err := s.fileWriter(multipart.WriterParam{
 		Writer:    body,
 		Reader:    p.Data,
 		FieldName: "file",
-		FileName:  typeconv.StringVal(p.Name),
+		FileName:  fileName,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	uploadObject, err := s.httpClient.Post(ctx, http.RequestParam{
-		Url:  fmt.Sprintf("%s/%s", s.config.Host, "/v1/file"),
+		Url:  fmt.Sprintf("%s/%s", s.config.Host, "v1/file"),
 		Body: body,
 		Header: map[string][]string{
 			"Content-Type":  {writer.FormDataContentType()},
