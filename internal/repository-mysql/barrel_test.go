@@ -11,6 +11,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/go-seidon/chariot/internal/repository"
 	repository_mysql "github.com/go-seidon/chariot/internal/repository-mysql"
+	"github.com/go-seidon/provider/typeconv"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"gorm.io/driver/mysql"
@@ -65,7 +66,7 @@ var _ = Describe("Barrel Repository", func() {
 				CreatedAt: currentTs,
 			}
 			checkStmt = regexp.QuoteMeta("SELECT id, code FROM `barrel` WHERE code = ? ORDER BY `barrel`.`id` LIMIT 1")
-			insertStmt = regexp.QuoteMeta("INSERT INTO `barrel` (`id`,`code`,`name`,`provider`,`status`,`created_at`) VALUES (?,?,?,?,?,?)")
+			insertStmt = regexp.QuoteMeta("INSERT INTO `barrel` (`id`,`code`,`name`,`provider`,`status`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,?)")
 			findStmt = regexp.QuoteMeta("SELECT id, code, name, provider, status, created_at FROM `barrel` WHERE id = ? ORDER BY `barrel`.`id` LIMIT 1")
 		})
 
@@ -172,6 +173,7 @@ var _ = Describe("Barrel Repository", func() {
 						p.Id, p.Code,
 						p.Name, p.Provider, p.Status,
 						p.CreatedAt.UnixMilli(),
+						p.CreatedAt.UnixMilli(),
 					).
 					WillReturnError(fmt.Errorf("network error"))
 
@@ -202,6 +204,7 @@ var _ = Describe("Barrel Repository", func() {
 						p.Id, p.Code,
 						p.Name, p.Provider, p.Status,
 						p.CreatedAt.UnixMilli(),
+						p.CreatedAt.UnixMilli(),
 					).
 					WillReturnError(fmt.Errorf("network error"))
 
@@ -230,6 +233,7 @@ var _ = Describe("Barrel Repository", func() {
 					WithArgs(
 						p.Id, p.Code,
 						p.Name, p.Provider, p.Status,
+						p.CreatedAt.UnixMilli(),
 						p.CreatedAt.UnixMilli(),
 					).
 					WillReturnResult(sqlmock.NewResult(1, 1))
@@ -266,6 +270,7 @@ var _ = Describe("Barrel Repository", func() {
 						p.Id, p.Code,
 						p.Name, p.Provider, p.Status,
 						p.CreatedAt.UnixMilli(),
+						p.CreatedAt.UnixMilli(),
 					).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 
@@ -299,6 +304,7 @@ var _ = Describe("Barrel Repository", func() {
 					WithArgs(
 						p.Id, p.Code,
 						p.Name, p.Provider, p.Status,
+						p.CreatedAt.UnixMilli(),
 						p.CreatedAt.UnixMilli(),
 					).
 					WillReturnResult(sqlmock.NewResult(1, 1))
@@ -343,6 +349,7 @@ var _ = Describe("Barrel Repository", func() {
 					WithArgs(
 						p.Id, p.Code,
 						p.Name, p.Provider, p.Status,
+						p.CreatedAt.UnixMilli(),
 						p.CreatedAt.UnixMilli(),
 					).
 					WillReturnResult(sqlmock.NewResult(1, 1))
@@ -428,6 +435,7 @@ var _ = Describe("Barrel Repository", func() {
 				Provider:  "goseidon_hippo",
 				Status:    "active",
 				CreatedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
+				UpdatedAt: typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
 			}
 			findStmt = regexp.QuoteMeta("SELECT id, code, name, provider, status, created_at, updated_at FROM `barrel` WHERE id = ? ORDER BY `barrel`.`id` LIMIT 1")
 		})
@@ -476,7 +484,7 @@ var _ = Describe("Barrel Repository", func() {
 				}).AddRow(
 					r.Id, r.Code,
 					r.Name, r.Provider, r.Status,
-					currentTs.UnixMilli(), nil,
+					currentTs.UnixMilli(), currentTs.UnixMilli(),
 				)
 
 				dbClient.
@@ -486,41 +494,6 @@ var _ = Describe("Barrel Repository", func() {
 
 				res, err := barrelRepo.FindBarrel(ctx, p)
 
-				Expect(res).To(Equal(r))
-				Expect(err).To(BeNil())
-			})
-		})
-
-		When("success find updated barrel", func() {
-			It("should return result", func() {
-				rows := sqlmock.NewRows([]string{
-					"id", "code",
-					"name", "provider", "status",
-					"created_at", "updated_at",
-				}).AddRow(
-					r.Id, r.Code,
-					r.Name, r.Provider, r.Status,
-					currentTs.UnixMilli(),
-					currentTs.UnixMilli(),
-				)
-
-				dbClient.
-					ExpectQuery(findStmt).
-					WithArgs(p.Id).
-					WillReturnRows(rows)
-
-				res, err := barrelRepo.FindBarrel(ctx, p)
-
-				updatedAt := time.UnixMilli(currentTs.UnixMilli()).UTC()
-				r := &repository.FindBarrelResult{
-					Id:        "id",
-					Code:      "code",
-					Name:      "name",
-					Provider:  "goseidon_hippo",
-					Status:    "active",
-					CreatedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
-					UpdatedAt: &updatedAt,
-				}
 				Expect(res).To(Equal(r))
 				Expect(err).To(BeNil())
 			})
@@ -954,7 +927,6 @@ var _ = Describe("Barrel Repository", func() {
 				Providers: []string{"goseidon_hippo"},
 				Codes:     []string{"hippo1"},
 			}
-			updatedAt := time.UnixMilli(currentTs.UnixMilli()).UTC()
 			r = &repository.SearchBarrelResult{
 				Summary: repository.SearchBarrelSummary{
 					TotalItems: 2,
@@ -967,6 +939,7 @@ var _ = Describe("Barrel Repository", func() {
 						Provider:  "goseidon_hippo",
 						Status:    "inactive",
 						CreatedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
+						UpdatedAt: typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
 					},
 					{
 						Id:        "id-2",
@@ -975,7 +948,7 @@ var _ = Describe("Barrel Repository", func() {
 						Provider:  "goseidon_hippo",
 						Status:    "active",
 						CreatedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
-						UpdatedAt: &updatedAt,
+						UpdatedAt: typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
 					},
 				},
 			}
@@ -1004,7 +977,7 @@ var _ = Describe("Barrel Repository", func() {
 			}).AddRow(
 				"id-1", "code-1",
 				"name-1", "goseidon_hippo", "inactive",
-				currentTs.UnixMilli(), nil,
+				currentTs.UnixMilli(), currentTs.UnixMilli(),
 			).AddRow(
 				"id-2", "code-2",
 				"name-2", "goseidon_hippo", "active",
@@ -1077,7 +1050,7 @@ var _ = Describe("Barrel Repository", func() {
 				}).AddRow(
 					"id-1", "code-1",
 					"name-1", "goseidon_hippo", "inactive",
-					currentTs.UnixMilli(), nil,
+					currentTs.UnixMilli(), currentTs.UnixMilli(),
 				)
 				dbClient.
 					ExpectQuery(searchStmt).
@@ -1117,7 +1090,7 @@ var _ = Describe("Barrel Repository", func() {
 				}).AddRow(
 					"id-1", "code-1",
 					"name-1", "goseidon_hippo", "inactive",
-					currentTs.UnixMilli(), nil,
+					currentTs.UnixMilli(), currentTs.UnixMilli(),
 				)
 				dbClient.
 					ExpectQuery(searchStmt).
@@ -1158,7 +1131,7 @@ var _ = Describe("Barrel Repository", func() {
 							Provider:  "goseidon_hippo",
 							Status:    "inactive",
 							CreatedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
-							UpdatedAt: nil,
+							UpdatedAt: typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
 						},
 					},
 				}
