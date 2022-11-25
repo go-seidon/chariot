@@ -31,6 +31,15 @@ type Config struct {
 	MySQLSecondaryDBName   string `env:"MYSQL_SECONDARY_DB_NAME"`
 
 	UploadFormSize int64 `env:"UPLOAD_FORM_SIZE"`
+
+	Barrels map[string]BarrelConfig `env:"BARRELS"`
+}
+
+type BarrelConfig struct {
+	Provider          string `env:"PROVIDER"`
+	HippoServerHost   string `env:"HIPPO_SERVER_HOST"`
+	HippoClientId     string `env:"HIPPO_CLIENT_ID"`
+	HippoClientSecret string `env:"HIPPO_CLIENT_SECRET"`
 }
 
 func NewDefaultConfig() (*Config, error) {
