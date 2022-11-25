@@ -12,6 +12,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/go-seidon/chariot/internal/repository"
 	repository_mysql "github.com/go-seidon/chariot/internal/repository-mysql"
+	"github.com/go-seidon/provider/typeconv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
@@ -69,7 +70,7 @@ var _ = Describe("Auth Repository", func() {
 				CreatedAt:    currentTs,
 			}
 			checkStmt = regexp.QuoteMeta("SELECT id, client_id FROM `auth_client` WHERE client_id = ? ORDER BY `auth_client`.`id` LIMIT 1")
-			insertStmt = regexp.QuoteMeta("INSERT INTO `auth_client` (`id`,`client_id`,`client_secret`,`name`,`type`,`status`,`created_at`) VALUES (?,?,?,?,?,?,?)")
+			insertStmt = regexp.QuoteMeta("INSERT INTO `auth_client` (`id`,`client_id`,`client_secret`,`name`,`type`,`status`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,?,?)")
 			findStmt = regexp.QuoteMeta("SELECT id, client_id, client_secret, name, type, status, created_at FROM `auth_client` WHERE id = ? ORDER BY `auth_client`.`id` LIMIT 1")
 		})
 
@@ -176,6 +177,7 @@ var _ = Describe("Auth Repository", func() {
 						p.Id, p.ClientId, p.ClientSecret,
 						p.Name, p.Type, p.Status,
 						p.CreatedAt.UnixMilli(),
+						p.CreatedAt.UnixMilli(),
 					).
 					WillReturnError(fmt.Errorf("network error"))
 
@@ -206,6 +208,7 @@ var _ = Describe("Auth Repository", func() {
 						p.Id, p.ClientId, p.ClientSecret,
 						p.Name, p.Type, p.Status,
 						p.CreatedAt.UnixMilli(),
+						p.CreatedAt.UnixMilli(),
 					).
 					WillReturnError(fmt.Errorf("network error"))
 
@@ -234,6 +237,7 @@ var _ = Describe("Auth Repository", func() {
 					WithArgs(
 						p.Id, p.ClientId, p.ClientSecret,
 						p.Name, p.Type, p.Status,
+						p.CreatedAt.UnixMilli(),
 						p.CreatedAt.UnixMilli(),
 					).
 					WillReturnResult(sqlmock.NewResult(1, 1))
@@ -270,6 +274,7 @@ var _ = Describe("Auth Repository", func() {
 						p.Id, p.ClientId, p.ClientSecret,
 						p.Name, p.Type, p.Status,
 						p.CreatedAt.UnixMilli(),
+						p.CreatedAt.UnixMilli(),
 					).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 
@@ -303,6 +308,7 @@ var _ = Describe("Auth Repository", func() {
 					WithArgs(
 						p.Id, p.ClientId, p.ClientSecret,
 						p.Name, p.Type, p.Status,
+						p.CreatedAt.UnixMilli(),
 						p.CreatedAt.UnixMilli(),
 					).
 					WillReturnResult(sqlmock.NewResult(1, 1))
@@ -345,6 +351,7 @@ var _ = Describe("Auth Repository", func() {
 					WithArgs(
 						p.Id, p.ClientId, p.ClientSecret,
 						p.Name, p.Type, p.Status,
+						p.CreatedAt.UnixMilli(),
 						p.CreatedAt.UnixMilli(),
 					).
 					WillReturnResult(sqlmock.NewResult(1, 1))
@@ -470,30 +477,6 @@ var _ = Describe("Auth Repository", func() {
 		})
 
 		When("success find client", func() {
-			It("should return result", func() {
-				rows := sqlmock.NewRows([]string{
-					"id", "client_id", "client_secret",
-					"name", "type", "status",
-					"created_at", "updated_at",
-				}).AddRow(
-					r.Id, r.ClientId, r.ClientSecret,
-					r.Name, r.Type, r.Status,
-					currentTs.UnixMilli(), nil,
-				)
-
-				dbClient.
-					ExpectQuery(findStmt).
-					WithArgs(p.Id).
-					WillReturnRows(rows)
-
-				res, err := authRepo.FindClient(ctx, p)
-
-				Expect(res).To(Equal(r))
-				Expect(err).To(BeNil())
-			})
-		})
-
-		When("success find updated client", func() {
 			It("should return result", func() {
 				rows := sqlmock.NewRows([]string{
 					"id", "client_id", "client_secret",
@@ -968,6 +951,7 @@ var _ = Describe("Auth Repository", func() {
 						Type:         "basic",
 						Status:       "inactive",
 						CreatedAt:    time.UnixMilli(currentTs.UnixMilli()).UTC(),
+						UpdatedAt:    &updatedAt,
 					},
 					{
 						Id:           "id-2",
@@ -1002,7 +986,7 @@ var _ = Describe("Auth Repository", func() {
 			}).AddRow(
 				"id-1", "client-id-1", "client-secret-1",
 				"name-1", "basic", "inactive",
-				currentTs.UnixMilli(), nil,
+				currentTs.UnixMilli(), currentTs.UnixMilli(),
 			).AddRow(
 				"id-2", "client-id-2", "client-secret-2",
 				"name-2", "basic", "active",
@@ -1107,7 +1091,7 @@ var _ = Describe("Auth Repository", func() {
 				}).AddRow(
 					"id-1", "client-id-1", "client-secret-1",
 					"name-1", "basic", "inactive",
-					currentTs.UnixMilli(), nil,
+					currentTs.UnixMilli(), currentTs.UnixMilli(),
 				)
 				dbClient.
 					ExpectQuery(searchStmt).
@@ -1145,7 +1129,7 @@ var _ = Describe("Auth Repository", func() {
 							Type:         "basic",
 							Status:       "inactive",
 							CreatedAt:    time.UnixMilli(currentTs.UnixMilli()).UTC(),
-							UpdatedAt:    nil,
+							UpdatedAt:    typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
 						},
 					},
 				}

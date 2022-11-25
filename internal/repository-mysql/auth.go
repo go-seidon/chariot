@@ -2,11 +2,11 @@ package repository_mysql
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"time"
 
 	"github.com/go-seidon/chariot/internal/repository"
+	"github.com/go-seidon/provider/typeconv"
 	"gorm.io/gorm"
 	"gorm.io/plugin/dbresolver"
 )
@@ -48,6 +48,7 @@ func (r *auth) CreateClient(ctx context.Context, p repository.CreateClientParam)
 		Type:         p.Type,
 		Status:       p.Status,
 		CreatedAt:    p.CreatedAt.UnixMilli(),
+		UpdatedAt:    p.CreatedAt.UnixMilli(),
 	}
 	createRes := tx.Create(createParam)
 	if createRes.Error != nil {
@@ -104,12 +105,6 @@ func (r *auth) FindClient(ctx context.Context, p repository.FindClientParam) (*r
 		return nil, findRes.Error
 	}
 
-	var updatedAt *time.Time
-	if authClient.UpdatedAt.Valid {
-		updatedDate := time.UnixMilli(authClient.UpdatedAt.Int64).UTC()
-		updatedAt = &updatedDate
-	}
-
 	res := &repository.FindClientResult{
 		Id:           authClient.Id,
 		ClientId:     authClient.ClientId,
@@ -118,7 +113,7 @@ func (r *auth) FindClient(ctx context.Context, p repository.FindClientParam) (*r
 		Type:         authClient.Type,
 		Status:       authClient.Status,
 		CreatedAt:    time.UnixMilli(authClient.CreatedAt).UTC(),
-		UpdatedAt:    updatedAt,
+		UpdatedAt:    typeconv.Time(time.UnixMilli(authClient.UpdatedAt).UTC()),
 	}
 	return res, nil
 }
@@ -189,7 +184,7 @@ func (r *auth) UpdateClient(ctx context.Context, p repository.UpdateClientParam)
 		Type:         authClient.Type,
 		Status:       authClient.Status,
 		CreatedAt:    time.UnixMilli(authClient.CreatedAt).UTC(),
-		UpdatedAt:    time.UnixMilli(authClient.UpdatedAt.Int64).UTC(),
+		UpdatedAt:    time.UnixMilli(authClient.UpdatedAt).UTC(),
 	}
 	return res, nil
 }
@@ -239,12 +234,6 @@ func (r *auth) SearchClient(ctx context.Context, p repository.SearchClientParam)
 	}
 
 	for _, authClient := range authClients {
-		var updatedAt *time.Time
-		if authClient.UpdatedAt.Valid {
-			updated := time.UnixMilli(authClient.UpdatedAt.Int64).UTC()
-			updatedAt = &updated
-		}
-
 		res.Items = append(res.Items, repository.SearchClientItem{
 			Id:           authClient.Id,
 			ClientId:     authClient.ClientId,
@@ -253,7 +242,7 @@ func (r *auth) SearchClient(ctx context.Context, p repository.SearchClientParam)
 			Type:         authClient.Type,
 			Status:       authClient.Status,
 			CreatedAt:    time.UnixMilli(authClient.CreatedAt).UTC(),
-			UpdatedAt:    updatedAt,
+			UpdatedAt:    typeconv.Time(time.UnixMilli(authClient.UpdatedAt).UTC()),
 		})
 	}
 
@@ -276,14 +265,14 @@ func NewAuth(p AuthParam) *auth {
 }
 
 type AuthClient struct {
-	Id           string        `gorm:"column:id;primaryKey"`
-	ClientId     string        `gorm:"column:client_id"`
-	ClientSecret string        `gorm:"column:client_secret"`
-	Name         string        `gorm:"column:name"`
-	Type         string        `gorm:"column:type"`
-	Status       string        `gorm:"column:status"`
-	CreatedAt    int64         `gorm:"column:created_at"`
-	UpdatedAt    sql.NullInt64 `gorm:"column:updated_at;autoUpdateTime:milli;<-:update"`
+	Id           string `gorm:"column:id;primaryKey"`
+	ClientId     string `gorm:"column:client_id"`
+	ClientSecret string `gorm:"column:client_secret"`
+	Name         string `gorm:"column:name"`
+	Type         string `gorm:"column:type"`
+	Status       string `gorm:"column:status"`
+	CreatedAt    int64  `gorm:"column:created_at"`
+	UpdatedAt    int64  `gorm:"column:updated_at;autoUpdateTime:milli"`
 }
 
 func (AuthClient) TableName() string {
