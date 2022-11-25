@@ -18,6 +18,19 @@ const (
 	STATUS_INACTIVE = "inactive"
 )
 
+const (
+	PROVIDER_HIPPO    = "goseidon_hippo"
+	PROVIDER_AWSS3    = "aws_s3"
+	PROVIDER_GCLOUD   = "gcloud_storage"
+	PROVIDER_ALICLOUD = "alicloud_oss"
+)
+
+var (
+	SUPPORTED_PROVIDERS = map[string]bool{
+		PROVIDER_HIPPO: true,
+	}
+)
+
 type Barrel interface {
 	CreateBarrel(ctx context.Context, p CreateBarrelParam) (*CreateBarrelResult, *system.SystemError)
 	FindBarrelById(ctx context.Context, p FindBarrelByIdParam) (*FindBarrelByIdResult, *system.SystemError)
@@ -28,7 +41,7 @@ type Barrel interface {
 type CreateBarrelParam struct {
 	Code     string `validate:"required,lowercase,alphanum,min=6,max=128" label:"code"`
 	Name     string `validate:"required,printascii,min=3,max=64" label:"name"`
-	Provider string `validate:"required,oneof='goseidon_hippo' 'aws_s3' 'gcloud_storage' 'alicloud_oss'" label:"provider"`
+	Provider string `validate:"required,oneof='goseidon_hippo'" label:"provider"`
 	Status   string `validate:"required,oneof='active' 'inactive'" label:"status"`
 }
 
@@ -61,7 +74,7 @@ type UpdateBarrelByIdParam struct {
 	Id       string `validate:"required,min=5,max=64" label:"id"`
 	Code     string `validate:"required,lowercase,alphanum,min=6,max=128" label:"code"`
 	Name     string `validate:"required,printascii,min=3,max=64" label:"name"`
-	Provider string `validate:"required,oneof='goseidon_hippo' 'aws_s3' 'gcloud_storage' 'alicloud_oss'" label:"provider"`
+	Provider string `validate:"required,oneof='goseidon_hippo'" label:"provider"`
 	Status   string `validate:"required,oneof='active' 'inactive'" label:"status"`
 }
 
