@@ -40,7 +40,7 @@ type UploadFileInfo struct {
 
 type UploadFileSetting struct {
 	Visibility string   `validate:"required,oneof='public' 'protected'" label:"visibility"`
-	Barrels    []string `validate:"required,unique,min=1,max=3,dive,min=1,max=128" label:"barrels"`
+	Barrels    []string `validate:"required,unique,min=1,max=3,dive,required,lowercase,alphanum,min=6,max=128" label:"barrels"`
 }
 
 type UploadFileParam struct {
