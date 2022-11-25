@@ -109,7 +109,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 
 	searchItems := searchBarrels.SortCodes(p.Setting.Barrels)
 	barrels := []struct {
-		FileId     string
+		ObjectId   string
 		BarrelId   string
 		BarrelCode string
 	}{}
@@ -123,11 +123,11 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 		}
 
 		barrels = append(barrels, struct {
-			FileId     string
+			ObjectId   string
 			BarrelId   string
 			BarrelCode string
 		}{
-			FileId:     id,
+			ObjectId:   id,
 			BarrelId:   searchItem.Id,
 			BarrelCode: searchItem.Code,
 		})
@@ -146,7 +146,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 
 	uploadFile, err := uploader.UploadObject(ctx, storage.UploadObjectParam{
 		Data:      p.Data,
-		Id:        typeconv.String(primaryBarrel.FileId),
+		Id:        typeconv.String(primaryBarrel.ObjectId),
 		Name:      typeconv.String(p.Info.Name),
 		Mimetype:  typeconv.String(p.Info.Mimetype),
 		Extension: typeconv.String(p.Info.Extension),
@@ -186,7 +186,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 	}
 
 	createFile, err := f.fileRepo.CreateFile(ctx, repository.CreateFileParam{
-		Id:         primaryBarrel.FileId,
+		Id:         primaryBarrel.ObjectId,
 		Slug:       slug,
 		Name:       p.Info.Name,
 		Mimetype:   p.Info.Mimetype,
