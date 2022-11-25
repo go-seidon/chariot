@@ -80,6 +80,7 @@ func (r *file) CreateFile(ctx context.Context, p repository.CreateFileParam) (*r
 				ExternalId: externalId,
 				Priority:   location.Priority,
 				CreatedAt:  location.CreatedAt.UnixMilli(),
+				UpdatedAt:  location.CreatedAt.UnixMicro(),
 				UploadedAt: uploadedAt,
 			})
 		}
@@ -95,6 +96,7 @@ func (r *file) CreateFile(ctx context.Context, p repository.CreateFileParam) (*r
 		Visibility: p.Visibility,
 		Status:     p.Status,
 		CreatedAt:  p.CreatedAt.UnixMilli(),
+		UpdatedAt:  p.CreatedAt.UnixMilli(),
 		UploadedAt: p.UploadedAt.UnixMilli(),
 		Metas:      metas,
 		Locations:  locations,
@@ -111,7 +113,7 @@ func (r *file) CreateFile(ctx context.Context, p repository.CreateFileParam) (*r
 	uploadFile := tx.
 		Select(`id, slug, name, mimetype, extension, size, visibility, status, created_at, uploaded_at`).
 		Preload("Metas", func(tx *gorm.DB) *gorm.DB {
-			return tx.Select("file_id, key, value")
+			return tx.Select("file_id, `key`, value")
 		}).
 		Preload("Locations", func(tx *gorm.DB) *gorm.DB {
 			return tx.Select("file_id, barrel_id, external_id, priority, status, created_at, uploaded_at")
@@ -195,7 +197,7 @@ type File struct {
 	Status     string         `gorm:"column:status"`
 	UploadedAt int64          `gorm:"column:uploaded_at"`
 	CreatedAt  int64          `gorm:"column:created_at"`
-	UpdatedAt  sql.NullInt64  `gorm:"column:updated_at;autoUpdateTime:milli;<-:update"`
+	UpdatedAt  int64          `gorm:"column:updated_at;autoUpdateTime:milli"`
 	DeletedAt  sql.NullInt64  `gorm:"column:deleted_at;<-:update"`
 	Metas      []FileMeta     `gorm:"foreignKey:FileId;references:Id"`
 	Locations  []FileLocation `gorm:"foreignKey:FileId;references:Id"`
@@ -213,7 +215,7 @@ type FileLocation struct {
 	Status     string         `gorm:"column:status"`
 	UploadedAt sql.NullInt64  `gorm:"column:uploaded_at"`
 	CreatedAt  int64          `gorm:"column:created_at"`
-	UpdatedAt  sql.NullInt64  `gorm:"column:updated_at;autoUpdateTime:milli;<-:update"`
+	UpdatedAt  int64          `gorm:"column:updated_at;autoUpdateTime:milli"`
 }
 
 func (FileLocation) TableName() string {

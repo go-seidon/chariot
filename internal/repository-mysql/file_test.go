@@ -98,11 +98,11 @@ var _ = Describe("File Repository", func() {
 				UploadedAt: currentTs,
 			}
 			checkStmt = regexp.QuoteMeta("SELECT id, slug FROM `file` WHERE slug = ? ORDER BY `file`.`id` LIMIT 1")
-			createFileStmt = regexp.QuoteMeta("INSERT INTO `file` (`id`,`slug`,`name`,`mimetype`,`extension`,`size`,`visibility`,`status`,`uploaded_at`,`created_at`) VALUES (?,?,?,?,?,?,?,?,?,?)")
-			createMetaStmt = regexp.QuoteMeta("INSERT INTO `file_meta` (`file_id`,`key`,`value`) VALUES (?,?,?) ON DUPLICATE KEY UPDATE `file_id`=VALUES(`file_id`)")
-			createLocationStmt = regexp.QuoteMeta("INSERT INTO `file_location` (`file_id`,`barrel_id`,`external_id`,`priority`,`status`,`uploaded_at`,`created_at`) VALUES (?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `file_id`=VALUES(`file_id`)")
+			createFileStmt = regexp.QuoteMeta("INSERT INTO `file` (`id`,`slug`,`name`,`mimetype`,`extension`,`size`,`visibility`,`status`,`uploaded_at`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
+			createMetaStmt = regexp.QuoteMeta("INSERT INTO `file_meta` (`file_id`,`key`,`value`) VALUES (?,?,?),(?,?,?) ON DUPLICATE KEY UPDATE `file_id`=VALUES(`file_id`)")
+			createLocationStmt = regexp.QuoteMeta("INSERT INTO `file_location` (`file_id`,`barrel_id`,`external_id`,`priority`,`status`,`uploaded_at`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,?,?),(?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `file_id`=VALUES(`file_id`)")
 			findFileStmt = regexp.QuoteMeta("SELECT id, slug, name, mimetype, extension, size, visibility, status, created_at, uploaded_at FROM `file` WHERE id = ? ORDER BY `file`.`id` LIMIT 1")
-			findMetaStmt = regexp.QuoteMeta("SELECT file_id, key, value FROM `file_meta` WHERE `file_meta`.`file_id` = ?")
+			findMetaStmt = regexp.QuoteMeta("SELECT file_id, `key`, value FROM `file_meta` WHERE `file_meta`.`file_id` = ?")
 			findLocationStmt = regexp.QuoteMeta("SELECT file_id, barrel_id, external_id, priority, status, created_at, uploaded_at FROM `file_location` WHERE `file_location`.`file_id` = ?")
 
 			findFileRows = sqlmock.NewRows([]string{
@@ -222,6 +222,7 @@ var _ = Describe("File Repository", func() {
 						p.Mimetype, p.Extension, p.Size,
 						p.Visibility, p.Status,
 						p.CreatedAt.UnixMilli(),
+						p.CreatedAt.UnixMilli(),
 						p.UploadedAt.UnixMilli(),
 					).
 					WillReturnError(fmt.Errorf("network error"))
@@ -254,6 +255,7 @@ var _ = Describe("File Repository", func() {
 						p.Mimetype, p.Extension, p.Size,
 						p.Visibility, p.Status,
 						p.CreatedAt.UnixMilli(),
+						p.CreatedAt.UnixMilli(),
 						p.UploadedAt.UnixMilli(),
 					).
 					WillReturnError(fmt.Errorf("network error"))
@@ -284,6 +286,7 @@ var _ = Describe("File Repository", func() {
 						p.Id, p.Slug, p.Name,
 						p.Mimetype, p.Extension, p.Size,
 						p.Visibility, p.Status,
+						p.CreatedAt.UnixMilli(),
 						p.CreatedAt.UnixMilli(),
 						p.UploadedAt.UnixMilli(),
 					).
@@ -330,6 +333,7 @@ var _ = Describe("File Repository", func() {
 						p.Mimetype, p.Extension, p.Size,
 						p.Visibility, p.Status,
 						p.CreatedAt.UnixMilli(),
+						p.CreatedAt.UnixMilli(),
 						p.UploadedAt.UnixMilli(),
 					).
 					WillReturnResult(sqlmock.NewResult(1, 1))
@@ -373,6 +377,7 @@ var _ = Describe("File Repository", func() {
 						p.Id, p.Slug, p.Name,
 						p.Mimetype, p.Extension, p.Size,
 						p.Visibility, p.Status,
+						p.CreatedAt.UnixMilli(),
 						p.CreatedAt.UnixMilli(),
 						p.UploadedAt.UnixMilli(),
 					).
@@ -428,6 +433,7 @@ var _ = Describe("File Repository", func() {
 						p.Id, p.Slug, p.Name,
 						p.Mimetype, p.Extension, p.Size,
 						p.Visibility, p.Status,
+						p.CreatedAt.UnixMilli(),
 						p.CreatedAt.UnixMilli(),
 						p.UploadedAt.UnixMilli(),
 					).
@@ -497,6 +503,7 @@ var _ = Describe("File Repository", func() {
 						p.Id, slug, p.Name,
 						p.Mimetype, p.Extension, p.Size,
 						p.Visibility, p.Status,
+						p.CreatedAt.UnixMilli(),
 						p.CreatedAt.UnixMilli(),
 						p.UploadedAt.UnixMilli(),
 					).
