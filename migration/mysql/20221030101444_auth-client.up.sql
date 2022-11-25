@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS `auth_client` (
   `name` VARCHAR(128) NOT NULL,
   `type` VARCHAR(32) NOT NULL,
   `status` VARCHAR(16) NOT NULL,
-  `created_at` BIGINT(20) NOT NULL,
-  `updated_at` BIGINT(20) NULL DEFAULT NULL,
+  `created_at` BIGINT NOT NULL,
+  `updated_at` BIGINT NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE uk_client_id(`client_id`)
 ) 

@@ -77,7 +77,6 @@ TBA
 ```
 
 ## Todo
-1. change barrel & auth_client.updated_at not nullable (add default value implementation on repo)
 2. change slug generation using random text generator
 3. Devs: Adjustment code structure
 - Move mysql repo as repository subfolder
