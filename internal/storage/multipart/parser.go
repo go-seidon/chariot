@@ -8,45 +8,44 @@ import (
 	"strings"
 )
 
-type Parser = func(p ParserParam) (*FileInfo, error)
-
-type ParserParam struct {
-	Header *multipart.FileHeader
-	Data   io.ReadSeeker
-}
+type Parser = func(h *multipart.FileHeader) (*FileInfo, error)
 
 type FileInfo struct {
 	Name      string
 	Size      int64
 	Extension string
 	Mimetype  string
+	Data      multipart.File
 }
 
-func FileParser(p ParserParam) (*FileInfo, error) {
-	if p.Header == nil {
+func FileParser(h *multipart.FileHeader) (*FileInfo, error) {
+	if h == nil {
 		return nil, fmt.Errorf("invalid header")
 	}
-	if p.Data == nil {
-		return nil, fmt.Errorf("invalid data")
+
+	data, err := h.Open()
+	if err != nil {
+		return nil, err
 	}
 
 	buff := make([]byte, 512)
-	n, err := p.Data.Read(buff)
+	n, err := data.Read(buff)
 	if err != nil && err != io.EOF {
 		return nil, err
 	}
 	buff = buff[:n]
 
-	_, err = p.Data.Seek(0, io.SeekStart)
+	_, err = data.Seek(0, io.SeekStart)
 	if err != nil {
 		return nil, err
 	}
 
 	info := &FileInfo{
-		Size:      p.Header.Size,
-		Name:      FileName(p.Header),
-		Extension: FileExtension(p.Header),
+		Size:      h.Size,
+		Name:      FileName(h),
+		Extension: FileExtension(h),
 		Mimetype:  http.DetectContentType(buff),
+		Data:      data,
 	}
 	return info, nil
 }
