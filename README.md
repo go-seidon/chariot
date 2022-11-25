@@ -3,7 +3,7 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=go-seidon_chariot&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=go-seidon_chariot)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=go-seidon_chariot&metric=coverage)](https://sonarcloud.io/summary/new_code?id=go-seidon_chariot)
 
-Storage provider aggregator, managing multiple files from various location
+Storage aggregator, managing multiple files from various storage provider
 
 ## Technical Stack
 1. Transport layer
@@ -77,57 +77,56 @@ TBA
 ```
 
 ## Todo
-1. Devs: Adjustment code structure
+1. change barrel & auth_client.updated_at not nullable (add default value implementation on repo)
+2. change slug generation using random text generator
+3. Devs: Adjustment code structure
 - Move mysql repo as repository subfolder
 - Remove dash foldering name
 
-2. Client: RetrieveFile
-- auto failover
-3. Client: GenerateAccessToken
-4. Client: RetrieveFile 
-- secure access (file_url on upload file result)
-- add file config (access_host)
+4. Client: RetrieveFile
+- auto failover from various location
 5. Admin: GetFileById
 6. Admin: SearchFiles
-7. Admin: DeleteFile
-8. Daemon: ProceedPendingUpload
-9. Client: Secure UploadFile (using auth)
+
+7. Client: Secure Access
+- GenerateAccessToken
+8. Client: Secure RetrieveFile 
+- secure retrieval (file_url on upload file result)
+- access duration
+- add file config (access_host)
+9. Client: Secure UploadFile
 - secure upload (e.g: presigned url, upload session, etc)
+
 10. Client: Upload rule (size, resolution, extension)
 - rule is required
 - rule may have no attribute (free rule)
 - rule may have multiple attribute
 - if rule have multiple attribute than it's mean we're matching at least one rule (or clause)
-11. Admin: dashboard monitoring
+11. Daemon: ProceedPendingUpload
+12. Admin: DeleteFile
+
+13. Admin: dashboard monitoring
 - data exporter: CollectMetris
 - prometheus (rest exporter)
 - grafana
-12. Devs: Enhance rest app
+14. Devs: Enhancement
 - Override default error handler (echo router)
+- Add request logging
+- Unit test: app NewDefaultConfig
+- Unit test: storage multipart test
 
 ## Nice to have
-1. Custom file access (custom link with certain limitation, e.g: access duration)
-2. File backup
-3. SDK
-- golang
-- javascript
-- php
-4. Middleware
-- mux
-- fiber
-- echo
-- gin
-5. Repository provider
-- mongo
-- postgre
-6. Retrieve image
+1. File backup
+2. SDK (golang, js, php)
+3. Middleware (mux, fiber, echo, gin)
+4. Repository provider (mongo, postgres)
+5. Retrieve image
 - Image manipulation capability (width, height, compression)
-7. Caching support
-8. Enhance Rule: mimetype
-9. Unit test: app NewDefaultConfig
+6. Caching support
+7. Enhance Rule: mimetype
 
 ## Issue
-No issue right now
+1. Gorm not inserting has many association, issue since gorm@v1.22.5 [ref](https://github.com/go-gorm/gorm/issues/5754). Current solution is to use gorm@v1.22.4, mysql@v1.2.1, dbresolver@v1.1.0
 
 ## Note
 1. Make sure X-Correlation-Id is in a string data type and not greater than 128 char length
