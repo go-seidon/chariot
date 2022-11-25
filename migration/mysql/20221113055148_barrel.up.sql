@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS `barrel` (
   `created_at` BIGINT(20) NOT NULL,
   `updated_at` BIGINT(20) NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE uq_code(`code`)
+  UNIQUE uk_code(`code`)
 ) 
 DEFAULT CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci
