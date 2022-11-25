@@ -2,11 +2,11 @@ package repository_mysql
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"time"
 
 	"github.com/go-seidon/chariot/internal/repository"
+	"github.com/go-seidon/provider/typeconv"
 	"gorm.io/gorm"
 	"gorm.io/plugin/dbresolver"
 )
@@ -47,6 +47,7 @@ func (r *barrel) CreateBarrel(ctx context.Context, p repository.CreateBarrelPara
 		Provider:  p.Provider,
 		Status:    p.Status,
 		CreatedAt: p.CreatedAt.UnixMilli(),
+		UpdatedAt: p.CreatedAt.UnixMilli(),
 	}
 	createRes := tx.Create(createParam)
 	if createRes.Error != nil {
@@ -102,12 +103,6 @@ func (r *barrel) FindBarrel(ctx context.Context, p repository.FindBarrelParam) (
 		return nil, findRes.Error
 	}
 
-	var updatedAt *time.Time
-	if barrel.UpdatedAt.Valid {
-		updatedDate := time.UnixMilli(barrel.UpdatedAt.Int64).UTC()
-		updatedAt = &updatedDate
-	}
-
 	res := &repository.FindBarrelResult{
 		Id:        barrel.Id,
 		Code:      barrel.Code,
@@ -115,7 +110,7 @@ func (r *barrel) FindBarrel(ctx context.Context, p repository.FindBarrelParam) (
 		Provider:  barrel.Provider,
 		Status:    barrel.Status,
 		CreatedAt: time.UnixMilli(barrel.CreatedAt).UTC(),
-		UpdatedAt: updatedAt,
+		UpdatedAt: typeconv.Time(time.UnixMilli(barrel.UpdatedAt).UTC()),
 	}
 	return res, nil
 }
@@ -185,7 +180,7 @@ func (r *barrel) UpdateBarrel(ctx context.Context, p repository.UpdateBarrelPara
 		Provider:  barrel.Provider,
 		Status:    barrel.Status,
 		CreatedAt: time.UnixMilli(barrel.CreatedAt).UTC(),
-		UpdatedAt: time.UnixMilli(barrel.UpdatedAt.Int64).UTC(),
+		UpdatedAt: time.UnixMilli(barrel.UpdatedAt).UTC(),
 	}
 	return res, nil
 }
@@ -245,12 +240,6 @@ func (r *barrel) SearchBarrel(ctx context.Context, p repository.SearchBarrelPara
 	}
 
 	for _, barrel := range barrels {
-		var updatedAt *time.Time
-		if barrel.UpdatedAt.Valid {
-			updated := time.UnixMilli(barrel.UpdatedAt.Int64).UTC()
-			updatedAt = &updated
-		}
-
 		res.Items = append(res.Items, repository.SearchBarrelItem{
 			Id:        barrel.Id,
 			Code:      barrel.Code,
@@ -258,7 +247,7 @@ func (r *barrel) SearchBarrel(ctx context.Context, p repository.SearchBarrelPara
 			Provider:  barrel.Provider,
 			Status:    barrel.Status,
 			CreatedAt: time.UnixMilli(barrel.CreatedAt).UTC(),
-			UpdatedAt: updatedAt,
+			UpdatedAt: typeconv.Time(time.UnixMilli(barrel.UpdatedAt).UTC()),
 		})
 	}
 
@@ -280,13 +269,13 @@ func NewBarrel(p BarrelParam) *barrel {
 }
 
 type Barrel struct {
-	Id        string        `gorm:"column:id;primaryKey"`
-	Code      string        `gorm:"column:code"`
-	Name      string        `gorm:"column:name"`
-	Provider  string        `gorm:"column:provider"`
-	Status    string        `gorm:"column:status"`
-	CreatedAt int64         `gorm:"column:created_at"`
-	UpdatedAt sql.NullInt64 `gorm:"column:updated_at;autoUpdateTime:milli;<-:update"`
+	Id        string `gorm:"column:id;primaryKey"`
+	Code      string `gorm:"column:code"`
+	Name      string `gorm:"column:name"`
+	Provider  string `gorm:"column:provider"`
+	Status    string `gorm:"column:status"`
+	CreatedAt int64  `gorm:"column:created_at"`
+	UpdatedAt int64  `gorm:"column:updated_at;autoUpdateTime:milli"`
 }
 
 func (Barrel) TableName() string {
