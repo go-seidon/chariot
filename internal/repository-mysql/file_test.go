@@ -10,7 +10,9 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/go-seidon/chariot/internal/repository"
 	repository_mysql "github.com/go-seidon/chariot/internal/repository-mysql"
+	random "github.com/go-seidon/provider/random/mock"
 	"github.com/go-seidon/provider/typeconv"
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"gorm.io/driver/mysql"
@@ -23,6 +25,7 @@ var _ = Describe("File Repository", func() {
 			ctx                context.Context
 			currentTs          time.Time
 			dbClient           sqlmock.Sqlmock
+			randomizer         *random.MockRandomizer
 			fileRepo           repository.File
 			p                  repository.CreateFileParam
 			checkStmt          string
@@ -59,8 +62,13 @@ var _ = Describe("File Repository", func() {
 			if err != nil {
 				AbortSuite("failed create gorm client: " + err.Error())
 			}
+
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			randomizer = random.NewMockRandomizer(ctrl)
 			fileRepo = repository_mysql.NewFile(repository_mysql.FileParam{
 				GormClient: gormClient,
+				Randomizer: randomizer,
 			})
 
 			p = repository.CreateFileParam{
@@ -202,6 +210,65 @@ var _ = Describe("File Repository", func() {
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("failed rollback during generate slug prefix", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				checkRows := sqlmock.
+					NewRows([]string{"id", "slug"}).
+					AddRow("id", "slug")
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.Slug).
+					WillReturnRows(checkRows)
+
+				randomizer.
+					EXPECT().
+					String(gomock.Eq(7)).
+					Return("", fmt.Errorf("disk error")).
+					Times(1)
+
+				dbClient.
+					ExpectRollback().
+					WillReturnError(fmt.Errorf("network error"))
+
+				res, err := fileRepo.CreateFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("failed generate slug prefix", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				checkRows := sqlmock.
+					NewRows([]string{"id", "slug"}).
+					AddRow("id", "slug")
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.Slug).
+					WillReturnRows(checkRows)
+
+				randomizer.
+					EXPECT().
+					String(gomock.Eq(7)).
+					Return("", fmt.Errorf("disk error")).
+					Times(1)
+
+				dbClient.
+					ExpectRollback()
+
+				res, err := fileRepo.CreateFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("disk error")))
 			})
 		})
 
@@ -496,7 +563,13 @@ var _ = Describe("File Repository", func() {
 					WithArgs(p.Slug).
 					WillReturnRows(checkRows)
 
-				slug := fmt.Sprintf("%s-%s", p.Id, p.Slug)
+				randomizer.
+					EXPECT().
+					String(gomock.Eq(7)).
+					Return("abcdefg", nil).
+					Times(1)
+
+				slug := "dolphin-22-abcdefg.jpg"
 				dbClient.
 					ExpectExec(createFileStmt).
 					WithArgs(
