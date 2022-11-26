@@ -77,10 +77,6 @@ TBA
 ```
 
 ## Todo
-3. Devs: Adjustment code structure
-- Move mysql repo as repository subfolder
-- Remove dash foldering name
-
 4. Client: RetrieveFile
 - auto failover from various location
 5. Admin: GetFileById
