@@ -5,9 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-seidon/chariot/internal/repository"
+	"github.com/go-seidon/provider/random"
 	"github.com/go-seidon/provider/typeconv"
 	"gorm.io/gorm"
 	"gorm.io/plugin/dbresolver"
@@ -15,6 +17,7 @@ import (
 
 type file struct {
 	gormClient *gorm.DB
+	randomizer random.Randomizer
 }
 
 func (r *file) CreateFile(ctx context.Context, p repository.CreateFileParam) (*repository.CreateFileResult, error) {
@@ -30,17 +33,31 @@ func (r *file) CreateFile(ctx context.Context, p repository.CreateFileParam) (*r
 	checkRes := tx.
 		Select(`id, slug`).
 		First(&File{}, "slug = ?", slug)
-	if checkRes.Error == nil {
-		slug = fmt.Sprintf("%s-%s", p.Id, slug)
-	}
-
-	if checkRes.Error != nil &&
-		!errors.Is(checkRes.Error, gorm.ErrRecordNotFound) {
+	failedCheckSlug := checkRes.Error != nil &&
+		!errors.Is(checkRes.Error, gorm.ErrRecordNotFound)
+	if failedCheckSlug {
 		txRes := tx.Rollback()
 		if txRes.Error != nil {
 			return nil, txRes.Error
 		}
 		return nil, checkRes.Error
+	}
+
+	if checkRes.Error == nil {
+		token, err := r.randomizer.String(7)
+		if err != nil {
+			txRes := tx.Rollback()
+			if txRes.Error != nil {
+				return nil, txRes.Error
+			}
+			return nil, err
+		}
+
+		slug = strings.TrimSuffix(slug, "."+p.Extension)
+		slug = fmt.Sprintf("%s-%s", slug, token)
+		if p.Extension != "" {
+			slug = fmt.Sprintf("%s.%s", slug, p.Extension)
+		}
 	}
 
 	metas := []FileMeta{}
@@ -178,11 +195,13 @@ func (r *file) CreateFile(ctx context.Context, p repository.CreateFileParam) (*r
 
 type FileParam struct {
 	GormClient *gorm.DB
+	Randomizer random.Randomizer
 }
 
 func NewFile(p FileParam) *file {
 	return &file{
 		gormClient: p.GormClient,
+		randomizer: p.Randomizer,
 	}
 }
 

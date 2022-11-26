@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/go-seidon/provider/mysql"
+	"github.com/go-seidon/provider/random/crypto"
 	"gorm.io/gorm"
 )
 
@@ -53,6 +54,7 @@ func NewRepository(opts ...RepoOption) (*provider, error) {
 	}
 	fileRepo := &file{
 		gormClient: p.gormClient,
+		randomizer: crypto.NewRandomizer(),
 	}
 
 	repo := &provider{
