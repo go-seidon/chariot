@@ -1,10 +1,10 @@
-package rest_handler
+package resthandler
 
 import (
 	"net/http"
 	"strings"
 
-	rest_app "github.com/go-seidon/chariot/generated/rest-app"
+	"github.com/go-seidon/chariot/generated/restapp"
 	"github.com/go-seidon/chariot/internal/file"
 	"github.com/go-seidon/chariot/internal/storage/multipart"
 	"github.com/go-seidon/provider/serialization"
@@ -21,7 +21,7 @@ type fileHandler struct {
 func (h *fileHandler) UploadFile(ctx echo.Context) error {
 	fileHeader, ferr := ctx.FormFile("file")
 	if ferr != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+		return echo.NewHTTPError(http.StatusBadRequest, &restapp.ResponseBodyInfo{
 			Code:    status.INVALID_PARAM,
 			Message: ferr.Error(),
 		})
@@ -29,7 +29,7 @@ func (h *fileHandler) UploadFile(ctx echo.Context) error {
 
 	fileInfo, ferr := h.fileParser(fileHeader)
 	if ferr != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+		return echo.NewHTTPError(http.StatusBadRequest, &restapp.ResponseBodyInfo{
 			Code:    status.INVALID_PARAM,
 			Message: ferr.Error(),
 		})
@@ -40,7 +40,7 @@ func (h *fileHandler) UploadFile(ctx echo.Context) error {
 	if metas != "" {
 		err := h.serializer.Unmarshal([]byte(metas), &meta)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+			return echo.NewHTTPError(http.StatusBadRequest, &restapp.ResponseBodyInfo{
 				Code:    status.INVALID_PARAM,
 				Message: err.Error(),
 			})
@@ -64,31 +64,31 @@ func (h *fileHandler) UploadFile(ctx echo.Context) error {
 	if err != nil {
 		switch err.Code {
 		case status.INVALID_PARAM:
-			return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+			return echo.NewHTTPError(http.StatusBadRequest, &restapp.ResponseBodyInfo{
 				Code:    err.Code,
 				Message: err.Message,
 			})
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, &rest_app.ResponseBodyInfo{
+		return echo.NewHTTPError(http.StatusInternalServerError, &restapp.ResponseBodyInfo{
 			Code:    err.Code,
 			Message: err.Message,
 		})
 	}
 
-	return ctx.JSON(http.StatusCreated, &rest_app.UploadFileResponse{
+	return ctx.JSON(http.StatusCreated, &restapp.UploadFileResponse{
 		Code:    uploadFile.Success.Code,
 		Message: uploadFile.Success.Message,
-		Data: rest_app.UploadFileData{
+		Data: restapp.UploadFileData{
 			Id:         uploadFile.Id,
 			Slug:       uploadFile.Slug,
 			Name:       uploadFile.Name,
 			Extension:  uploadFile.Extension,
 			Size:       uploadFile.Size,
 			Mimetype:   uploadFile.Mimetype,
-			Visibility: rest_app.UploadFileDataVisibility(uploadFile.Visibility),
-			Status:     rest_app.UploadFileDataStatus(uploadFile.Status),
+			Visibility: restapp.UploadFileDataVisibility(uploadFile.Visibility),
+			Status:     restapp.UploadFileDataStatus(uploadFile.Status),
 			UploadedAt: uploadFile.UploadedAt.UnixMilli(),
-			Meta: &rest_app.UploadFileData_Meta{
+			Meta: &restapp.UploadFileData_Meta{
 				AdditionalProperties: uploadFile.Meta,
 			},
 		},

@@ -1,4 +1,4 @@
-package rest_app
+package restapp
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/go-seidon/chariot/internal/barrel"
 	"github.com/go-seidon/chariot/internal/file"
 	"github.com/go-seidon/chariot/internal/repository"
-	rest_handler "github.com/go-seidon/chariot/internal/rest-handler"
+	"github.com/go-seidon/chariot/internal/resthandler"
 	"github.com/go-seidon/chariot/internal/storage/multipart"
 	"github.com/go-seidon/provider/datetime"
 	"github.com/go-seidon/provider/encoding/base64"
@@ -116,8 +116,8 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			return nil, err
 		}
 
-		basicHandler := rest_handler.NewBasic(rest_handler.BasicParam{
-			Config: &rest_handler.BasicConfig{
+		basicHandler := resthandler.NewBasic(resthandler.BasicParam{
+			Config: &resthandler.BasicConfig{
 				AppName:    config.AppName,
 				AppVersion: config.AppVersion,
 			},
@@ -132,7 +132,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			Clock:      clock,
 			AuthRepo:   repo.GetAuth(),
 		})
-		authHandler := rest_handler.NewAuth(rest_handler.AuthParam{
+		authHandler := resthandler.NewAuth(resthandler.AuthParam{
 			AuthClient: authClient,
 		})
 		authClientGroup := echo.Group("/v1/auth-client")
@@ -147,7 +147,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			Clock:      clock,
 			BarrelRepo: repo.GetBarrel(),
 		})
-		barrelHandler := rest_handler.NewBarrel(rest_handler.BarrelParam{
+		barrelHandler := resthandler.NewBarrel(resthandler.BarrelParam{
 			Barrel: barrelClient,
 		})
 		barrelGroup := echo.Group("/v1/barrel")
@@ -165,7 +165,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			BarrelRepo: repo.GetBarrel(),
 			FileRepo:   repo.GetFile(),
 		})
-		fileHandler := rest_handler.NewFile(rest_handler.FileParam{
+		fileHandler := resthandler.NewFile(resthandler.FileParam{
 			File:       fileClient,
 			Serializer: jsonSerializer,
 			FileParser: multipart.FileParser,

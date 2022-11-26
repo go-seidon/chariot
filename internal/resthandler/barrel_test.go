@@ -1,4 +1,4 @@
-package rest_handler_test
+package resthandler_test
 
 import (
 	"bytes"
@@ -7,10 +7,10 @@ import (
 	"net/http/httptest"
 	"time"
 
-	rest_app "github.com/go-seidon/chariot/generated/rest-app"
+	"github.com/go-seidon/chariot/generated/restapp"
 	"github.com/go-seidon/chariot/internal/barrel"
 	mock_barrel "github.com/go-seidon/chariot/internal/barrel/mock"
-	rest_handler "github.com/go-seidon/chariot/internal/rest-handler"
+	"github.com/go-seidon/chariot/internal/resthandler"
 	"github.com/go-seidon/provider/system"
 	"github.com/golang/mock/gomock"
 	"github.com/labstack/echo/v4"
@@ -33,7 +33,7 @@ var _ = Describe("Auth Handler", func() {
 
 		BeforeEach(func() {
 			currentTs = time.Now()
-			reqBody := &rest_app.CreateBarrelRequest{
+			reqBody := &restapp.CreateBarrelRequest{
 				Code:     "code",
 				Name:     "name",
 				Provider: "goseidon_hipo",
@@ -51,7 +51,7 @@ var _ = Describe("Auth Handler", func() {
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
 			barrelClient = mock_barrel.NewMockBarrel(ctrl)
-			barrelHandler := rest_handler.NewBarrel(rest_handler.BarrelParam{
+			barrelHandler := resthandler.NewBarrel(resthandler.BarrelParam{
 				Barrel: barrelClient,
 			})
 			h = barrelHandler.CreateBarrel
@@ -95,7 +95,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1002,
 						Message: "invalid request",
 					},
@@ -118,7 +118,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1002,
 						Message: "invalid data",
 					},
@@ -141,7 +141,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 500,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1001,
 						Message: "network error",
 					},
@@ -159,14 +159,14 @@ var _ = Describe("Auth Handler", func() {
 
 				err := h(ctx)
 
-				res := &rest_app.CreateBarrelResponse{}
+				res := &restapp.CreateBarrelResponse{}
 				json.Unmarshal(rec.Body.Bytes(), res)
 
 				Expect(err).To(BeNil())
 				Expect(rec.Code).To(Equal(http.StatusCreated))
 				Expect(res.Code).To(Equal(int32(1000)))
 				Expect(res.Message).To(Equal("success create barrel"))
-				Expect(res.Data).To(Equal(rest_app.CreateBarrelData{
+				Expect(res.Data).To(Equal(restapp.CreateBarrelData{
 					Id:        createRes.Id,
 					Code:      createRes.Code,
 					Name:      createRes.Name,
@@ -204,7 +204,7 @@ var _ = Describe("Auth Handler", func() {
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
 			barrelClient = mock_barrel.NewMockBarrel(ctrl)
-			barrelHandler := rest_handler.NewBarrel(rest_handler.BarrelParam{
+			barrelHandler := resthandler.NewBarrel(resthandler.BarrelParam{
 				Barrel: barrelClient,
 			})
 			h = barrelHandler.GetBarrelById
@@ -241,7 +241,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1002,
 						Message: "invalid data",
 					},
@@ -264,7 +264,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 500,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1001,
 						Message: "network error",
 					},
@@ -287,7 +287,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 404,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1004,
 						Message: "not found",
 					},
@@ -307,14 +307,14 @@ var _ = Describe("Auth Handler", func() {
 
 				updatedAt := findRes.UpdatedAt.UnixMilli()
 
-				res := &rest_app.GetBarrelByIdResponse{}
+				res := &restapp.GetBarrelByIdResponse{}
 				json.Unmarshal(rec.Body.Bytes(), res)
 
 				Expect(err).To(BeNil())
 				Expect(rec.Code).To(Equal(http.StatusOK))
 				Expect(res.Code).To(Equal(int32(1000)))
 				Expect(res.Message).To(Equal("success find barrel"))
-				Expect(res.Data).To(Equal(rest_app.GetBarrelByIdData{
+				Expect(res.Data).To(Equal(restapp.GetBarrelByIdData{
 					Id:        findRes.Id,
 					Code:      findRes.Code,
 					Name:      findRes.Name,
@@ -340,7 +340,7 @@ var _ = Describe("Auth Handler", func() {
 
 		BeforeEach(func() {
 			currentTs = time.Now().UTC()
-			reqBody := &rest_app.UpdateBarrelByIdRequest{
+			reqBody := &restapp.UpdateBarrelByIdRequest{
 				Code:     "code",
 				Name:     "name",
 				Provider: "goseidon_hippo",
@@ -360,7 +360,7 @@ var _ = Describe("Auth Handler", func() {
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
 			barrelClient = mock_barrel.NewMockBarrel(ctrl)
-			barrelHandler := rest_handler.NewBarrel(rest_handler.BarrelParam{
+			barrelHandler := resthandler.NewBarrel(resthandler.BarrelParam{
 				Barrel: barrelClient,
 			})
 			h = barrelHandler.UpdateBarrelById
@@ -406,7 +406,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1002,
 						Message: "invalid request",
 					},
@@ -429,7 +429,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1002,
 						Message: "invalid data",
 					},
@@ -452,7 +452,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 404,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1004,
 						Message: "barrel is not available",
 					},
@@ -475,7 +475,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 500,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1001,
 						Message: "network error",
 					},
@@ -493,14 +493,14 @@ var _ = Describe("Auth Handler", func() {
 
 				err := h(ctx)
 
-				res := &rest_app.UpdateBarrelByIdResponse{}
+				res := &restapp.UpdateBarrelByIdResponse{}
 				json.Unmarshal(rec.Body.Bytes(), res)
 
 				Expect(err).To(BeNil())
 				Expect(rec.Code).To(Equal(http.StatusOK))
 				Expect(res.Code).To(Equal(int32(1000)))
 				Expect(res.Message).To(Equal("success update barrel"))
-				Expect(res.Data).To(Equal(rest_app.UpdateBarrelByIdData{
+				Expect(res.Data).To(Equal(restapp.UpdateBarrelByIdData{
 					Id:        updateRes.Id,
 					Code:      updateRes.Code,
 					Name:      updateRes.Name,
@@ -527,13 +527,13 @@ var _ = Describe("Auth Handler", func() {
 		BeforeEach(func() {
 			currentTs = time.Now().UTC()
 			keyword := "goseidon"
-			reqBody := &rest_app.SearchBarrelRequest{
-				Filter: &rest_app.SearchBarrelFilter{
-					StatusIn:   &[]rest_app.SearchBarrelFilterStatusIn{"active"},
-					ProviderIn: &[]rest_app.SearchBarrelFilterProviderIn{"goseidon_hippo"},
+			reqBody := &restapp.SearchBarrelRequest{
+				Filter: &restapp.SearchBarrelFilter{
+					StatusIn:   &[]restapp.SearchBarrelFilterStatusIn{"active"},
+					ProviderIn: &[]restapp.SearchBarrelFilterProviderIn{"goseidon_hippo"},
 				},
 				Keyword: &keyword,
-				Pagination: &rest_app.RequestPagination{
+				Pagination: &restapp.RequestPagination{
 					Page:       2,
 					TotalItems: 24,
 				},
@@ -550,7 +550,7 @@ var _ = Describe("Auth Handler", func() {
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
 			barrelClient = mock_barrel.NewMockBarrel(ctrl)
-			barrelHandler := rest_handler.NewBarrel(rest_handler.BarrelParam{
+			barrelHandler := resthandler.NewBarrel(resthandler.BarrelParam{
 				Barrel: barrelClient,
 			})
 			h = barrelHandler.SearchBarrel
@@ -613,7 +613,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1002,
 						Message: "invalid request",
 					},
@@ -636,7 +636,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1002,
 						Message: "invalid data",
 					},
@@ -659,7 +659,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 500,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1001,
 						Message: "network error",
 					},
@@ -688,18 +688,18 @@ var _ = Describe("Auth Handler", func() {
 
 				err := h(ctx)
 
-				res := &rest_app.SearchBarrelResponse{}
+				res := &restapp.SearchBarrelResponse{}
 				json.Unmarshal(rec.Body.Bytes(), res)
 
 				Expect(err).To(BeNil())
 				Expect(rec.Code).To(Equal(http.StatusOK))
 				Expect(res.Code).To(Equal(int32(1000)))
 				Expect(res.Message).To(Equal("success search barrel"))
-				Expect(res.Data.Summary).To(Equal(rest_app.SearchBarrelSummary{
+				Expect(res.Data.Summary).To(Equal(restapp.SearchBarrelSummary{
 					Page:       2,
 					TotalItems: 0,
 				}))
-				Expect(res.Data.Items).To(Equal([]rest_app.SearchBarrelItem{}))
+				Expect(res.Data.Items).To(Equal([]restapp.SearchBarrelItem{}))
 			})
 		})
 
@@ -734,18 +734,18 @@ var _ = Describe("Auth Handler", func() {
 
 				err := h(ctx)
 
-				res := &rest_app.SearchBarrelResponse{}
+				res := &restapp.SearchBarrelResponse{}
 				json.Unmarshal(rec.Body.Bytes(), res)
 
 				Expect(err).To(BeNil())
 				Expect(rec.Code).To(Equal(http.StatusOK))
 				Expect(res.Code).To(Equal(int32(1000)))
 				Expect(res.Message).To(Equal("success search barrel"))
-				Expect(res.Data.Summary).To(Equal(rest_app.SearchBarrelSummary{
+				Expect(res.Data.Summary).To(Equal(restapp.SearchBarrelSummary{
 					Page:       2,
 					TotalItems: 1,
 				}))
-				Expect(res.Data.Items).To(Equal([]rest_app.SearchBarrelItem{
+				Expect(res.Data.Items).To(Equal([]restapp.SearchBarrelItem{
 					{
 						Id:        "id-1",
 						Code:      "code-1",
@@ -769,7 +769,7 @@ var _ = Describe("Auth Handler", func() {
 
 				err := h(ctx)
 
-				res := &rest_app.SearchBarrelResponse{}
+				res := &restapp.SearchBarrelResponse{}
 				json.Unmarshal(rec.Body.Bytes(), res)
 
 				updatedAt := currentTs.UnixMilli()
@@ -777,11 +777,11 @@ var _ = Describe("Auth Handler", func() {
 				Expect(rec.Code).To(Equal(http.StatusOK))
 				Expect(res.Code).To(Equal(int32(1000)))
 				Expect(res.Message).To(Equal("success search barrel"))
-				Expect(res.Data.Summary).To(Equal(rest_app.SearchBarrelSummary{
+				Expect(res.Data.Summary).To(Equal(restapp.SearchBarrelSummary{
 					Page:       2,
 					TotalItems: 2,
 				}))
-				Expect(res.Data.Items).To(Equal([]rest_app.SearchBarrelItem{
+				Expect(res.Data.Items).To(Equal([]restapp.SearchBarrelItem{
 					{
 						Id:        "id-1",
 						Code:      "code-1",

@@ -1,4 +1,4 @@
-package rest_app_test
+package restapp_test
 
 import (
 	"context"
@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/go-seidon/chariot/internal/app"
-	rest_app "github.com/go-seidon/chariot/internal/rest-app"
+	"github.com/go-seidon/chariot/internal/restapp"
 
 	mock_repository "github.com/go-seidon/chariot/internal/repository/mock"
-	mock_restapp "github.com/go-seidon/chariot/internal/rest-app/mock"
+	mock_restapp "github.com/go-seidon/chariot/internal/restapp/mock"
 	mock_logging "github.com/go-seidon/provider/logging/mock"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
@@ -26,7 +26,7 @@ var _ = Describe("App Package", func() {
 	Context("NewRestApp function", Label("unit"), func() {
 		When("config is not specified", func() {
 			It("should return error", func() {
-				res, err := rest_app.NewRestApp()
+				res, err := restapp.NewRestApp()
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("invalid config")))
@@ -38,8 +38,8 @@ var _ = Describe("App Package", func() {
 				config := &app.Config{
 					RepositoryProvider: "mysql",
 				}
-				res, err := rest_app.NewRestApp(
-					rest_app.WithConfig(config),
+				res, err := restapp.NewRestApp(
+					restapp.WithConfig(config),
 				)
 
 				Expect(res).ToNot(BeNil())
@@ -55,9 +55,9 @@ var _ = Describe("App Package", func() {
 					RepositoryProvider: "mysql",
 				}
 				logger := mock_logging.NewMockLogger(ctrl)
-				res, err := rest_app.NewRestApp(
-					rest_app.WithConfig(config),
-					rest_app.WithLogger(logger),
+				res, err := restapp.NewRestApp(
+					restapp.WithConfig(config),
+					restapp.WithLogger(logger),
 				)
 
 				Expect(res).ToNot(BeNil())
@@ -88,9 +88,9 @@ var _ = Describe("App Package", func() {
 					GetFile().
 					Times(1)
 
-				res, err := rest_app.NewRestApp(
-					rest_app.WithConfig(config),
-					rest_app.WithRepository(repo),
+				res, err := restapp.NewRestApp(
+					restapp.WithConfig(config),
+					restapp.WithRepository(repo),
 				)
 
 				Expect(res).ToNot(BeNil())
@@ -106,9 +106,9 @@ var _ = Describe("App Package", func() {
 					RepositoryProvider: "mysql",
 				}
 				server := mock_restapp.NewMockServer(ctrl)
-				res, err := rest_app.NewRestApp(
-					rest_app.WithConfig(config),
-					rest_app.WithServer(server),
+				res, err := restapp.NewRestApp(
+					restapp.WithConfig(config),
+					restapp.WithServer(server),
 				)
 
 				Expect(res).ToNot(BeNil())
@@ -139,11 +139,11 @@ var _ = Describe("App Package", func() {
 				RESTAppHost: "host",
 				RESTAppPort: 1,
 			}
-			rApp, _ = rest_app.NewRestApp(
-				rest_app.WithConfig(config),
-				rest_app.WithServer(server),
-				rest_app.WithLogger(logger),
-				rest_app.WithRepository(repo),
+			rApp, _ = restapp.NewRestApp(
+				restapp.WithConfig(config),
+				restapp.WithServer(server),
+				restapp.WithLogger(logger),
+				restapp.WithRepository(repo),
 			)
 		})
 
@@ -266,11 +266,11 @@ var _ = Describe("App Package", func() {
 				RESTAppHost: "host",
 				RESTAppPort: 1,
 			}
-			rApp, _ = rest_app.NewRestApp(
-				rest_app.WithConfig(config),
-				rest_app.WithServer(server),
-				rest_app.WithLogger(logger),
-				rest_app.WithRepository(repo),
+			rApp, _ = restapp.NewRestApp(
+				restapp.WithConfig(config),
+				restapp.WithServer(server),
+				restapp.WithLogger(logger),
+				restapp.WithRepository(repo),
 			)
 		})
 

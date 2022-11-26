@@ -1,4 +1,4 @@
-package rest_app
+package restapp
 
 import (
 	"github.com/go-seidon/chariot/internal/app"

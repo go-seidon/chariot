@@ -47,8 +47,8 @@ This command should run all the test available on this project.
 1. REST App
 
 ```
-  $ make run-rest-app
-  $ make build-rest-app
+  $ make run-restapp
+  $ make build-restapp
 ```
 
 ### Docker

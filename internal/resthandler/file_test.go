@@ -1,4 +1,4 @@
-package rest_handler_test
+package resthandler_test
 
 import (
 	"bytes"
@@ -9,10 +9,10 @@ import (
 	"net/http/httptest"
 	"time"
 
-	rest_app "github.com/go-seidon/chariot/generated/rest-app"
+	"github.com/go-seidon/chariot/generated/restapp"
 	"github.com/go-seidon/chariot/internal/file"
 	mock_file "github.com/go-seidon/chariot/internal/file/mock"
-	rest_handler "github.com/go-seidon/chariot/internal/rest-handler"
+	"github.com/go-seidon/chariot/internal/resthandler"
 	"github.com/go-seidon/chariot/internal/storage/multipart"
 	"github.com/go-seidon/provider/serialization/json"
 	serialization "github.com/go-seidon/provider/serialization/mock"
@@ -90,7 +90,7 @@ var _ = Describe("Basic Handler", func() {
 			serializer = serialization.NewMockSerializer(ctrl)
 			jsonSerializer := json.NewSerializer()
 			fileClient = mock_file.NewMockFile(ctrl)
-			fileHandler := rest_handler.NewFile(rest_handler.FileParam{
+			fileHandler := resthandler.NewFile(resthandler.FileParam{
 				Serializer: jsonSerializer,
 				File:       fileClient,
 				FileParser: func(h *mime_multipart.FileHeader) (*multipart.FileInfo, error) {
@@ -156,7 +156,7 @@ var _ = Describe("Basic Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1002,
 						Message: "no multipart boundary param in Content-Type",
 					},
@@ -166,7 +166,7 @@ var _ = Describe("Basic Handler", func() {
 
 		When("failed parse file", func() {
 			It("should return error", func() {
-				fileHandler := rest_handler.NewFile(rest_handler.FileParam{
+				fileHandler := resthandler.NewFile(resthandler.FileParam{
 					Serializer: serializer,
 					File:       fileClient,
 					FileParser: func(h *mime_multipart.FileHeader) (*multipart.FileInfo, error) {
@@ -177,7 +177,7 @@ var _ = Describe("Basic Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1002,
 						Message: "disk error",
 					},
@@ -187,7 +187,7 @@ var _ = Describe("Basic Handler", func() {
 
 		When("failed parse meta", func() {
 			It("should return error", func() {
-				fileHandler := rest_handler.NewFile(rest_handler.FileParam{
+				fileHandler := resthandler.NewFile(resthandler.FileParam{
 					Serializer: serializer,
 					File:       fileClient,
 					FileParser: func(h *mime_multipart.FileHeader) (*multipart.FileInfo, error) {
@@ -211,7 +211,7 @@ var _ = Describe("Basic Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1002,
 						Message: "invalid data type",
 					},
@@ -234,7 +234,7 @@ var _ = Describe("Basic Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1002,
 						Message: "invalid param",
 					},
@@ -257,7 +257,7 @@ var _ = Describe("Basic Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 500,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1001,
 						Message: "network error",
 					},
@@ -275,23 +275,23 @@ var _ = Describe("Basic Handler", func() {
 
 				err := h(ctx)
 
-				res := &rest_app.UploadFileResponse{}
+				res := &restapp.UploadFileResponse{}
 				encoding_json.Unmarshal(rec.Body.Bytes(), res)
 
 				Expect(err).To(BeNil())
 				Expect(res.Code).To(Equal(uploadRes.Success.Code))
 				Expect(res.Message).To(Equal(uploadRes.Success.Message))
-				Expect(res.Data).To(Equal(rest_app.UploadFileData{
+				Expect(res.Data).To(Equal(restapp.UploadFileData{
 					Id:         uploadRes.Id,
 					Slug:       uploadRes.Slug,
 					Name:       uploadRes.Name,
 					Extension:  uploadRes.Extension,
 					Mimetype:   uploadRes.Mimetype,
 					Size:       uploadRes.Size,
-					Status:     rest_app.UploadFileDataStatus(uploadRes.Status),
-					Visibility: rest_app.UploadFileDataVisibility(uploadRes.Visibility),
+					Status:     restapp.UploadFileDataStatus(uploadRes.Status),
+					Visibility: restapp.UploadFileDataVisibility(uploadRes.Visibility),
 					UploadedAt: uploadRes.UploadedAt.Local().UnixMilli(),
-					Meta: &rest_app.UploadFileData_Meta{
+					Meta: &restapp.UploadFileData_Meta{
 						AdditionalProperties: uploadRes.Meta,
 					},
 				}))

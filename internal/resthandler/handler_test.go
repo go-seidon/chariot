@@ -1,4 +1,4 @@
-package rest_handler_test
+package resthandler_test
 
 import (
 	"testing"

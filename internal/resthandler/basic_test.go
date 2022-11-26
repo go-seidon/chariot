@@ -1,12 +1,12 @@
-package rest_handler_test
+package resthandler_test
 
 import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 
-	rest_app "github.com/go-seidon/chariot/generated/rest-app"
-	rest_handler "github.com/go-seidon/chariot/internal/rest-handler"
+	"github.com/go-seidon/chariot/generated/restapp"
+	"github.com/go-seidon/chariot/internal/resthandler"
 	"github.com/labstack/echo/v4"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -27,8 +27,8 @@ var _ = Describe("Basic Handler", func() {
 
 			e := echo.New()
 			ctx = e.NewContext(req, rec)
-			basicHandler := rest_handler.NewBasic(rest_handler.BasicParam{
-				Config: &rest_handler.BasicConfig{
+			basicHandler := resthandler.NewBasic(resthandler.BasicParam{
+				Config: &resthandler.BasicConfig{
 					AppName:    "name",
 					AppVersion: "version",
 				},
@@ -41,14 +41,14 @@ var _ = Describe("Basic Handler", func() {
 
 				err := h(ctx)
 
-				res := &rest_app.GetAppInfoResponse{}
+				res := &restapp.GetAppInfoResponse{}
 				json.Unmarshal(rec.Body.Bytes(), res)
 
 				Expect(err).To(BeNil())
 				Expect(rec.Code).To(Equal(http.StatusOK))
 				Expect(res.Code).To(Equal(int32(1000)))
 				Expect(res.Message).To(Equal("success get app info"))
-				Expect(res.Data).To(Equal(rest_app.GetAppInfoData{
+				Expect(res.Data).To(Equal(restapp.GetAppInfoData{
 					AppName:    "name",
 					AppVersion: "version",
 				}))

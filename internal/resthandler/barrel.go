@@ -1,81 +1,80 @@
-package rest_handler
+package resthandler
 
 import (
 	"net/http"
 
-	rest_app "github.com/go-seidon/chariot/generated/rest-app"
-	"github.com/go-seidon/chariot/internal/auth"
+	"github.com/go-seidon/chariot/generated/restapp"
+	"github.com/go-seidon/chariot/internal/barrel"
 	"github.com/go-seidon/provider/status"
 	"github.com/labstack/echo/v4"
 )
 
-type authHandler struct {
-	authClient auth.AuthClient
+type barrelHandler struct {
+	barrelClient barrel.Barrel
 }
 
-func (h *authHandler) CreateClient(ctx echo.Context) error {
-	req := &rest_app.CreateAuthClientRequest{}
+func (h *barrelHandler) CreateBarrel(ctx echo.Context) error {
+	req := &restapp.CreateBarrelRequest{}
 	if err := ctx.Bind(req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+		return echo.NewHTTPError(http.StatusBadRequest, &restapp.ResponseBodyInfo{
 			Code:    status.INVALID_PARAM,
 			Message: "invalid request",
 		})
 	}
 
-	createRes, err := h.authClient.CreateClient(ctx.Request().Context(), auth.CreateClientParam{
-		ClientId:     req.ClientId,
-		ClientSecret: req.ClientSecret,
-		Name:         req.Name,
-		Type:         string(req.Type),
-		Status:       string(req.Status),
+	createRes, err := h.barrelClient.CreateBarrel(ctx.Request().Context(), barrel.CreateBarrelParam{
+		Code:     req.Code,
+		Name:     req.Name,
+		Provider: string(req.Provider),
+		Status:   string(req.Status),
 	})
 	if err != nil {
 		switch err.Code {
 		case status.INVALID_PARAM:
-			return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+			return echo.NewHTTPError(http.StatusBadRequest, &restapp.ResponseBodyInfo{
 				Code:    err.Code,
 				Message: err.Message,
 			})
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, &rest_app.ResponseBodyInfo{
+		return echo.NewHTTPError(http.StatusInternalServerError, &restapp.ResponseBodyInfo{
 			Code:    err.Code,
 			Message: err.Message,
 		})
 	}
 
-	return ctx.JSON(http.StatusCreated, &rest_app.CreateAuthClientResponse{
+	return ctx.JSON(http.StatusCreated, &restapp.CreateBarrelResponse{
 		Code:    createRes.Success.Code,
 		Message: createRes.Success.Message,
-		Data: rest_app.CreateAuthClientData{
+		Data: restapp.CreateBarrelData{
 			Id:        createRes.Id,
+			Code:      createRes.Code,
 			Name:      createRes.Name,
-			Type:      createRes.Type,
+			Provider:  createRes.Provider,
 			Status:    createRes.Status,
-			ClientId:  createRes.ClientId,
 			CreatedAt: createRes.CreatedAt.UnixMilli(),
 		},
 	})
 }
 
-func (h *authHandler) GetClientById(ctx echo.Context) error {
-	findRes, err := h.authClient.FindClientById(ctx.Request().Context(), auth.FindClientByIdParam{
+func (h *barrelHandler) GetBarrelById(ctx echo.Context) error {
+	findRes, err := h.barrelClient.FindBarrelById(ctx.Request().Context(), barrel.FindBarrelByIdParam{
 		Id: ctx.Param("id"),
 	})
 	if err != nil {
 		switch err.Code {
 		case status.INVALID_PARAM:
-			return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+			return echo.NewHTTPError(http.StatusBadRequest, &restapp.ResponseBodyInfo{
 				Code:    err.Code,
 				Message: err.Message,
 			})
 		case status.RESOURCE_NOTFOUND:
-			return echo.NewHTTPError(http.StatusNotFound, &rest_app.ResponseBodyInfo{
+			return echo.NewHTTPError(http.StatusNotFound, &restapp.ResponseBodyInfo{
 				Code:    err.Code,
 				Message: err.Message,
 			})
 		}
 
-		return echo.NewHTTPError(http.StatusInternalServerError, &rest_app.ResponseBodyInfo{
+		return echo.NewHTTPError(http.StatusInternalServerError, &restapp.ResponseBodyInfo{
 			Code:    err.Code,
 			Message: err.Message,
 		})
@@ -87,75 +86,75 @@ func (h *authHandler) GetClientById(ctx echo.Context) error {
 		updatedAt = &updatedDate
 	}
 
-	return ctx.JSON(http.StatusOK, &rest_app.GetAuthClientByIdResponse{
+	return ctx.JSON(http.StatusOK, &restapp.GetBarrelByIdResponse{
 		Code:    findRes.Success.Code,
 		Message: findRes.Success.Message,
-		Data: rest_app.GetAuthClientByIdData{
+		Data: restapp.GetBarrelByIdData{
 			Id:        findRes.Id,
+			Code:      findRes.Code,
 			Name:      findRes.Name,
-			Type:      findRes.Type,
+			Provider:  findRes.Provider,
 			Status:    findRes.Status,
-			ClientId:  findRes.ClientId,
 			CreatedAt: findRes.CreatedAt.UnixMilli(),
 			UpdatedAt: updatedAt,
 		},
 	})
 }
 
-func (h *authHandler) UpdateClientById(ctx echo.Context) error {
-	req := &rest_app.UpdateAuthClientByIdRequest{}
+func (h *barrelHandler) UpdateBarrelById(ctx echo.Context) error {
+	req := &restapp.UpdateBarrelByIdRequest{}
 	if err := ctx.Bind(req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+		return echo.NewHTTPError(http.StatusBadRequest, &restapp.ResponseBodyInfo{
 			Code:    status.INVALID_PARAM,
 			Message: "invalid request",
 		})
 	}
 
-	updateRes, err := h.authClient.UpdateClientById(ctx.Request().Context(), auth.UpdateClientByIdParam{
+	updateRes, err := h.barrelClient.UpdateBarrelById(ctx.Request().Context(), barrel.UpdateBarrelByIdParam{
 		Id:       ctx.Param("id"),
-		ClientId: req.ClientId,
+		Code:     req.Code,
 		Name:     req.Name,
-		Type:     string(req.Type),
+		Provider: string(req.Provider),
 		Status:   string(req.Status),
 	})
 	if err != nil {
 		switch err.Code {
 		case status.INVALID_PARAM:
-			return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+			return echo.NewHTTPError(http.StatusBadRequest, &restapp.ResponseBodyInfo{
 				Code:    err.Code,
 				Message: err.Message,
 			})
 		case status.RESOURCE_NOTFOUND:
-			return echo.NewHTTPError(http.StatusNotFound, &rest_app.ResponseBodyInfo{
+			return echo.NewHTTPError(http.StatusNotFound, &restapp.ResponseBodyInfo{
 				Code:    err.Code,
 				Message: err.Message,
 			})
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, &rest_app.ResponseBodyInfo{
+		return echo.NewHTTPError(http.StatusInternalServerError, &restapp.ResponseBodyInfo{
 			Code:    err.Code,
 			Message: err.Message,
 		})
 	}
 
-	return ctx.JSON(http.StatusOK, &rest_app.UpdateAuthClientByIdResponse{
+	return ctx.JSON(http.StatusOK, &restapp.UpdateBarrelByIdResponse{
 		Code:    updateRes.Success.Code,
 		Message: updateRes.Success.Message,
-		Data: rest_app.UpdateAuthClientByIdData{
+		Data: restapp.UpdateBarrelByIdData{
 			Id:        updateRes.Id,
+			Code:      updateRes.Code,
 			Name:      updateRes.Name,
-			Type:      updateRes.Type,
+			Provider:  updateRes.Provider,
 			Status:    updateRes.Status,
-			ClientId:  updateRes.ClientId,
 			CreatedAt: updateRes.CreatedAt.UnixMilli(),
 			UpdatedAt: updateRes.UpdatedAt.UnixMilli(),
 		},
 	})
 }
 
-func (h *authHandler) SearchClient(ctx echo.Context) error {
-	req := &rest_app.SearchAuthClientRequest{}
+func (h *barrelHandler) SearchBarrel(ctx echo.Context) error {
+	req := &restapp.SearchBarrelRequest{}
 	if err := ctx.Bind(req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+		return echo.NewHTTPError(http.StatusBadRequest, &restapp.ResponseBodyInfo{
 			Code:    status.INVALID_PARAM,
 			Message: "invalid request",
 		})
@@ -175,6 +174,15 @@ func (h *authHandler) SearchClient(ctx echo.Context) error {
 		}
 	}
 
+	providers := []string{}
+	if req.Filter != nil {
+		if req.Filter.ProviderIn != nil {
+			for _, provider := range *req.Filter.ProviderIn {
+				providers = append(providers, string(provider))
+			}
+		}
+	}
+
 	totalItems := int32(0)
 	page := int64(0)
 	if req.Pagination != nil {
@@ -182,27 +190,28 @@ func (h *authHandler) SearchClient(ctx echo.Context) error {
 		page = req.Pagination.Page
 	}
 
-	searchRes, err := h.authClient.SearchClient(ctx.Request().Context(), auth.SearchClientParam{
+	searchRes, err := h.barrelClient.SearchBarrel(ctx.Request().Context(), barrel.SearchBarrelParam{
 		Keyword:    keyword,
 		Statuses:   statuses,
+		Providers:  providers,
 		TotalItems: totalItems,
 		Page:       page,
 	})
 	if err != nil {
 		switch err.Code {
 		case status.INVALID_PARAM:
-			return echo.NewHTTPError(http.StatusBadRequest, &rest_app.ResponseBodyInfo{
+			return echo.NewHTTPError(http.StatusBadRequest, &restapp.ResponseBodyInfo{
 				Code:    err.Code,
 				Message: err.Message,
 			})
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, &rest_app.ResponseBodyInfo{
+		return echo.NewHTTPError(http.StatusInternalServerError, &restapp.ResponseBodyInfo{
 			Code:    err.Code,
 			Message: err.Message,
 		})
 	}
 
-	items := []rest_app.SearchAuthClientItem{}
+	items := []restapp.SearchBarrelItem{}
 	for _, searchItem := range searchRes.Items {
 		var updatedAt *int64
 		if searchItem.UpdatedAt != nil {
@@ -210,23 +219,23 @@ func (h *authHandler) SearchClient(ctx echo.Context) error {
 			updatedAt = &updated
 		}
 
-		items = append(items, rest_app.SearchAuthClientItem{
+		items = append(items, restapp.SearchBarrelItem{
 			Id:        searchItem.Id,
-			ClientId:  searchItem.ClientId,
+			Code:      searchItem.Code,
 			Name:      searchItem.Name,
-			Type:      searchItem.Type,
+			Provider:  searchItem.Provider,
 			Status:    searchItem.Status,
 			CreatedAt: searchItem.CreatedAt.UnixMilli(),
 			UpdatedAt: updatedAt,
 		})
 	}
 
-	return ctx.JSON(http.StatusOK, &rest_app.SearchAuthClientResponse{
+	return ctx.JSON(http.StatusOK, &restapp.SearchBarrelResponse{
 		Code:    searchRes.Success.Code,
 		Message: searchRes.Success.Message,
-		Data: rest_app.SearchAuthClientData{
+		Data: restapp.SearchBarrelData{
 			Items: items,
-			Summary: rest_app.SearchAuthClientSummary{
+			Summary: restapp.SearchBarrelSummary{
 				Page:       searchRes.Summary.Page,
 				TotalItems: searchRes.Summary.TotalItems,
 			},
@@ -234,12 +243,12 @@ func (h *authHandler) SearchClient(ctx echo.Context) error {
 	})
 }
 
-type AuthParam struct {
-	AuthClient auth.AuthClient
+type BarrelParam struct {
+	Barrel barrel.Barrel
 }
 
-func NewAuth(p AuthParam) *authHandler {
-	return &authHandler{
-		authClient: p.AuthClient,
+func NewBarrel(p BarrelParam) *barrelHandler {
+	return &barrelHandler{
+		barrelClient: p.Barrel,
 	}
 }

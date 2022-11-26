@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/go-seidon/chariot/internal/app"
-	rest_app "github.com/go-seidon/chariot/internal/rest-app"
+	"github.com/go-seidon/chariot/internal/restapp"
 )
 
 func main() {
@@ -13,8 +13,8 @@ func main() {
 		panic(err)
 	}
 
-	app, err := rest_app.NewRestApp(
-		rest_app.WithConfig(config),
+	app, err := restapp.NewRestApp(
+		restapp.WithConfig(config),
 	)
 	if err != nil {
 		panic(err)

@@ -1,9 +1,9 @@
-package rest_handler
+package resthandler
 
 import (
 	"net/http"
 
-	rest_app "github.com/go-seidon/chariot/generated/rest-app"
+	"github.com/go-seidon/chariot/generated/restapp"
 	"github.com/go-seidon/provider/status"
 	"github.com/labstack/echo/v4"
 )
@@ -13,10 +13,10 @@ type basicHandler struct {
 }
 
 func (h *basicHandler) GetAppInfo(ctx echo.Context) error {
-	res := &rest_app.GetAppInfoResponse{
+	res := &restapp.GetAppInfoResponse{
 		Code:    status.ACTION_SUCCESS,
 		Message: "success get app info",
-		Data: rest_app.GetAppInfoData{
+		Data: restapp.GetAppInfoData{
 			AppName:    h.config.AppName,
 			AppVersion: h.config.AppVersion,
 		},

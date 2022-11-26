@@ -1,0 +1,4 @@
+package: restapp
+generate:
+  - types
+output: generated/restapp/type.gen.go

@@ -1,4 +1,4 @@
-package rest_handler_test
+package resthandler_test
 
 import (
 	"bytes"
@@ -7,10 +7,10 @@ import (
 	"net/http/httptest"
 	"time"
 
-	rest_app "github.com/go-seidon/chariot/generated/rest-app"
+	"github.com/go-seidon/chariot/generated/restapp"
 	"github.com/go-seidon/chariot/internal/auth"
 	mock_auth "github.com/go-seidon/chariot/internal/auth/mock"
-	rest_handler "github.com/go-seidon/chariot/internal/rest-handler"
+	"github.com/go-seidon/chariot/internal/resthandler"
 	"github.com/go-seidon/provider/system"
 	"github.com/golang/mock/gomock"
 	"github.com/labstack/echo/v4"
@@ -32,7 +32,7 @@ var _ = Describe("Auth Handler", func() {
 
 		BeforeEach(func() {
 			currentTs = time.Now()
-			reqBody := &rest_app.CreateAuthClientRequest{
+			reqBody := &restapp.CreateAuthClientRequest{
 				ClientId:     "client-id",
 				ClientSecret: "client-secret",
 				Name:         "name",
@@ -51,7 +51,7 @@ var _ = Describe("Auth Handler", func() {
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
 			authClient = mock_auth.NewMockAuthClient(ctrl)
-			authHandler := rest_handler.NewAuth(rest_handler.AuthParam{
+			authHandler := resthandler.NewAuth(resthandler.AuthParam{
 				AuthClient: authClient,
 			})
 			h = authHandler.CreateClient
@@ -96,7 +96,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1002,
 						Message: "invalid request",
 					},
@@ -119,7 +119,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1002,
 						Message: "invalid data",
 					},
@@ -142,7 +142,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 500,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1001,
 						Message: "network error",
 					},
@@ -160,14 +160,14 @@ var _ = Describe("Auth Handler", func() {
 
 				err := h(ctx)
 
-				res := &rest_app.CreateAuthClientResponse{}
+				res := &restapp.CreateAuthClientResponse{}
 				json.Unmarshal(rec.Body.Bytes(), res)
 
 				Expect(err).To(BeNil())
 				Expect(rec.Code).To(Equal(http.StatusCreated))
 				Expect(res.Code).To(Equal(int32(1000)))
 				Expect(res.Message).To(Equal("success create auth client"))
-				Expect(res.Data).To(Equal(rest_app.CreateAuthClientData{
+				Expect(res.Data).To(Equal(restapp.CreateAuthClientData{
 					Id:        createRes.Id,
 					Name:      createRes.Name,
 					Status:    createRes.Status,
@@ -205,7 +205,7 @@ var _ = Describe("Auth Handler", func() {
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
 			authClient = mock_auth.NewMockAuthClient(ctrl)
-			authHandler := rest_handler.NewAuth(rest_handler.AuthParam{
+			authHandler := resthandler.NewAuth(resthandler.AuthParam{
 				AuthClient: authClient,
 			})
 			h = authHandler.GetClientById
@@ -242,7 +242,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1002,
 						Message: "invalid data",
 					},
@@ -265,7 +265,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 500,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1001,
 						Message: "network error",
 					},
@@ -288,7 +288,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 404,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1004,
 						Message: "not found",
 					},
@@ -308,14 +308,14 @@ var _ = Describe("Auth Handler", func() {
 
 				updatedAt := findRes.UpdatedAt.UnixMilli()
 
-				res := &rest_app.GetAuthClientByIdResponse{}
+				res := &restapp.GetAuthClientByIdResponse{}
 				json.Unmarshal(rec.Body.Bytes(), res)
 
 				Expect(err).To(BeNil())
 				Expect(rec.Code).To(Equal(http.StatusOK))
 				Expect(res.Code).To(Equal(int32(1000)))
 				Expect(res.Message).To(Equal("success find auth client"))
-				Expect(res.Data).To(Equal(rest_app.GetAuthClientByIdData{
+				Expect(res.Data).To(Equal(restapp.GetAuthClientByIdData{
 					Id:        findRes.Id,
 					Name:      findRes.Name,
 					Status:    findRes.Status,
@@ -341,7 +341,7 @@ var _ = Describe("Auth Handler", func() {
 
 		BeforeEach(func() {
 			currentTs = time.Now().UTC()
-			reqBody := &rest_app.UpdateAuthClientByIdRequest{
+			reqBody := &restapp.UpdateAuthClientByIdRequest{
 				ClientId: "client-id",
 				Name:     "name",
 				Type:     "basic",
@@ -361,7 +361,7 @@ var _ = Describe("Auth Handler", func() {
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
 			authClient = mock_auth.NewMockAuthClient(ctrl)
-			authHandler := rest_handler.NewAuth(rest_handler.AuthParam{
+			authHandler := resthandler.NewAuth(resthandler.AuthParam{
 				AuthClient: authClient,
 			})
 			h = authHandler.UpdateClientById
@@ -407,7 +407,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1002,
 						Message: "invalid request",
 					},
@@ -430,7 +430,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1002,
 						Message: "invalid data",
 					},
@@ -453,7 +453,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 404,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1004,
 						Message: "auth client is not available",
 					},
@@ -476,7 +476,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 500,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1001,
 						Message: "network error",
 					},
@@ -494,14 +494,14 @@ var _ = Describe("Auth Handler", func() {
 
 				err := h(ctx)
 
-				res := &rest_app.UpdateAuthClientByIdResponse{}
+				res := &restapp.UpdateAuthClientByIdResponse{}
 				json.Unmarshal(rec.Body.Bytes(), res)
 
 				Expect(err).To(BeNil())
 				Expect(rec.Code).To(Equal(http.StatusOK))
 				Expect(res.Code).To(Equal(int32(1000)))
 				Expect(res.Message).To(Equal("success update auth client"))
-				Expect(res.Data).To(Equal(rest_app.UpdateAuthClientByIdData{
+				Expect(res.Data).To(Equal(restapp.UpdateAuthClientByIdData{
 					Id:        updateRes.Id,
 					Name:      updateRes.Name,
 					Status:    updateRes.Status,
@@ -528,12 +528,12 @@ var _ = Describe("Auth Handler", func() {
 		BeforeEach(func() {
 			currentTs = time.Now().UTC()
 			keyword := "goseidon"
-			reqBody := &rest_app.SearchAuthClientRequest{
-				Filter: &rest_app.SearchAuthClientFilter{
-					StatusIn: &[]rest_app.SearchAuthClientFilterStatusIn{"active"},
+			reqBody := &restapp.SearchAuthClientRequest{
+				Filter: &restapp.SearchAuthClientFilter{
+					StatusIn: &[]restapp.SearchAuthClientFilterStatusIn{"active"},
 				},
 				Keyword: &keyword,
-				Pagination: &rest_app.RequestPagination{
+				Pagination: &restapp.RequestPagination{
 					Page:       2,
 					TotalItems: 24,
 				},
@@ -550,7 +550,7 @@ var _ = Describe("Auth Handler", func() {
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
 			authClient = mock_auth.NewMockAuthClient(ctrl)
-			authHandler := rest_handler.NewAuth(rest_handler.AuthParam{
+			authHandler := resthandler.NewAuth(resthandler.AuthParam{
 				AuthClient: authClient,
 			})
 			h = authHandler.SearchClient
@@ -612,7 +612,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1002,
 						Message: "invalid request",
 					},
@@ -635,7 +635,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 400,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1002,
 						Message: "invalid data",
 					},
@@ -658,7 +658,7 @@ var _ = Describe("Auth Handler", func() {
 
 				Expect(err).To(Equal(&echo.HTTPError{
 					Code: 500,
-					Message: &rest_app.ResponseBodyInfo{
+					Message: &restapp.ResponseBodyInfo{
 						Code:    1001,
 						Message: "network error",
 					},
@@ -687,18 +687,18 @@ var _ = Describe("Auth Handler", func() {
 
 				err := h(ctx)
 
-				res := &rest_app.SearchAuthClientResponse{}
+				res := &restapp.SearchAuthClientResponse{}
 				json.Unmarshal(rec.Body.Bytes(), res)
 
 				Expect(err).To(BeNil())
 				Expect(rec.Code).To(Equal(http.StatusOK))
 				Expect(res.Code).To(Equal(int32(1000)))
 				Expect(res.Message).To(Equal("success search auth client"))
-				Expect(res.Data.Summary).To(Equal(rest_app.SearchAuthClientSummary{
+				Expect(res.Data.Summary).To(Equal(restapp.SearchAuthClientSummary{
 					Page:       2,
 					TotalItems: 0,
 				}))
-				Expect(res.Data.Items).To(Equal([]rest_app.SearchAuthClientItem{}))
+				Expect(res.Data.Items).To(Equal([]restapp.SearchAuthClientItem{}))
 			})
 		})
 
@@ -733,18 +733,18 @@ var _ = Describe("Auth Handler", func() {
 
 				err := h(ctx)
 
-				res := &rest_app.SearchAuthClientResponse{}
+				res := &restapp.SearchAuthClientResponse{}
 				json.Unmarshal(rec.Body.Bytes(), res)
 
 				Expect(err).To(BeNil())
 				Expect(rec.Code).To(Equal(http.StatusOK))
 				Expect(res.Code).To(Equal(int32(1000)))
 				Expect(res.Message).To(Equal("success search auth client"))
-				Expect(res.Data.Summary).To(Equal(rest_app.SearchAuthClientSummary{
+				Expect(res.Data.Summary).To(Equal(restapp.SearchAuthClientSummary{
 					Page:       2,
 					TotalItems: 1,
 				}))
-				Expect(res.Data.Items).To(Equal([]rest_app.SearchAuthClientItem{
+				Expect(res.Data.Items).To(Equal([]restapp.SearchAuthClientItem{
 					{
 						Id:        "id-1",
 						ClientId:  "client-id-1",
@@ -768,7 +768,7 @@ var _ = Describe("Auth Handler", func() {
 
 				err := h(ctx)
 
-				res := &rest_app.SearchAuthClientResponse{}
+				res := &restapp.SearchAuthClientResponse{}
 				json.Unmarshal(rec.Body.Bytes(), res)
 
 				updatedAt := currentTs.UnixMilli()
@@ -776,11 +776,11 @@ var _ = Describe("Auth Handler", func() {
 				Expect(rec.Code).To(Equal(http.StatusOK))
 				Expect(res.Code).To(Equal(int32(1000)))
 				Expect(res.Message).To(Equal("success search auth client"))
-				Expect(res.Data.Summary).To(Equal(rest_app.SearchAuthClientSummary{
+				Expect(res.Data.Summary).To(Equal(restapp.SearchAuthClientSummary{
 					Page:       2,
 					TotalItems: 2,
 				}))
-				Expect(res.Data.Items).To(Equal([]rest_app.SearchAuthClientItem{
+				Expect(res.Data.Items).To(Equal([]restapp.SearchAuthClientItem{
 					{
 						Id:        "id-1",
 						ClientId:  "client-id-1",
