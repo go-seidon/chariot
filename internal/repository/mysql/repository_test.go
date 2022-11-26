@@ -1,4 +1,4 @@
-package repository_mysql_test
+package mysql_test
 
 import (
 	"testing"

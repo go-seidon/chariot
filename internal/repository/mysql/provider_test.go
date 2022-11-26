@@ -1,4 +1,4 @@
-package repository_mysql_test
+package mysql_test
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/go-seidon/chariot/internal/repository"
-	repository_mysql "github.com/go-seidon/chariot/internal/repository-mysql"
+	mysql "github.com/go-seidon/chariot/internal/repository/mysql"
 	mock_mysql "github.com/go-seidon/provider/mysql/mock"
 )
 
@@ -18,7 +18,7 @@ var _ = Describe("Repository Provider", func() {
 	Context("NewRepository function", Label("unit"), func() {
 		When("db client is not specified", func() {
 			It("should return error", func() {
-				res, err := repository_mysql.NewRepository()
+				res, err := mysql.NewRepository()
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("invalid db client")))
@@ -27,8 +27,8 @@ var _ = Describe("Repository Provider", func() {
 
 		When("required parameters are specified", func() {
 			It("should return result", func() {
-				mOpt := repository_mysql.WithDbClient(&sql.DB{})
-				res, err := repository_mysql.NewRepository(mOpt)
+				mOpt := mysql.WithDbClient(&sql.DB{})
+				res, err := mysql.NewRepository(mOpt)
 
 				Expect(res).ToNot(BeNil())
 				Expect(err).To(BeNil())
@@ -42,8 +42,8 @@ var _ = Describe("Repository Provider", func() {
 		)
 
 		BeforeEach(func() {
-			mOpt := repository_mysql.WithDbClient(&sql.DB{})
-			provider, _ = repository_mysql.NewRepository(mOpt)
+			mOpt := mysql.WithDbClient(&sql.DB{})
+			provider, _ = mysql.NewRepository(mOpt)
 		})
 
 		When("function is called", func() {
@@ -61,8 +61,8 @@ var _ = Describe("Repository Provider", func() {
 		)
 
 		BeforeEach(func() {
-			mOpt := repository_mysql.WithDbClient(&sql.DB{})
-			provider, _ = repository_mysql.NewRepository(mOpt)
+			mOpt := mysql.WithDbClient(&sql.DB{})
+			provider, _ = mysql.NewRepository(mOpt)
 		})
 
 		When("function is called", func() {
@@ -80,8 +80,8 @@ var _ = Describe("Repository Provider", func() {
 		)
 
 		BeforeEach(func() {
-			mOpt := repository_mysql.WithDbClient(&sql.DB{})
-			provider, _ = repository_mysql.NewRepository(mOpt)
+			mOpt := mysql.WithDbClient(&sql.DB{})
+			provider, _ = mysql.NewRepository(mOpt)
 		})
 
 		When("function is called", func() {
@@ -100,8 +100,8 @@ var _ = Describe("Repository Provider", func() {
 		)
 
 		BeforeEach(func() {
-			mOpt := repository_mysql.WithDbClient(&sql.DB{})
-			provider, _ = repository_mysql.NewRepository(mOpt)
+			mOpt := mysql.WithDbClient(&sql.DB{})
+			provider, _ = mysql.NewRepository(mOpt)
 			ctx = context.Background()
 		})
 
@@ -126,8 +126,8 @@ var _ = Describe("Repository Provider", func() {
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
 			client = mock_mysql.NewMockClient(ctrl)
-			provider, _ = repository_mysql.NewRepository(
-				repository_mysql.WithDbClient(client),
+			provider, _ = mysql.NewRepository(
+				mysql.WithDbClient(client),
 			)
 		})
 

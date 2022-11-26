@@ -1,4 +1,4 @@
-package repository_mysql_test
+package mysql_test
 
 import (
 	"context"
@@ -6,26 +6,29 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/go-seidon/chariot/internal/repository"
-	repository_mysql "github.com/go-seidon/chariot/internal/repository-mysql"
+	"github.com/go-seidon/chariot/internal/repository/mysql"
 	"github.com/go-seidon/provider/typeconv"
+	gorm_mysql "gorm.io/driver/mysql"
+	"gorm.io/gorm"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 )
 
-var _ = Describe("Barrel Repository", func() {
-	Context("CreateBarrel function", Label("unit"), func() {
+var _ = Describe("Auth Repository", func() {
+
+	Context("CreateClient function", Label("unit"), func() {
 		var (
 			ctx        context.Context
 			currentTs  time.Time
 			dbClient   sqlmock.Sqlmock
-			barrelRepo repository.Barrel
-			p          repository.CreateBarrelParam
+			authRepo   repository.Auth
+			p          repository.CreateClientParam
 			checkStmt  string
 			insertStmt string
 			findStmt   string
@@ -44,7 +47,7 @@ var _ = Describe("Barrel Repository", func() {
 				AbortSuite("failed create db mock: " + err.Error())
 			}
 
-			gormClient, err := gorm.Open(mysql.New(mysql.Config{
+			gormClient, err := gorm.Open(gorm_mysql.New(gorm_mysql.Config{
 				Conn:                      db,
 				SkipInitializeWithVersion: true,
 			}), &gorm.Config{
@@ -53,21 +56,22 @@ var _ = Describe("Barrel Repository", func() {
 			if err != nil {
 				AbortSuite("failed create gorm client: " + err.Error())
 			}
-			barrelRepo = repository_mysql.NewBarrel(repository_mysql.BarrelParam{
+			authRepo = mysql.NewAuth(mysql.AuthParam{
 				GormClient: gormClient,
 			})
 
-			p = repository.CreateBarrelParam{
-				Id:        "id",
-				Code:      "code",
-				Name:      "name",
-				Provider:  "goseidon_hippo",
-				Status:    "active",
-				CreatedAt: currentTs,
+			p = repository.CreateClientParam{
+				Id:           "id",
+				ClientId:     "client-id",
+				ClientSecret: "client-secret",
+				Name:         "name",
+				Type:         "basic",
+				Status:       "active",
+				CreatedAt:    currentTs,
 			}
-			checkStmt = regexp.QuoteMeta("SELECT id, code FROM `barrel` WHERE code = ? ORDER BY `barrel`.`id` LIMIT 1")
-			insertStmt = regexp.QuoteMeta("INSERT INTO `barrel` (`id`,`code`,`name`,`provider`,`status`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,?)")
-			findStmt = regexp.QuoteMeta("SELECT id, code, name, provider, status, created_at FROM `barrel` WHERE id = ? ORDER BY `barrel`.`id` LIMIT 1")
+			checkStmt = regexp.QuoteMeta("SELECT id, client_id FROM `auth_client` WHERE client_id = ? ORDER BY `auth_client`.`id` LIMIT 1")
+			insertStmt = regexp.QuoteMeta("INSERT INTO `auth_client` (`id`,`client_id`,`client_secret`,`name`,`type`,`status`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,?,?)")
+			findStmt = regexp.QuoteMeta("SELECT id, client_id, client_secret, name, type, status, created_at FROM `auth_client` WHERE id = ? ORDER BY `auth_client`.`id` LIMIT 1")
 		})
 
 		AfterEach(func() {
@@ -83,95 +87,95 @@ var _ = Describe("Barrel Repository", func() {
 					ExpectBegin().
 					WillReturnError(fmt.Errorf("begin error"))
 
-				res, err := barrelRepo.CreateBarrel(ctx, p)
+				res, err := authRepo.CreateClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("begin error")))
 			})
 		})
 
-		When("failed rollback during check barrel", func() {
+		When("failed rollback during check client", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
 
 				dbClient.
 					ExpectQuery(checkStmt).
-					WithArgs(p.Code).
+					WithArgs(p.ClientId).
 					WillReturnError(fmt.Errorf("network error"))
 
 				dbClient.
 					ExpectRollback().
 					WillReturnError(fmt.Errorf("rollback error"))
 
-				res, err := barrelRepo.CreateBarrel(ctx, p)
+				res, err := authRepo.CreateClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("rollback error")))
 			})
 		})
 
-		When("failed check barrel", func() {
+		When("failed check client", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
 
 				dbClient.
 					ExpectQuery(checkStmt).
-					WithArgs(p.Code).
+					WithArgs(p.ClientId).
 					WillReturnError(fmt.Errorf("network error"))
 
 				dbClient.
 					ExpectRollback()
 
-				res, err := barrelRepo.CreateBarrel(ctx, p)
+				res, err := authRepo.CreateClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("network error")))
 			})
 		})
 
-		When("barrel already exists", func() {
+		When("client already exists", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
 
 				rows := sqlmock.NewRows([]string{
-					"id", "code",
+					"id", "client_id",
 				}).AddRow(
-					p.Id, p.Code,
+					p.Id, p.ClientId,
 				)
 
 				dbClient.
 					ExpectQuery(checkStmt).
-					WithArgs(p.Code).
+					WithArgs(p.ClientId).
 					WillReturnRows(rows)
 
 				dbClient.
 					ExpectRollback()
 
-				res, err := barrelRepo.CreateBarrel(ctx, p)
+				res, err := authRepo.CreateClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(repository.ErrExists))
 			})
 		})
 
-		When("failed rollback during barrel creation", func() {
+		When("failed rollback during client creation", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
 
 				dbClient.
 					ExpectQuery(checkStmt).
-					WithArgs(p.Code).
+					WithArgs(p.ClientId).
 					WillReturnError(gorm.ErrRecordNotFound)
 
 				dbClient.
 					ExpectExec(insertStmt).
 					WithArgs(
-						p.Id, p.Code,
-						p.Name, p.Provider, p.Status,
+						p.Id, p.ClientId, p.ClientSecret,
+						p.Name, p.Type, p.Status,
 						p.CreatedAt.UnixMilli(),
 						p.CreatedAt.UnixMilli(),
 					).
@@ -181,28 +185,28 @@ var _ = Describe("Barrel Repository", func() {
 					ExpectRollback().
 					WillReturnError(fmt.Errorf("rollback error"))
 
-				res, err := barrelRepo.CreateBarrel(ctx, p)
+				res, err := authRepo.CreateClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("rollback error")))
 			})
 		})
 
-		When("failed create barrel", func() {
+		When("failed create client", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
 
 				dbClient.
 					ExpectQuery(checkStmt).
-					WithArgs(p.Code).
+					WithArgs(p.ClientId).
 					WillReturnError(gorm.ErrRecordNotFound)
 
 				dbClient.
 					ExpectExec(insertStmt).
 					WithArgs(
-						p.Id, p.Code,
-						p.Name, p.Provider, p.Status,
+						p.Id, p.ClientId, p.ClientSecret,
+						p.Name, p.Type, p.Status,
 						p.CreatedAt.UnixMilli(),
 						p.CreatedAt.UnixMilli(),
 					).
@@ -211,28 +215,28 @@ var _ = Describe("Barrel Repository", func() {
 				dbClient.
 					ExpectRollback()
 
-				res, err := barrelRepo.CreateBarrel(ctx, p)
+				res, err := authRepo.CreateClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("network error")))
 			})
 		})
 
-		When("failed rollback during find barrel", func() {
+		When("failed rollback during find client", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
 
 				dbClient.
 					ExpectQuery(checkStmt).
-					WithArgs(p.Code).
+					WithArgs(p.ClientId).
 					WillReturnError(gorm.ErrRecordNotFound)
 
 				dbClient.
 					ExpectExec(insertStmt).
 					WithArgs(
-						p.Id, p.Code,
-						p.Name, p.Provider, p.Status,
+						p.Id, p.ClientId, p.ClientSecret,
+						p.Name, p.Type, p.Status,
 						p.CreatedAt.UnixMilli(),
 						p.CreatedAt.UnixMilli(),
 					).
@@ -247,28 +251,28 @@ var _ = Describe("Barrel Repository", func() {
 					ExpectRollback().
 					WillReturnError(fmt.Errorf("rollback error"))
 
-				res, err := barrelRepo.CreateBarrel(ctx, p)
+				res, err := authRepo.CreateClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("rollback error")))
 			})
 		})
 
-		When("failed find barrel", func() {
+		When("failed find client", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
 
 				dbClient.
 					ExpectQuery(checkStmt).
-					WithArgs(p.Code).
+					WithArgs(p.ClientId).
 					WillReturnError(gorm.ErrRecordNotFound)
 
 				dbClient.
 					ExpectExec(insertStmt).
 					WithArgs(
-						p.Id, p.Code,
-						p.Name, p.Provider, p.Status,
+						p.Id, p.ClientId, p.ClientSecret,
+						p.Name, p.Type, p.Status,
 						p.CreatedAt.UnixMilli(),
 						p.CreatedAt.UnixMilli(),
 					).
@@ -282,41 +286,39 @@ var _ = Describe("Barrel Repository", func() {
 				dbClient.
 					ExpectRollback()
 
-				res, err := barrelRepo.CreateBarrel(ctx, p)
+				res, err := authRepo.CreateClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("network error")))
 			})
 		})
 
-		When("failed commit during success create barrel", func() {
+		When("failed commit during success create client", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
 
 				dbClient.
 					ExpectQuery(checkStmt).
-					WithArgs(p.Code).
+					WithArgs(p.ClientId).
 					WillReturnError(gorm.ErrRecordNotFound)
 
 				dbClient.
 					ExpectExec(insertStmt).
 					WithArgs(
-						p.Id, p.Code,
-						p.Name, p.Provider, p.Status,
+						p.Id, p.ClientId, p.ClientSecret,
+						p.Name, p.Type, p.Status,
 						p.CreatedAt.UnixMilli(),
 						p.CreatedAt.UnixMilli(),
 					).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 
 				rows := sqlmock.NewRows([]string{
-					"id", "code",
-					"name", "provider",
-					"status", "created_at",
+					"id", "client_id", "client_secret",
+					"name", "type", "status", "created_at",
 				}).AddRow(
-					p.Id, p.Code,
-					p.Name, p.Provider,
-					p.Status, p.CreatedAt.UnixMilli(),
+					p.Id, p.ClientId, p.ClientSecret,
+					p.Name, p.Type, p.Status, p.CreatedAt.UnixMilli(),
 				)
 				dbClient.
 					ExpectQuery(findStmt).
@@ -327,41 +329,39 @@ var _ = Describe("Barrel Repository", func() {
 					ExpectCommit().
 					WillReturnError(fmt.Errorf("commit error"))
 
-				res, err := barrelRepo.CreateBarrel(ctx, p)
+				res, err := authRepo.CreateClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("commit error")))
 			})
 		})
 
-		When("success create barrel", func() {
+		When("success create client", func() {
 			It("should return result", func() {
 				dbClient.
 					ExpectBegin()
 
 				dbClient.
 					ExpectQuery(checkStmt).
-					WithArgs(p.Code).
+					WithArgs(p.ClientId).
 					WillReturnError(gorm.ErrRecordNotFound)
 
 				dbClient.
 					ExpectExec(insertStmt).
 					WithArgs(
-						p.Id, p.Code,
-						p.Name, p.Provider, p.Status,
+						p.Id, p.ClientId, p.ClientSecret,
+						p.Name, p.Type, p.Status,
 						p.CreatedAt.UnixMilli(),
 						p.CreatedAt.UnixMilli(),
 					).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 
 				rows := sqlmock.NewRows([]string{
-					"id", "code",
-					"name", "provider",
-					"status", "created_at",
+					"id", "client_id", "client_secret",
+					"name", "type", "status", "created_at",
 				}).AddRow(
-					p.Id, p.Code,
-					p.Name, p.Provider,
-					p.Status, p.CreatedAt.UnixMilli(),
+					p.Id, p.ClientId, p.ClientSecret,
+					p.Name, p.Type, p.Status, p.CreatedAt.UnixMilli(),
 				)
 				dbClient.
 					ExpectQuery(findStmt).
@@ -371,15 +371,16 @@ var _ = Describe("Barrel Repository", func() {
 				dbClient.
 					ExpectCommit()
 
-				res, err := barrelRepo.CreateBarrel(ctx, p)
+				res, err := authRepo.CreateClient(ctx, p)
 
-				expectedRes := &repository.CreateBarrelResult{
-					Id:        p.Id,
-					Code:      p.Code,
-					Name:      p.Name,
-					Provider:  p.Provider,
-					Status:    p.Status,
-					CreatedAt: time.UnixMilli(p.CreatedAt.UnixMilli()).UTC(),
+				expectedRes := &repository.CreateClientResult{
+					Id:           p.Id,
+					ClientId:     p.ClientId,
+					ClientSecret: p.ClientSecret,
+					Name:         p.Name,
+					Type:         p.Type,
+					Status:       p.Status,
+					CreatedAt:    time.UnixMilli(p.CreatedAt.UnixMilli()).UTC(),
 				}
 				Expect(res).To(Equal(expectedRes))
 				Expect(err).To(BeNil())
@@ -387,16 +388,16 @@ var _ = Describe("Barrel Repository", func() {
 		})
 	})
 
-	Context("FindBarrel function", Label("unit"), func() {
+	Context("FindClient function", Label("unit"), func() {
 
 		var (
-			ctx        context.Context
-			currentTs  time.Time
-			dbClient   sqlmock.Sqlmock
-			barrelRepo repository.Barrel
-			p          repository.FindBarrelParam
-			r          *repository.FindBarrelResult
-			findStmt   string
+			ctx       context.Context
+			currentTs time.Time
+			dbClient  sqlmock.Sqlmock
+			authRepo  repository.Auth
+			p         repository.FindClientParam
+			r         *repository.FindClientResult
+			findStmt  string
 		)
 
 		BeforeEach(func() {
@@ -412,7 +413,7 @@ var _ = Describe("Barrel Repository", func() {
 				AbortSuite("failed create db mock: " + err.Error())
 			}
 
-			gormClient, err := gorm.Open(mysql.New(mysql.Config{
+			gormClient, err := gorm.Open(gorm_mysql.New(gorm_mysql.Config{
 				Conn:                      db,
 				SkipInitializeWithVersion: true,
 			}), &gorm.Config{
@@ -421,23 +422,23 @@ var _ = Describe("Barrel Repository", func() {
 			if err != nil {
 				AbortSuite("failed create gorm client: " + err.Error())
 			}
-			barrelRepo = repository_mysql.NewBarrel(repository_mysql.BarrelParam{
+			authRepo = mysql.NewAuth(mysql.AuthParam{
 				GormClient: gormClient,
 			})
 
-			p = repository.FindBarrelParam{
+			p = repository.FindClientParam{
 				Id: "id",
 			}
-			r = &repository.FindBarrelResult{
-				Id:        "id",
-				Code:      "code",
-				Name:      "name",
-				Provider:  "goseidon_hippo",
-				Status:    "active",
-				CreatedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
-				UpdatedAt: typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+			r = &repository.FindClientResult{
+				Id:           "id",
+				ClientId:     "client-id",
+				ClientSecret: "client-secret",
+				Name:         "name",
+				Type:         "basic",
+				Status:       "active",
+				CreatedAt:    time.UnixMilli(currentTs.UnixMilli()).UTC(),
 			}
-			findStmt = regexp.QuoteMeta("SELECT id, code, name, provider, status, created_at, updated_at FROM `barrel` WHERE id = ? ORDER BY `barrel`.`id` LIMIT 1")
+			findStmt = regexp.QuoteMeta("SELECT id, client_id, client_secret, name, type, status, created_at, updated_at FROM `auth_client` WHERE id = ? ORDER BY `auth_client`.`id` LIMIT 1")
 		})
 
 		AfterEach(func() {
@@ -447,43 +448,43 @@ var _ = Describe("Barrel Repository", func() {
 			}
 		})
 
-		When("failed check barrel", func() {
+		When("failed check client", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectQuery(findStmt).
 					WithArgs(p.Id).
 					WillReturnError(fmt.Errorf("network error"))
 
-				res, err := barrelRepo.FindBarrel(ctx, p)
+				res, err := authRepo.FindClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("network error")))
 			})
 		})
 
-		When("barrel is not available", func() {
+		When("client is not available", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectQuery(findStmt).
 					WithArgs(p.Id).
 					WillReturnError(gorm.ErrRecordNotFound)
 
-				res, err := barrelRepo.FindBarrel(ctx, p)
+				res, err := authRepo.FindClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(repository.ErrNotFound))
 			})
 		})
 
-		When("success find barrel", func() {
+		When("success find client", func() {
 			It("should return result", func() {
 				rows := sqlmock.NewRows([]string{
-					"id", "code",
-					"name", "provider", "status",
+					"id", "client_id", "client_secret",
+					"name", "type", "status",
 					"created_at", "updated_at",
 				}).AddRow(
-					r.Id, r.Code,
-					r.Name, r.Provider, r.Status,
+					r.Id, r.ClientId, r.ClientSecret,
+					r.Name, r.Type, r.Status,
 					currentTs.UnixMilli(), currentTs.UnixMilli(),
 				)
 
@@ -492,23 +493,34 @@ var _ = Describe("Barrel Repository", func() {
 					WithArgs(p.Id).
 					WillReturnRows(rows)
 
-				res, err := barrelRepo.FindBarrel(ctx, p)
+				res, err := authRepo.FindClient(ctx, p)
 
+				updatedAt := time.UnixMilli(currentTs.UnixMilli()).UTC()
+				r := &repository.FindClientResult{
+					Id:           "id",
+					ClientId:     "client-id",
+					ClientSecret: "client-secret",
+					Name:         "name",
+					Type:         "basic",
+					Status:       "active",
+					CreatedAt:    time.UnixMilli(currentTs.UnixMilli()).UTC(),
+					UpdatedAt:    &updatedAt,
+				}
 				Expect(res).To(Equal(r))
 				Expect(err).To(BeNil())
 			})
 		})
 	})
 
-	Context("UpdateBarrel function", Label("unit"), func() {
+	Context("UpdateClient function", Label("unit"), func() {
 
 		var (
 			ctx        context.Context
 			currentTs  time.Time
 			dbClient   sqlmock.Sqlmock
-			barrelRepo repository.Barrel
-			p          repository.UpdateBarrelParam
-			r          *repository.UpdateBarrelResult
+			authRepo   repository.Auth
+			p          repository.UpdateClientParam
+			r          *repository.UpdateClientResult
 			findStmt   string
 			updateStmt string
 			checkStmt  string
@@ -529,7 +541,7 @@ var _ = Describe("Barrel Repository", func() {
 				AbortSuite("failed create db mock: " + err.Error())
 			}
 
-			gormClient, err := gorm.Open(mysql.New(mysql.Config{
+			gormClient, err := gorm.Open(gorm_mysql.New(gorm_mysql.Config{
 				Conn:                      db,
 				SkipInitializeWithVersion: true,
 			}), &gorm.Config{
@@ -538,45 +550,45 @@ var _ = Describe("Barrel Repository", func() {
 			if err != nil {
 				AbortSuite("failed create gorm client: " + err.Error())
 			}
-			barrelRepo = repository_mysql.NewBarrel(repository_mysql.BarrelParam{
+			authRepo = mysql.NewAuth(mysql.AuthParam{
 				GormClient: gormClient,
 			})
 
-			p = repository.UpdateBarrelParam{
+			p = repository.UpdateClientParam{
 				Id:        "id",
-				Code:      "new-code",
+				ClientId:  "new-client-id",
 				Name:      "new-name",
-				Provider:  "goseidon_hippo",
+				Type:      "basic",
 				Status:    "active",
 				UpdatedAt: currentTs,
 			}
-			r = &repository.UpdateBarrelResult{
-				Id:        "id",
-				Code:      "new-code",
-				Name:      "new-name",
-				Provider:  "goseidon_hippo",
-				Status:    "active",
-				CreatedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
-				UpdatedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
+			r = &repository.UpdateClientResult{
+				Id:           "id",
+				ClientId:     "new-client-id",
+				ClientSecret: "client-secret",
+				Name:         "new-name",
+				Type:         "basic",
+				Status:       "active",
+				CreatedAt:    time.UnixMilli(currentTs.UnixMilli()).UTC(),
+				UpdatedAt:    time.UnixMilli(currentTs.UnixMilli()).UTC(),
 			}
-			findStmt = regexp.QuoteMeta("SELECT id, code, name, provider, status FROM `barrel` WHERE id = ? ORDER BY `barrel`.`id` LIMIT 1")
-			updateStmt = regexp.QuoteMeta("UPDATE `barrel` SET `code`=?,`name`=?,`provider`=?,`status`=?,`updated_at`=? WHERE id = ?")
-			checkStmt = regexp.QuoteMeta("SELECT id, code, name, provider, status, created_at, updated_at FROM `barrel` WHERE id = ? ORDER BY `barrel`.`id` LIMIT 1")
+			findStmt = regexp.QuoteMeta("SELECT id, client_id, name, type, status FROM `auth_client` WHERE id = ? ORDER BY `auth_client`.`id` LIMIT 1")
+			updateStmt = regexp.QuoteMeta("UPDATE `auth_client` SET `client_id`=?,`name`=?,`status`=?,`type`=?,`updated_at`=? WHERE id = ?")
+			checkStmt = regexp.QuoteMeta("SELECT id, client_id, client_secret, name, type, status, created_at, updated_at FROM `auth_client` WHERE id = ? ORDER BY `auth_client`.`id` LIMIT 1")
 			findRows = sqlmock.NewRows([]string{
-				"id", "code",
-				"name", "provider", "status",
+				"id", "client_id",
+				"name", "type", "status",
 			}).AddRow(
-				"id", "old-code",
-				"old-name", "goseidon_hippo", "inactive",
+				"id", "old-client-id",
+				"old-name", "basic", "inactive",
 			)
 			checkRows = sqlmock.NewRows([]string{
-				"id", "code",
-				"name", "provider",
-				"status",
+				"id", "client_id", "client_secret",
+				"name", "type", "status",
 				"created_at", "updated_at",
 			}).AddRow(
-				"id", "new-code",
-				"new-name", "goseidon_hippo", "active",
+				"id", "new-client-id", "client-secret",
+				"new-name", "basic", "active",
 				currentTs.UnixMilli(), currentTs.UnixMilli(),
 			)
 		})
@@ -594,14 +606,14 @@ var _ = Describe("Barrel Repository", func() {
 					ExpectBegin().
 					WillReturnError(fmt.Errorf("begin error"))
 
-				res, err := barrelRepo.UpdateBarrel(ctx, p)
+				res, err := authRepo.UpdateClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("begin error")))
 			})
 		})
 
-		When("failed rollback during find barrel", func() {
+		When("failed rollback during find client", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
@@ -615,14 +627,14 @@ var _ = Describe("Barrel Repository", func() {
 					ExpectRollback().
 					WillReturnError(fmt.Errorf("rollback error"))
 
-				res, err := barrelRepo.UpdateBarrel(ctx, p)
+				res, err := authRepo.UpdateClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("rollback error")))
 			})
 		})
 
-		When("failed find barrel", func() {
+		When("failed find client", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
@@ -635,14 +647,14 @@ var _ = Describe("Barrel Repository", func() {
 				dbClient.
 					ExpectRollback()
 
-				res, err := barrelRepo.UpdateBarrel(ctx, p)
+				res, err := authRepo.UpdateClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("network error")))
 			})
 		})
 
-		When("barrel is not available", func() {
+		When("client is not available", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
@@ -655,14 +667,14 @@ var _ = Describe("Barrel Repository", func() {
 				dbClient.
 					ExpectRollback()
 
-				res, err := barrelRepo.UpdateBarrel(ctx, p)
+				res, err := authRepo.UpdateClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(repository.ErrNotFound))
 			})
 		})
 
-		When("failed rollback during update barrel", func() {
+		When("failed rollback during update client", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
@@ -675,10 +687,10 @@ var _ = Describe("Barrel Repository", func() {
 				dbClient.
 					ExpectExec(updateStmt).
 					WithArgs(
-						p.Code,
+						p.ClientId,
 						p.Name,
-						p.Provider,
 						p.Status,
+						p.Type,
 						p.UpdatedAt.UnixMilli(),
 						p.Id,
 					).
@@ -688,14 +700,14 @@ var _ = Describe("Barrel Repository", func() {
 					ExpectRollback().
 					WillReturnError(fmt.Errorf("rollback error"))
 
-				res, err := barrelRepo.UpdateBarrel(ctx, p)
+				res, err := authRepo.UpdateClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("rollback error")))
 			})
 		})
 
-		When("failed update barrel", func() {
+		When("failed update client", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectBegin()
@@ -708,10 +720,10 @@ var _ = Describe("Barrel Repository", func() {
 				dbClient.
 					ExpectExec(updateStmt).
 					WithArgs(
-						p.Code,
+						p.ClientId,
 						p.Name,
-						p.Provider,
 						p.Status,
+						p.Type,
 						p.UpdatedAt.UnixMilli(),
 						p.Id,
 					).
@@ -720,7 +732,7 @@ var _ = Describe("Barrel Repository", func() {
 				dbClient.
 					ExpectRollback()
 
-				res, err := barrelRepo.UpdateBarrel(ctx, p)
+				res, err := authRepo.UpdateClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("network error")))
@@ -740,10 +752,10 @@ var _ = Describe("Barrel Repository", func() {
 				dbClient.
 					ExpectExec(updateStmt).
 					WithArgs(
-						p.Code,
+						p.ClientId,
 						p.Name,
-						p.Provider,
 						p.Status,
+						p.Type,
 						p.UpdatedAt.UnixMilli(),
 						p.Id,
 					).
@@ -758,7 +770,7 @@ var _ = Describe("Barrel Repository", func() {
 					ExpectRollback().
 					WillReturnError(fmt.Errorf("rollback error"))
 
-				res, err := barrelRepo.UpdateBarrel(ctx, p)
+				res, err := authRepo.UpdateClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("rollback error")))
@@ -778,10 +790,10 @@ var _ = Describe("Barrel Repository", func() {
 				dbClient.
 					ExpectExec(updateStmt).
 					WithArgs(
-						p.Code,
+						p.ClientId,
 						p.Name,
-						p.Provider,
 						p.Status,
+						p.Type,
 						p.UpdatedAt.UnixMilli(),
 						p.Id,
 					).
@@ -795,7 +807,7 @@ var _ = Describe("Barrel Repository", func() {
 				dbClient.
 					ExpectRollback()
 
-				res, err := barrelRepo.UpdateBarrel(ctx, p)
+				res, err := authRepo.UpdateClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("network error")))
@@ -815,10 +827,10 @@ var _ = Describe("Barrel Repository", func() {
 				dbClient.
 					ExpectExec(updateStmt).
 					WithArgs(
-						p.Code,
+						p.ClientId,
 						p.Name,
-						p.Provider,
 						p.Status,
+						p.Type,
 						p.UpdatedAt.UnixMilli(),
 						p.Id,
 					).
@@ -833,14 +845,14 @@ var _ = Describe("Barrel Repository", func() {
 					ExpectCommit().
 					WillReturnError(fmt.Errorf("commit error"))
 
-				res, err := barrelRepo.UpdateBarrel(ctx, p)
+				res, err := authRepo.UpdateClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("commit error")))
 			})
 		})
 
-		When("success update barrel", func() {
+		When("success update client", func() {
 			It("should return result", func() {
 				dbClient.
 					ExpectBegin()
@@ -853,10 +865,10 @@ var _ = Describe("Barrel Repository", func() {
 				dbClient.
 					ExpectExec(updateStmt).
 					WithArgs(
-						p.Code,
+						p.ClientId,
 						p.Name,
-						p.Provider,
 						p.Status,
+						p.Type,
 						p.UpdatedAt.UnixMilli(),
 						p.Id,
 					).
@@ -870,7 +882,7 @@ var _ = Describe("Barrel Repository", func() {
 				dbClient.
 					ExpectCommit()
 
-				res, err := barrelRepo.UpdateBarrel(ctx, p)
+				res, err := authRepo.UpdateClient(ctx, p)
 
 				Expect(res).To(Equal(r))
 				Expect(err).To(BeNil())
@@ -878,15 +890,15 @@ var _ = Describe("Barrel Repository", func() {
 		})
 	})
 
-	Context("SearchBarrel function", Label("unit"), func() {
+	Context("SearchClient function", Label("unit"), func() {
 
 		var (
 			ctx        context.Context
 			currentTs  time.Time
 			dbClient   sqlmock.Sqlmock
-			barrelRepo repository.Barrel
-			p          repository.SearchBarrelParam
-			r          *repository.SearchBarrelResult
+			authRepo   repository.Auth
+			p          repository.SearchClientParam
+			r          *repository.SearchClientResult
 			searchStmt string
 			countStmt  string
 			searchRows *sqlmock.Rows
@@ -906,7 +918,7 @@ var _ = Describe("Barrel Repository", func() {
 				AbortSuite("failed create db mock: " + err.Error())
 			}
 
-			gormClient, err := gorm.Open(mysql.New(mysql.Config{
+			gormClient, err := gorm.Open(gorm_mysql.New(gorm_mysql.Config{
 				Conn:                      db,
 				SkipInitializeWithVersion: true,
 			}), &gorm.Config{
@@ -915,72 +927,69 @@ var _ = Describe("Barrel Repository", func() {
 			if err != nil {
 				AbortSuite("failed create gorm client: " + err.Error())
 			}
-			barrelRepo = repository_mysql.NewBarrel(repository_mysql.BarrelParam{
+			authRepo = mysql.NewAuth(mysql.AuthParam{
 				GormClient: gormClient,
 			})
 
-			p = repository.SearchBarrelParam{
-				Limit:     24,
-				Offset:    48,
-				Keyword:   "goseidon",
-				Statuses:  []string{"active"},
-				Providers: []string{"goseidon_hippo"},
-				Codes:     []string{"hippo1"},
+			p = repository.SearchClientParam{
+				Limit:    24,
+				Offset:   48,
+				Keyword:  "goseidon",
+				Statuses: []string{"active"},
 			}
-			r = &repository.SearchBarrelResult{
-				Summary: repository.SearchBarrelSummary{
+			updatedAt := time.UnixMilli(currentTs.UnixMilli()).UTC()
+			r = &repository.SearchClientResult{
+				Summary: repository.SearchClientSummary{
 					TotalItems: 2,
 				},
-				Items: []repository.SearchBarrelItem{
+				Items: []repository.SearchClientItem{
 					{
-						Id:        "id-1",
-						Code:      "code-1",
-						Name:      "name-1",
-						Provider:  "goseidon_hippo",
-						Status:    "inactive",
-						CreatedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
-						UpdatedAt: typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+						Id:           "id-1",
+						ClientId:     "client-id-1",
+						ClientSecret: "client-secret-1",
+						Name:         "name-1",
+						Type:         "basic",
+						Status:       "inactive",
+						CreatedAt:    time.UnixMilli(currentTs.UnixMilli()).UTC(),
+						UpdatedAt:    &updatedAt,
 					},
 					{
-						Id:        "id-2",
-						Code:      "code-2",
-						Name:      "name-2",
-						Provider:  "goseidon_hippo",
-						Status:    "active",
-						CreatedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
-						UpdatedAt: typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+						Id:           "id-2",
+						ClientId:     "client-id-2",
+						ClientSecret: "client-secret-2",
+						Name:         "name-2",
+						Type:         "basic",
+						Status:       "active",
+						CreatedAt:    time.UnixMilli(currentTs.UnixMilli()).UTC(),
+						UpdatedAt:    &updatedAt,
 					},
 				},
 			}
 			searchStmt = regexp.QuoteMeta(strings.TrimSpace(`
-				SELECT id, code, name, provider, status, created_at, updated_at 
-				FROM ` + "`barrel`" + ` 
-				WHERE name LIKE ? OR code LIKE ?
+				SELECT id, client_id, client_secret, name, type, status, created_at, updated_at 
+				FROM ` + "`auth_client`" + ` 
+				WHERE name LIKE ? OR client_id LIKE ?
 				AND status IN (?)
-				AND provider IN (?)
-				AND code IN (?)
 				LIMIT 24
 				OFFSET 48
 			`))
 			countStmt = regexp.QuoteMeta(strings.TrimSpace(`
 				SELECT count(*)
-				FROM ` + "`barrel`" + ` 
-				WHERE name LIKE ? OR code LIKE ?
+				FROM ` + "`auth_client`" + ` 
+				WHERE name LIKE ? OR client_id LIKE ?
 				AND status IN (?)
-				AND provider IN (?)
-				AND code IN (?)
 			`))
 			searchRows = sqlmock.NewRows([]string{
-				"id", "code",
-				"name", "provider", "status",
+				"id", "client_id", "client_secret",
+				"name", "type", "status",
 				"created_at", "updated_at",
 			}).AddRow(
-				"id-1", "code-1",
-				"name-1", "goseidon_hippo", "inactive",
+				"id-1", "client-id-1", "client-secret-1",
+				"name-1", "basic", "inactive",
 				currentTs.UnixMilli(), currentTs.UnixMilli(),
 			).AddRow(
-				"id-2", "code-2",
-				"name-2", "goseidon_hippo", "active",
+				"id-2", "client-id-2", "client-secret-2",
+				"name-2", "basic", "active",
 				currentTs.UnixMilli(), currentTs.UnixMilli(),
 			)
 			countRows = sqlmock.
@@ -1003,12 +1012,10 @@ var _ = Describe("Barrel Repository", func() {
 						"%"+p.Keyword+"%",
 						"%"+p.Keyword+"%",
 						p.Statuses[0],
-						p.Providers[0],
-						p.Codes[0],
 					).
 					WillReturnError(fmt.Errorf("network error"))
 
-				res, err := barrelRepo.SearchBarrel(ctx, p)
+				res, err := authRepo.SearchClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("network error")))
@@ -1023,18 +1030,16 @@ var _ = Describe("Barrel Repository", func() {
 						"%"+p.Keyword+"%",
 						"%"+p.Keyword+"%",
 						p.Statuses[0],
-						p.Providers[0],
-						p.Codes[0],
 					).
 					WillReturnError(gorm.ErrRecordNotFound)
 
-				res, err := barrelRepo.SearchBarrel(ctx, p)
+				res, err := authRepo.SearchClient(ctx, p)
 
-				r := &repository.SearchBarrelResult{
-					Summary: repository.SearchBarrelSummary{
+				r := &repository.SearchClientResult{
+					Summary: repository.SearchClientSummary{
 						TotalItems: 0,
 					},
-					Items: []repository.SearchBarrelItem{},
+					Items: []repository.SearchClientItem{},
 				}
 				Expect(res).To(Equal(r))
 				Expect(err).To(BeNil())
@@ -1044,13 +1049,13 @@ var _ = Describe("Barrel Repository", func() {
 		When("failed count search client", func() {
 			It("should return result", func() {
 				searchRows := sqlmock.NewRows([]string{
-					"id", "code",
-					"name", "provider", "status",
+					"id", "client_id", "client_secret",
+					"name", "type", "status",
 					"created_at", "updated_at",
 				}).AddRow(
-					"id-1", "code-1",
-					"name-1", "goseidon_hippo", "inactive",
-					currentTs.UnixMilli(), currentTs.UnixMilli(),
+					"id-1", "client-id-1", "client-secret-1",
+					"name-1", "basic", "inactive",
+					currentTs.UnixMilli(), nil,
 				)
 				dbClient.
 					ExpectQuery(searchStmt).
@@ -1058,8 +1063,6 @@ var _ = Describe("Barrel Repository", func() {
 						"%"+p.Keyword+"%",
 						"%"+p.Keyword+"%",
 						p.Statuses[0],
-						p.Providers[0],
-						p.Codes[0],
 					).
 					WillReturnRows(searchRows)
 
@@ -1069,12 +1072,10 @@ var _ = Describe("Barrel Repository", func() {
 						"%"+p.Keyword+"%",
 						"%"+p.Keyword+"%",
 						p.Statuses[0],
-						p.Providers[0],
-						p.Codes[0],
 					).
 					WillReturnError(fmt.Errorf("network error"))
 
-				res, err := barrelRepo.SearchBarrel(ctx, p)
+				res, err := authRepo.SearchClient(ctx, p)
 
 				Expect(res).To(BeNil())
 				Expect(err).To(Equal(fmt.Errorf("network error")))
@@ -1084,12 +1085,12 @@ var _ = Describe("Barrel Repository", func() {
 		When("there is one client", func() {
 			It("should return result", func() {
 				searchRows := sqlmock.NewRows([]string{
-					"id", "code",
-					"name", "provider", "status",
+					"id", "client_id", "client_secret",
+					"name", "type", "status",
 					"created_at", "updated_at",
 				}).AddRow(
-					"id-1", "code-1",
-					"name-1", "goseidon_hippo", "inactive",
+					"id-1", "client-id-1", "client-secret-1",
+					"name-1", "basic", "inactive",
 					currentTs.UnixMilli(), currentTs.UnixMilli(),
 				)
 				dbClient.
@@ -1098,8 +1099,6 @@ var _ = Describe("Barrel Repository", func() {
 						"%"+p.Keyword+"%",
 						"%"+p.Keyword+"%",
 						p.Statuses[0],
-						p.Providers[0],
-						p.Codes[0],
 					).
 					WillReturnRows(searchRows)
 
@@ -1112,26 +1111,25 @@ var _ = Describe("Barrel Repository", func() {
 						"%"+p.Keyword+"%",
 						"%"+p.Keyword+"%",
 						p.Statuses[0],
-						p.Providers[0],
-						p.Codes[0],
 					).
 					WillReturnRows(countRows)
 
-				res, err := barrelRepo.SearchBarrel(ctx, p)
+				res, err := authRepo.SearchClient(ctx, p)
 
-				r := &repository.SearchBarrelResult{
-					Summary: repository.SearchBarrelSummary{
+				r := &repository.SearchClientResult{
+					Summary: repository.SearchClientSummary{
 						TotalItems: 1,
 					},
-					Items: []repository.SearchBarrelItem{
+					Items: []repository.SearchClientItem{
 						{
-							Id:        "id-1",
-							Code:      "code-1",
-							Name:      "name-1",
-							Provider:  "goseidon_hippo",
-							Status:    "inactive",
-							CreatedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
-							UpdatedAt: typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+							Id:           "id-1",
+							ClientId:     "client-id-1",
+							ClientSecret: "client-secret-1",
+							Name:         "name-1",
+							Type:         "basic",
+							Status:       "inactive",
+							CreatedAt:    time.UnixMilli(currentTs.UnixMilli()).UTC(),
+							UpdatedAt:    typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
 						},
 					},
 				}
@@ -1148,8 +1146,6 @@ var _ = Describe("Barrel Repository", func() {
 						"%"+p.Keyword+"%",
 						"%"+p.Keyword+"%",
 						p.Statuses[0],
-						p.Providers[0],
-						p.Codes[0],
 					).
 					WillReturnRows(searchRows)
 
@@ -1159,16 +1155,15 @@ var _ = Describe("Barrel Repository", func() {
 						"%"+p.Keyword+"%",
 						"%"+p.Keyword+"%",
 						p.Statuses[0],
-						p.Providers[0],
-						p.Codes[0],
 					).
 					WillReturnRows(countRows)
 
-				res, err := barrelRepo.SearchBarrel(ctx, p)
+				res, err := authRepo.SearchClient(ctx, p)
 
 				Expect(res).To(Equal(r))
 				Expect(err).To(BeNil())
 			})
 		})
 	})
+
 })

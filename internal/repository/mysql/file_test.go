@@ -1,4 +1,4 @@
-package repository_mysql_test
+package mysql_test
 
 import (
 	"context"
@@ -9,13 +9,13 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/go-seidon/chariot/internal/repository"
-	repository_mysql "github.com/go-seidon/chariot/internal/repository-mysql"
+	"github.com/go-seidon/chariot/internal/repository/mysql"
 	random "github.com/go-seidon/provider/random/mock"
 	"github.com/go-seidon/provider/typeconv"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"gorm.io/driver/mysql"
+	gorm_mysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
@@ -53,7 +53,7 @@ var _ = Describe("File Repository", func() {
 				AbortSuite("failed create db mock: " + err.Error())
 			}
 
-			gormClient, err := gorm.Open(mysql.New(mysql.Config{
+			gormClient, err := gorm.Open(gorm_mysql.New(gorm_mysql.Config{
 				Conn:                      db,
 				SkipInitializeWithVersion: true,
 			}), &gorm.Config{
@@ -66,7 +66,7 @@ var _ = Describe("File Repository", func() {
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
 			randomizer = random.NewMockRandomizer(ctrl)
-			fileRepo = repository_mysql.NewFile(repository_mysql.FileParam{
+			fileRepo = mysql.NewFile(mysql.FileParam{
 				GormClient: gormClient,
 				Randomizer: randomizer,
 			})

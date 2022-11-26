@@ -1,4 +1,4 @@
-package repository_mysql
+package mysql
 
 import (
 	"fmt"
