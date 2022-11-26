@@ -77,7 +77,6 @@ TBA
 ```
 
 ## Todo
-2. change slug generation using random text generator
 3. Devs: Adjustment code structure
 - Move mysql repo as repository subfolder
 - Remove dash foldering name
