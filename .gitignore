@@ -10,8 +10,8 @@ vendor/*
 *.env
 temp/*
 storage/*
-cmd/*-test
+cmd/*test
 
 # open api
-generated/rest-v1/main.all.yml
-generated/rest-v1/main.all.json
+generated/restapp/main.all.yml
+generated/restapp/main.all.json

@@ -61,7 +61,7 @@ generate-mock:
 	mockgen -package=mock_repository -source internal/repository/barrel.go -destination=internal/repository/mock/barrel_mock.go
 	mockgen -package=mock_repository -source internal/repository/file.go -destination=internal/repository/mock/file_mock.go
 	mockgen -package=mock_repository -source internal/repository/provider.go -destination=internal/repository/mock/provider_mock.go
-	mockgen -package=mock_restapp -source internal/rest-app/server.go -destination=internal/rest-app/mock/server_mock.go
+	mockgen -package=mock_restapp -source internal/restapp/server.go -destination=internal/restapp/mock/server_mock.go
 	mockgen -package=mock_storage -source internal/storage/storage.go -destination=internal/storage/mock/storage_mock.go
 	mockgen -package=mock_storage -source internal/storage/router/router.go -destination=internal/storage/mock/router_mock.go
 
@@ -71,12 +71,12 @@ generate-proto:
 
 .PHONY: verify-swagger
 verify-swagger:
-	swagger-cli bundle api/rest-app/main.yml --type json > generated/rest-app/main.all.json
-	swagger-cli validate generated/rest-app/main.all.json 
+	swagger-cli bundle api/restapp/main.yml --type json > generated/restapp/main.all.json
+	swagger-cli validate generated/restapp/main.all.json 
 
 .PHONY: generate-swagger
 generate-swagger:
-	swagger-cli bundle api/rest-app/main.yml --type yaml > generated/rest-app/main.all.yml
+	swagger-cli bundle api/restapp/main.yml --type yaml > generated/restapp/main.all.yml
 
 .PHONY: generate-oapi
 generate-oapi:
@@ -86,19 +86,19 @@ generate-oapi:
 
 .PHONY: generate-oapi-type
 generate-oapi-type:
-	oapi-codegen -old-config-style -config api/rest-app/type.gen.yaml generated/rest-app/main.all.yml
+	oapi-codegen -old-config-style -config api/restapp/type.gen.yaml generated/restapp/main.all.yml
 
 .PHONY: generate-oapi-server
 generate-oapi-server:
-	oapi-codegen -old-config-style -config api/rest-app/server.gen.yaml generated/rest-app/main.all.yml
+	oapi-codegen -old-config-style -config api/restapp/server.gen.yaml generated/restapp/main.all.yml
 
-.PHONY: run-rest-app
-run-rest-app:
-	go run cmd/rest-app/main.go
+.PHONY: run-restapp
+run-restapp:
+	go run cmd/restapp/main.go
 
-.PHONY: build-rest-app
-build-rest-app:
-	go build -o ./build/rest-app/ ./cmd/rest-app/main.go
+.PHONY: build-restapp
+build-restapp:
+	go build -o ./build/restapp/ ./cmd/restapp/main.go
 
 ifeq (migrate-mysql,$(firstword $(MAKECMDGOALS)))
   # use the rest as arguments for "migrate-mysql"

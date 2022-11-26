@@ -47,8 +47,8 @@ This command should run all the test available on this project.
 1. REST App
 
 ```
-  $ make run-rest-app
-  $ make build-rest-app
+  $ make run-restapp
+  $ make build-restapp
 ```
 
 ### Docker
@@ -77,10 +77,6 @@ TBA
 ```
 
 ## Todo
-3. Devs: Adjustment code structure
-- Move mysql repo as repository subfolder
-- Remove dash foldering name
-
 4. Client: RetrieveFile
 - auto failover from various location
 5. Admin: GetFileById
