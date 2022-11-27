@@ -36,6 +36,21 @@ func (m *MockFile) EXPECT() *MockFileMockRecorder {
 	return m.recorder
 }
 
+// RetrieveFileBySlug mocks base method.
+func (m *MockFile) RetrieveFileBySlug(ctx context.Context, p file.RetrieveFileBySlugParam) (*file.RetrieveFileBySlugResult, *system.SystemError) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RetrieveFileBySlug", ctx, p)
+	ret0, _ := ret[0].(*file.RetrieveFileBySlugResult)
+	ret1, _ := ret[1].(*system.SystemError)
+	return ret0, ret1
+}
+
+// RetrieveFileBySlug indicates an expected call of RetrieveFileBySlug.
+func (mr *MockFileMockRecorder) RetrieveFileBySlug(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RetrieveFileBySlug", reflect.TypeOf((*MockFile)(nil).RetrieveFileBySlug), ctx, p)
+}
+
 // UploadFile mocks base method.
 func (m *MockFile) UploadFile(ctx context.Context, p file.UploadFileParam) (*file.UploadFileResult, *system.SystemError) {
 	m.ctrl.T.Helper()

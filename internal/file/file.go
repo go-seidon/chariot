@@ -2,6 +2,7 @@ package file
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -28,10 +29,11 @@ const (
 
 type File interface {
 	UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileResult, *system.SystemError)
+	RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam) (*RetrieveFileBySlugResult, *system.SystemError)
 }
 
 type UploadFileInfo struct {
-	Name      string            `validate:"max=1024" label:"name"`
+	Name      string            `validate:"max=256" label:"name"`
 	Mimetype  string            `validate:"max=128" label:"mimetype"`
 	Extension string            `validate:"max=32" label:"extension"`
 	Size      int64             `validate:"min=1" label:"size"`
@@ -50,6 +52,25 @@ type UploadFileParam struct {
 }
 
 type UploadFileResult struct {
+	Success    system.SystemSuccess
+	Id         string
+	Slug       string
+	Name       string
+	Mimetype   string
+	Extension  string
+	Size       int64
+	Visibility string
+	Status     string
+	Meta       map[string]string
+	UploadedAt time.Time
+}
+
+type RetrieveFileBySlugParam struct {
+	Slug string `validate:"required,min=1,max=288" label:"slug"`
+}
+
+type RetrieveFileBySlugResult struct {
+	Data       io.ReadCloser
 	Success    system.SystemSuccess
 	Id         string
 	Slug       string
@@ -221,6 +242,96 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 		Status:     createFile.Status,
 		Meta:       createFile.Meta,
 		UploadedAt: createFile.UploadedAt,
+	}
+	return res, nil
+}
+
+func (f *file) RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam) (*RetrieveFileBySlugResult, *system.SystemError) {
+	err := f.validator.Validate(p)
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.INVALID_PARAM,
+			Message: err.Error(),
+		}
+	}
+
+	findFile, err := f.fileRepo.FindFile(ctx, repository.FindFileParam{
+		Slug: p.Slug,
+	})
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, &system.SystemError{
+				Code:    status.RESOURCE_NOTFOUND,
+				Message: "file is not available",
+			}
+		}
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	var ferr error
+	var data io.ReadCloser
+	for i, location := range findFile.Locations {
+		if location.Barrel.Status != barrel.STATUS_ACTIVE {
+			if i+1 == len(findFile.Locations) {
+				ferr = fmt.Errorf("barrels are not active")
+			}
+			continue
+		}
+
+		st, err := f.router.CreateStorage(ctx, router.CreateStorageParam{
+			BarrelCode: location.Barrel.Code,
+		})
+		if err != nil {
+			ferr = err
+			break
+		}
+
+		retrieveObj, err := st.RetrieveObject(ctx, storage.RetrieveObjectParam{
+			ObjectId: typeconv.StringVal(location.ExternalId),
+		})
+		if err == nil {
+			data = retrieveObj.Data
+			break
+		}
+
+		if i+1 == len(findFile.Locations) {
+			ferr = fmt.Errorf("failed retrieve file from barrel")
+		}
+	}
+
+	if ferr != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: ferr.Error(),
+		}
+	}
+
+	if data == nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: "file data is invalid",
+		}
+	}
+
+	res := &RetrieveFileBySlugResult{
+		Success: system.SystemSuccess{
+			Code:    status.ACTION_SUCCESS,
+			Message: "success retrieve file",
+		},
+		Data:       data,
+		Id:         findFile.Id,
+		Slug:       findFile.Slug,
+		Name:       findFile.Name,
+		Mimetype:   findFile.Mimetype,
+		Extension:  findFile.Extension,
+		Size:       findFile.Size,
+		Visibility: findFile.Visibility,
+		Status:     findFile.Status,
+		Meta:       findFile.Meta,
+		UploadedAt: findFile.UploadedAt,
 	}
 	return res, nil
 }
