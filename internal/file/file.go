@@ -30,6 +30,7 @@ const (
 type File interface {
 	UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileResult, *system.SystemError)
 	RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam) (*RetrieveFileBySlugResult, *system.SystemError)
+	GetFileById(ctx context.Context, p GetFileByIdParam) (*GetFileByIdResult, *system.SystemError)
 }
 
 type UploadFileInfo struct {
@@ -82,6 +83,45 @@ type RetrieveFileBySlugResult struct {
 	Status     string
 	Meta       map[string]string
 	UploadedAt time.Time
+}
+
+type GetFileByIdParam struct {
+	Id string `validate:"required,min=5,max=64" label:"id"`
+}
+
+type GetFileByIdResult struct {
+	Success    system.SystemSuccess
+	Id         string
+	Slug       string
+	Name       string
+	Mimetype   string
+	Extension  string
+	Size       int64
+	Visibility string
+	Status     string
+	UploadedAt time.Time
+	CreatedAt  time.Time
+	UpdatedAt  *time.Time
+	DeletedAt  *time.Time
+	Meta       map[string]string
+	Locations  []GetFileByIdLocation
+}
+
+type GetFileByIdBarrel struct {
+	Id       string
+	Code     string
+	Provider string
+	Status   string
+}
+
+type GetFileByIdLocation struct {
+	Barrel     GetFileByIdBarrel
+	ExternalId *string
+	Priority   int32
+	Status     string
+	CreatedAt  time.Time
+	UpdatedAt  *time.Time
+	UploadedAt *time.Time
 }
 
 type file struct {
@@ -332,6 +372,72 @@ func (f *file) RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam
 		Status:     findFile.Status,
 		Meta:       findFile.Meta,
 		UploadedAt: findFile.UploadedAt,
+	}
+	return res, nil
+}
+
+func (f *file) GetFileById(ctx context.Context, p GetFileByIdParam) (*GetFileByIdResult, *system.SystemError) {
+	err := f.validator.Validate(p)
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.INVALID_PARAM,
+			Message: err.Error(),
+		}
+	}
+
+	findFile, err := f.fileRepo.FindFile(ctx, repository.FindFileParam{
+		Id: p.Id,
+	})
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, &system.SystemError{
+				Code:    status.RESOURCE_NOTFOUND,
+				Message: "file is not available",
+			}
+		}
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	locations := []GetFileByIdLocation{}
+	for _, location := range findFile.Locations {
+		locations = append(locations, GetFileByIdLocation{
+			Barrel: GetFileByIdBarrel{
+				Id:       location.Barrel.Id,
+				Code:     location.Barrel.Code,
+				Provider: location.Barrel.Provider,
+				Status:   location.Barrel.Status,
+			},
+			ExternalId: location.ExternalId,
+			Priority:   location.Priority,
+			Status:     location.Status,
+			CreatedAt:  location.CreatedAt,
+			UpdatedAt:  location.UpdatedAt,
+			UploadedAt: location.UploadedAt,
+		})
+	}
+
+	res := &GetFileByIdResult{
+		Success: system.SystemSuccess{
+			Code:    status.ACTION_SUCCESS,
+			Message: "success get file",
+		},
+		Id:         findFile.Id,
+		Slug:       findFile.Slug,
+		Name:       findFile.Name,
+		Mimetype:   findFile.Mimetype,
+		Extension:  findFile.Extension,
+		Size:       findFile.Size,
+		Visibility: findFile.Visibility,
+		Status:     findFile.Status,
+		UploadedAt: findFile.UploadedAt,
+		CreatedAt:  findFile.CreatedAt,
+		UpdatedAt:  findFile.UpdatedAt,
+		DeletedAt:  findFile.DeletedAt,
+		Meta:       findFile.Meta,
+		Locations:  locations,
 	}
 	return res, nil
 }

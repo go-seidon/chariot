@@ -1032,4 +1032,219 @@ var _ = Describe("File Package", func() {
 			})
 		})
 	})
+
+	Context("GetFileById function", Label("unit"), func() {
+
+		var (
+			ctx           context.Context
+			currentTs     time.Time
+			fileClient    file.File
+			validator     *mock_validation.MockValidator
+			identifier    *mock_identifier.MockIdentifier
+			clock         *mock_datetime.MockClock
+			slugger       *mock_slug.MockSlugger
+			barrelRepo    *mock_repository.MockBarrel
+			fileRepo      *mock_repository.MockFile
+			storageRouter *mock_storage.MockRouter
+			p             file.GetFileByIdParam
+			r             *file.GetFileByIdResult
+			findFileParam repository.FindFileParam
+			findFileRes   *repository.FindFileResult
+		)
+
+		BeforeEach(func() {
+			ctx = context.Background()
+			currentTs = time.Now().UTC()
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			validator = mock_validation.NewMockValidator(ctrl)
+			identifier = mock_identifier.NewMockIdentifier(ctrl)
+			clock = mock_datetime.NewMockClock(ctrl)
+			slugger = mock_slug.NewMockSlugger(ctrl)
+			barrelRepo = mock_repository.NewMockBarrel(ctrl)
+			fileRepo = mock_repository.NewMockFile(ctrl)
+			storageRouter = mock_storage.NewMockRouter(ctrl)
+			fileClient = file.NewFile(file.FileParam{
+				Validator:  validator,
+				Identifier: identifier,
+				Clock:      clock,
+				Slugger:    slugger,
+				BarrelRepo: barrelRepo,
+				FileRepo:   fileRepo,
+				Router:     storageRouter,
+			})
+			findFileParam = repository.FindFileParam{
+				Id: p.Id,
+			}
+			findFileRes = &repository.FindFileResult{
+				Id:         "id",
+				Slug:       "dolphin-22.jpg",
+				Name:       "Dolphin 22",
+				Mimetype:   "image/jpeg",
+				Extension:  "jpg",
+				Size:       23343,
+				Visibility: "public",
+				Status:     "available",
+				UploadedAt: currentTs,
+				CreatedAt:  currentTs,
+				UpdatedAt:  &currentTs,
+				DeletedAt:  nil,
+				Meta: map[string]string{
+					"feature": "profile",
+					"user_id": "123",
+				},
+				Locations: []repository.FindFileLocation{
+					{
+						Barrel: repository.FindFileBarrel{
+							Id:       "b1",
+							Code:     "b1",
+							Provider: "goseidon_hippo",
+							Status:   "active",
+						},
+						ExternalId: typeconv.String("e1"),
+						Priority:   1,
+						Status:     "available",
+						CreatedAt:  currentTs,
+						UpdatedAt:  typeconv.Time(currentTs),
+						UploadedAt: typeconv.Time(currentTs),
+					},
+					{
+						Barrel: repository.FindFileBarrel{
+							Id:       "b2",
+							Code:     "b2",
+							Provider: "goseidon_hippo",
+							Status:   "active",
+						},
+						ExternalId: typeconv.String("e2"),
+						Priority:   2,
+						Status:     "uploading",
+						CreatedAt:  currentTs,
+						UpdatedAt:  typeconv.Time(currentTs),
+						UploadedAt: nil,
+					},
+				},
+			}
+			p = file.GetFileByIdParam{
+				Id: "id",
+			}
+			locations := []file.GetFileByIdLocation{}
+			for _, location := range findFileRes.Locations {
+				locations = append(locations, file.GetFileByIdLocation{
+					Barrel: file.GetFileByIdBarrel{
+						Id:       location.Barrel.Id,
+						Code:     location.Barrel.Code,
+						Provider: location.Barrel.Provider,
+						Status:   location.Barrel.Status,
+					},
+					ExternalId: location.ExternalId,
+					Priority:   location.Priority,
+					Status:     location.Status,
+					CreatedAt:  location.CreatedAt,
+					UpdatedAt:  location.UpdatedAt,
+					UploadedAt: location.UploadedAt,
+				})
+			}
+			r = &file.GetFileByIdResult{
+				Success: system.SystemSuccess{
+					Code:    1000,
+					Message: "success get file",
+				},
+				Id:         findFileRes.Id,
+				Slug:       findFileRes.Slug,
+				Name:       findFileRes.Name,
+				Mimetype:   findFileRes.Mimetype,
+				Extension:  findFileRes.Extension,
+				Size:       findFileRes.Size,
+				Visibility: findFileRes.Visibility,
+				Status:     findFileRes.Status,
+				UploadedAt: findFileRes.UploadedAt,
+				CreatedAt:  findFileRes.CreatedAt,
+				UpdatedAt:  findFileRes.UpdatedAt,
+				DeletedAt:  findFileRes.DeletedAt,
+				Meta:       findFileRes.Meta,
+				Locations:  locations,
+			}
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(fmt.Errorf("invalid data")).
+					Times(1)
+
+				res, err := fileClient.GetFileById(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1002)))
+				Expect(err.Message).To(Equal("invalid data"))
+			})
+		})
+
+		When("failed get file", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := fileClient.GetFileById(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("network error"))
+			})
+		})
+
+		When("file is not available", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(nil, repository.ErrNotFound).
+					Times(1)
+
+				res, err := fileClient.GetFileById(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1004)))
+				Expect(err.Message).To(Equal("file is not available"))
+			})
+		})
+
+		When("success get file", func() {
+			It("should return result", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				res, err := fileClient.GetFileById(ctx, p)
+
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
 })
