@@ -77,8 +77,6 @@ TBA
 ```
 
 ## Todo
-4. Client: RetrieveFile
-- auto failover from various location
 5. Admin: GetFileById
 6. Admin: SearchFiles
 

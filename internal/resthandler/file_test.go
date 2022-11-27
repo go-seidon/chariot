@@ -4,6 +4,7 @@ import (
 	"bytes"
 	encoding_json "encoding/json"
 	"fmt"
+	"io"
 	mime_multipart "mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +15,7 @@ import (
 	mock_file "github.com/go-seidon/chariot/internal/file/mock"
 	"github.com/go-seidon/chariot/internal/resthandler"
 	"github.com/go-seidon/chariot/internal/storage/multipart"
+	mock_io "github.com/go-seidon/provider/io/mock"
 	"github.com/go-seidon/provider/serialization/json"
 	serialization "github.com/go-seidon/provider/serialization/mock"
 	"github.com/go-seidon/provider/system"
@@ -295,6 +297,150 @@ var _ = Describe("Basic Handler", func() {
 						AdditionalProperties: uploadRes.Meta,
 					},
 				}))
+			})
+		})
+	})
+
+	Context("RetrieveFileBySlug function", Label("unit"), func() {
+		var (
+			currentTs  time.Time
+			ctx        echo.Context
+			h          func(ctx echo.Context) error
+			rec        *httptest.ResponseRecorder
+			fileClient *mock_file.MockFile
+			findParam  file.RetrieveFileBySlugParam
+			findRes    *file.RetrieveFileBySlugResult
+			fileData   *mock_io.MockReadCloser
+		)
+
+		BeforeEach(func() {
+			currentTs = time.Now().UTC()
+
+			req := httptest.NewRequest(http.MethodPost, "/", nil)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec = httptest.NewRecorder()
+
+			e := echo.New()
+			ctx = e.NewContext(req, rec)
+			ctx.SetParamNames("slug")
+			ctx.SetParamValues("lumba.jpg")
+
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			fileClient = mock_file.NewMockFile(ctrl)
+			fileHandler := resthandler.NewFile(resthandler.FileParam{
+				File: fileClient,
+			})
+			h = fileHandler.RetrieveFileBySlug
+			findParam = file.RetrieveFileBySlugParam{
+				Slug: "lumba.jpg",
+			}
+			fileData = mock_io.NewMockReadCloser(ctrl)
+			findRes = &file.RetrieveFileBySlugResult{
+				Success: system.SystemSuccess{
+					Code:    1000,
+					Message: "success retrieve file",
+				},
+				Data:       fileData,
+				Id:         "id",
+				Slug:       "lumba.jpg",
+				Name:       "Lumba",
+				Mimetype:   "image/jpeg",
+				Extension:  "jpg",
+				Size:       23343,
+				Visibility: "public",
+				Status:     "available",
+				Meta:       map[string]string{},
+				UploadedAt: currentTs,
+			}
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				fileClient.
+					EXPECT().
+					RetrieveFileBySlug(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
+					Return(nil, &system.SystemError{
+						Code:    1002,
+						Message: "invalid data",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 400,
+					Message: &restapp.ResponseBodyInfo{
+						Code:    1002,
+						Message: "invalid data",
+					},
+				}))
+			})
+		})
+
+		When("file is not available", func() {
+			It("should return error", func() {
+				fileClient.
+					EXPECT().
+					RetrieveFileBySlug(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
+					Return(nil, &system.SystemError{
+						Code:    1004,
+						Message: "file is not available",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 404,
+					Message: &restapp.ResponseBodyInfo{
+						Code:    1004,
+						Message: "file is not available",
+					},
+				}))
+			})
+		})
+
+		When("failed find file", func() {
+			It("should return error", func() {
+				fileClient.
+					EXPECT().
+					RetrieveFileBySlug(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
+					Return(nil, &system.SystemError{
+						Code:    1001,
+						Message: "network error",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 500,
+					Message: &restapp.ResponseBodyInfo{
+						Code:    1001,
+						Message: "network error",
+					},
+				}))
+			})
+		})
+
+		When("success retrieve file", func() {
+			It("should return error", func() {
+				fileData.
+					EXPECT().
+					Read(gomock.Any()).
+					Return(0, io.EOF).
+					Times(1)
+
+				fileClient.
+					EXPECT().
+					RetrieveFileBySlug(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
+					Return(findRes, nil).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(BeNil())
 			})
 		})
 	})

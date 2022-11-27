@@ -2,12 +2,14 @@ package app
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/go-seidon/chariot/internal/barrel"
 	"github.com/go-seidon/chariot/internal/storage"
 	"github.com/go-seidon/chariot/internal/storage/hippo"
 	"github.com/go-seidon/chariot/internal/storage/multipart"
 	"github.com/go-seidon/chariot/internal/storage/router"
+	"github.com/go-seidon/provider/datetime"
 	"github.com/go-seidon/provider/encoding"
 	"github.com/go-seidon/provider/http"
 	"github.com/go-seidon/provider/serialization"
@@ -18,6 +20,7 @@ type StorageRouterParam struct {
 	Serializer serialization.Serializer
 	Encoder    encoding.Encoder
 	HttpClient http.Client
+	Clock      datetime.Clock
 }
 
 func NewDefaultStorageRouter(p StorageRouterParam) (router.Router, error) {
@@ -53,11 +56,11 @@ func NewDefaultStorageRouter(p StorageRouterParam) (router.Router, error) {
 				hippo.WithSerializer(p.Serializer),
 				hippo.WithHttpClient(p.HttpClient),
 				hippo.WithWriter(multipart.FileWriter),
+				hippo.WithClock(p.Clock),
 			)
-			barrels[code] = stg
+			barrels[strings.ToLower(code)] = stg
 		}
 	}
-
 	r = router.NewRouter(router.RouterParam{
 		Barrels: barrels,
 	})

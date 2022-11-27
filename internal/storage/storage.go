@@ -15,6 +15,7 @@ const (
 
 type Storage interface {
 	UploadObject(ctx context.Context, p UploadObjectParam) (*UploadObjectResult, error)
+	RetrieveObject(ctx context.Context, p RetrieveObjectParam) (*RetrieveObjectResult, error)
 }
 
 type UploadObjectParam struct {
@@ -28,4 +29,13 @@ type UploadObjectParam struct {
 type UploadObjectResult struct {
 	ObjectId   string    //required, this id might be different than the specified id
 	UploadedAt time.Time //required, represented in UTC format
+}
+
+type RetrieveObjectParam struct {
+	ObjectId string
+}
+
+type RetrieveObjectResult struct {
+	Data        io.ReadCloser
+	RetrievedAt time.Time
 }

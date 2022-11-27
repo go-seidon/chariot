@@ -2,6 +2,7 @@ package hippo
 
 import (
 	"github.com/go-seidon/chariot/internal/storage/multipart"
+	"github.com/go-seidon/provider/datetime"
 	"github.com/go-seidon/provider/encoding"
 	"github.com/go-seidon/provider/http"
 	"github.com/go-seidon/provider/serialization"
@@ -16,6 +17,7 @@ type StorageParam struct {
 	Encoder    encoding.Encoder
 	HttpClient http.Client
 	FileWriter multipart.Writer
+	Clock      datetime.Clock
 }
 
 type StorageAuth struct {
@@ -60,5 +62,11 @@ func WithHttpClient(c http.Client) StorageOption {
 func WithWriter(fw multipart.Writer) StorageOption {
 	return func(p *StorageParam) {
 		p.FileWriter = fw
+	}
+}
+
+func WithClock(c datetime.Clock) StorageOption {
+	return func(p *StorageParam) {
+		p.Clock = c
 	}
 }

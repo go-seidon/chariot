@@ -158,7 +158,7 @@ func (r *file) CreateFile(ctx context.Context, p repository.CreateFileParam) (*r
 	for _, item := range file.Locations {
 		var externalId *string
 		if item.ExternalId.Valid {
-			externalId = &item.ExternalId.String
+			externalId = typeconv.String(item.ExternalId.String)
 		}
 
 		var uploadedAt *time.Time
@@ -187,6 +187,95 @@ func (r *file) CreateFile(ctx context.Context, p repository.CreateFileParam) (*r
 		Status:     file.Status,
 		CreatedAt:  time.UnixMilli(file.CreatedAt).UTC(),
 		UploadedAt: time.UnixMilli(file.UploadedAt).UTC(),
+		Meta:       meta,
+		Locations:  location,
+	}
+	return res, nil
+}
+
+func (r *file) FindFile(ctx context.Context, p repository.FindFileParam) (*repository.FindFileResult, error) {
+	file := &File{}
+
+	query := r.gormClient.
+		WithContext(ctx).
+		Clauses(dbresolver.Read)
+
+	findRes := query.
+		Select(`id, slug, name, mimetype, extension, size, visibility, status, created_at, updated_at, deleted_at, uploaded_at`).
+		Preload("Metas", func(tx *gorm.DB) *gorm.DB {
+			return tx.Select("file_id, `key`, value")
+		}).
+		Preload("Locations", func(tx *gorm.DB) *gorm.DB {
+			return tx.Select("file_id, barrel_id, external_id, priority, status, created_at, updated_at, uploaded_at")
+		}).
+		Preload("Locations.Barrel", func(tx *gorm.DB) *gorm.DB {
+			return tx.Select("id, code, provider, status")
+		})
+
+	if p.Slug != "" {
+		findRes = findRes.First(file, "slug = ?", p.Slug)
+	} else {
+		findRes = findRes.First(file, "id = ?", p.Id)
+	}
+
+	if findRes.Error != nil {
+		if errors.Is(findRes.Error, gorm.ErrRecordNotFound) {
+			return nil, repository.ErrNotFound
+		}
+		return nil, findRes.Error
+	}
+
+	meta := map[string]string{}
+	for _, item := range file.Metas {
+		meta[item.Key] = item.Value
+	}
+
+	location := []repository.FindFileLocation{}
+	for _, item := range file.Locations {
+		var externalId *string
+		if item.ExternalId.Valid {
+			externalId = typeconv.String(item.ExternalId.String)
+		}
+
+		var uploadedAt *time.Time
+		if item.UploadedAt.Valid {
+			uploadedAt = typeconv.Time(time.UnixMilli(item.UploadedAt.Int64).UTC())
+		}
+
+		location = append(location, repository.FindFileLocation{
+			Barrel: repository.FindFileBarrel{
+				Id:       item.Barrel.Id,
+				Code:     item.Barrel.Code,
+				Provider: item.Barrel.Provider,
+				Status:   item.Barrel.Status,
+			},
+			ExternalId: externalId,
+			Priority:   item.Priority,
+			Status:     item.Status,
+			CreatedAt:  time.UnixMilli(item.CreatedAt).UTC(),
+			UploadedAt: uploadedAt,
+			UpdatedAt:  typeconv.Time(time.UnixMilli(item.UpdatedAt).UTC()),
+		})
+	}
+
+	var deletedAt *time.Time
+	if file.DeletedAt.Valid {
+		deletedAt = typeconv.Time(time.UnixMilli(file.DeletedAt.Int64).UTC())
+	}
+
+	res := &repository.FindFileResult{
+		Id:         file.Id,
+		Slug:       file.Slug,
+		Name:       file.Name,
+		Mimetype:   file.Mimetype,
+		Extension:  file.Extension,
+		Size:       file.Size,
+		Visibility: file.Visibility,
+		Status:     file.Status,
+		CreatedAt:  time.UnixMilli(file.CreatedAt).UTC(),
+		UpdatedAt:  typeconv.Time(time.UnixMilli(file.UpdatedAt).UTC()),
+		UploadedAt: time.UnixMilli(file.UploadedAt).UTC(),
+		DeletedAt:  deletedAt,
 		Meta:       meta,
 		Locations:  location,
 	}
@@ -235,6 +324,7 @@ type FileLocation struct {
 	UploadedAt sql.NullInt64  `gorm:"column:uploaded_at"`
 	CreatedAt  int64          `gorm:"column:created_at"`
 	UpdatedAt  int64          `gorm:"column:updated_at;autoUpdateTime:milli"`
+	Barrel     Barrel         `gorm:"foreignKey:BarrelId;references:Id"`
 }
 
 func (FileLocation) TableName() string {

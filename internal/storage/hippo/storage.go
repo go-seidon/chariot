@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-seidon/chariot/internal/storage"
 	"github.com/go-seidon/chariot/internal/storage/multipart"
+	"github.com/go-seidon/provider/datetime"
 	"github.com/go-seidon/provider/encoding"
 	"github.com/go-seidon/provider/http"
 	"github.com/go-seidon/provider/serialization"
@@ -24,6 +25,7 @@ type hippoStorage struct {
 	serializer serialization.Serializer
 	encoder    encoding.Encoder
 	httpClient http.Client
+	clock      datetime.Clock
 }
 
 func (s *hippoStorage) UploadObject(ctx context.Context, p storage.UploadObjectParam) (*storage.UploadObjectResult, error) {
@@ -85,6 +87,51 @@ func (s *hippoStorage) UploadObject(ctx context.Context, p storage.UploadObjectP
 	return res, nil
 }
 
+func (s *hippoStorage) RetrieveObject(ctx context.Context, p storage.RetrieveObjectParam) (*storage.RetrieveObjectResult, error) {
+	basicAuth, err := s.encoder.Encode([]byte(s.auth.ClientId + ":" + s.auth.ClientSecret))
+	if err != nil {
+		return nil, err
+	}
+
+	retrieveObject, err := s.httpClient.Get(ctx, http.RequestParam{
+		Url: fmt.Sprintf("%s/%s/%s", s.config.Host, "v1/file", p.ObjectId),
+		Header: map[string][]string{
+			"Authorization": {fmt.Sprintf("%s %s", "Basic", basicAuth)},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if retrieveObject.StatusCode != net_http.StatusOK {
+		retrieveData, err := io.ReadAll(retrieveObject.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		retrieveBody := &ResponseBodyInfo{}
+		err = s.serializer.Unmarshal(retrieveData, retrieveBody)
+		if err != nil {
+			return nil, err
+		}
+
+		err = fmt.Errorf(retrieveBody.Message)
+		switch retrieveBody.Code {
+		case status.ACTION_FORBIDDEN:
+			err = storage.ErrUnauthenticated
+		case status.RESOURCE_NOTFOUND:
+			err = storage.ErrNotFound
+		}
+		return nil, err
+	}
+
+	res := &storage.RetrieveObjectResult{
+		Data:        retrieveObject.Body,
+		RetrievedAt: s.clock.Now().UTC(),
+	}
+	return res, nil
+}
+
 func NewStorage(opts ...StorageOption) *hippoStorage {
 	p := StorageParam{}
 	for _, opt := range opts {
@@ -98,5 +145,6 @@ func NewStorage(opts ...StorageOption) *hippoStorage {
 		serializer: p.Serializer,
 		encoder:    p.Encoder,
 		httpClient: p.HttpClient,
+		clock:      p.Clock,
 	}
 }

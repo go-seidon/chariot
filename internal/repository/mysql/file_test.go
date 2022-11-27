@@ -636,4 +636,336 @@ var _ = Describe("File Repository", func() {
 		})
 	})
 
+	Context("FindFile function", Label("unit"), func() {
+
+		var (
+			ctx              context.Context
+			currentTs        time.Time
+			dbClient         sqlmock.Sqlmock
+			fileRepo         repository.File
+			p                repository.FindFileParam
+			r                *repository.FindFileResult
+			findStmt         string
+			findMetaStmt     string
+			findLocationStmt string
+			findBarrelStmt   string
+			findRows         *sqlmock.Rows
+			findMetaRows     *sqlmock.Rows
+			findLocationRows *sqlmock.Rows
+			findBarrelRows   *sqlmock.Rows
+		)
+
+		BeforeEach(func() {
+			var (
+				db  *sql.DB
+				err error
+			)
+
+			ctx = context.Background()
+			currentTs = time.Now().UTC()
+			db, dbClient, err = sqlmock.New()
+			if err != nil {
+				AbortSuite("failed create db mock: " + err.Error())
+			}
+
+			gormClient, err := gorm.Open(gorm_mysql.New(gorm_mysql.Config{
+				Conn:                      db,
+				SkipInitializeWithVersion: true,
+			}), &gorm.Config{
+				DisableAutomaticPing: true,
+			})
+			if err != nil {
+				AbortSuite("failed create gorm client: " + err.Error())
+			}
+			fileRepo = mysql.NewFile(mysql.FileParam{
+				GormClient: gormClient,
+			})
+
+			p = repository.FindFileParam{
+				Id: "id",
+			}
+			r = &repository.FindFileResult{
+				Id:         "id",
+				Slug:       "dolphin-22.jpg",
+				Name:       "Dolhpin 22",
+				Mimetype:   "image/jpeg",
+				Extension:  "jpg",
+				Size:       23343,
+				Visibility: "public",
+				Status:     "available",
+				CreatedAt:  time.UnixMilli(currentTs.UnixMilli()).UTC(),
+				UpdatedAt:  typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+				UploadedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
+				DeletedAt:  nil,
+				Meta: map[string]string{
+					"feature": "profile",
+					"user_id": "123",
+				},
+				Locations: []repository.FindFileLocation{
+					{
+						ExternalId: typeconv.String("e1"),
+						Priority:   1,
+						Status:     "available",
+						CreatedAt:  time.UnixMilli(currentTs.UnixMilli()).UTC(),
+						UpdatedAt:  typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+						UploadedAt: typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+						Barrel: repository.FindFileBarrel{
+							Id:       "b1",
+							Code:     "b1",
+							Provider: "goseidon_hippo",
+							Status:   "active",
+						},
+					},
+					{
+						ExternalId: nil,
+						Priority:   2,
+						Status:     "uploading",
+						CreatedAt:  time.UnixMilli(currentTs.UnixMilli()).UTC(),
+						UpdatedAt:  typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+						UploadedAt: nil,
+						Barrel: repository.FindFileBarrel{
+							Id:       "b2",
+							Code:     "b2",
+							Provider: "goseidon_hippo",
+							Status:   "active",
+						},
+					},
+				},
+			}
+			findStmt = regexp.QuoteMeta("SELECT id, slug, name, mimetype, extension, size, visibility, status, created_at, updated_at, deleted_at, uploaded_at FROM `file` WHERE id = ? ORDER BY `file`.`id` LIMIT 1")
+			findMetaStmt = regexp.QuoteMeta("SELECT file_id, `key`, value FROM `file_meta` WHERE `file_meta`.`file_id` = ?")
+			findLocationStmt = regexp.QuoteMeta("SELECT file_id, barrel_id, external_id, priority, status, created_at, updated_at, uploaded_at FROM `file_location` WHERE `file_location`.`file_id` = ?")
+			findBarrelStmt = regexp.QuoteMeta("SELECT id, code, provider, status FROM `barrel` WHERE `barrel`.`id` IN (?,?)")
+
+			findRows = sqlmock.NewRows([]string{
+				"id", "slug", "name", "mimetype",
+				"extension", "size", "visibility", "status",
+				"created_at", "updated_at", "deleted_at", "uploaded_at",
+			}).AddRow(
+				r.Id, r.Slug, r.Name, r.Mimetype,
+				r.Extension, r.Size, r.Visibility, r.Status,
+				currentTs.UnixMilli(), currentTs.UnixMilli(),
+				nil, currentTs.UnixMilli(),
+			)
+
+			findLocationRows = sqlmock.NewRows([]string{
+				"file_id", "barrel_id", "external_id",
+				"priority", "status",
+				"created_at", "updated_at", "uploaded_at",
+			}).AddRow(
+				"id", "b1", "e1",
+				1, "available",
+				currentTs.UnixMilli(),
+				currentTs.UnixMilli(),
+				currentTs.UnixMilli(),
+			).AddRow(
+				"id", "b2", nil,
+				2, "uploading",
+				currentTs.UnixMilli(),
+				currentTs.UnixMilli(),
+				nil,
+			)
+
+			findMetaRows = sqlmock.NewRows([]string{
+				"file_id", "key", "value",
+			}).
+				AddRow("id", "user_id", "123").
+				AddRow("id", "feature", "profile")
+
+			findBarrelRows = sqlmock.NewRows([]string{
+				"id", "code", "provider", "status",
+			}).
+				AddRow("b1", "b1", "goseidon_hippo", "active").
+				AddRow("b2", "b2", "goseidon_hippo", "active")
+		})
+
+		AfterEach(func() {
+			err := dbClient.ExpectationsWereMet()
+			if err != nil {
+				AbortSuite("some expectations were not met " + err.Error())
+			}
+		})
+
+		When("failed find file", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnError(fmt.Errorf("network error"))
+
+				res, err := fileRepo.FindFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("file is not available", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnError(gorm.ErrRecordNotFound)
+
+				res, err := fileRepo.FindFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(repository.ErrNotFound))
+			})
+		})
+
+		When("success find file", func() {
+			It("should return result", func() {
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnRows(findRows)
+
+				dbClient.
+					ExpectQuery(findLocationStmt).
+					WithArgs(p.Id).
+					WillReturnRows(findLocationRows)
+
+				dbClient.
+					ExpectQuery(findBarrelStmt).
+					WithArgs("b1", "b2").
+					WillReturnRows(findBarrelRows)
+
+				dbClient.
+					ExpectQuery(findMetaStmt).
+					WithArgs(p.Id).
+					WillReturnRows(findMetaRows)
+
+				res, err := fileRepo.FindFile(ctx, p)
+
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("success find deleted file", func() {
+			It("should return result", func() {
+				findRows := sqlmock.
+					NewRows([]string{
+						"id", "slug", "name", "mimetype",
+						"extension", "size", "visibility", "status",
+						"created_at", "updated_at", "deleted_at", "uploaded_at",
+					}).
+					AddRow(
+						r.Id, r.Slug, r.Name, r.Mimetype,
+						r.Extension, r.Size, r.Visibility, r.Status,
+						currentTs.UnixMilli(), currentTs.UnixMilli(),
+						currentTs.UnixMilli(), currentTs.UnixMilli(),
+					)
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Id).
+					WillReturnRows(findRows)
+
+				findLocationRows := sqlmock.NewRows([]string{
+					"file_id", "barrel_id", "external_id",
+					"priority", "status",
+					"created_at", "updated_at", "uploaded_at",
+				})
+				dbClient.
+					ExpectQuery(findLocationStmt).
+					WithArgs(p.Id).
+					WillReturnRows(findLocationRows)
+
+				findMetaRows := sqlmock.NewRows([]string{
+					"file_id", "key", "value",
+				})
+				dbClient.
+					ExpectQuery(findMetaStmt).
+					WithArgs(p.Id).
+					WillReturnRows(findMetaRows)
+
+				res, err := fileRepo.FindFile(ctx, p)
+
+				r := &repository.FindFileResult{
+					Id:         "id",
+					Slug:       "dolphin-22.jpg",
+					Name:       "Dolhpin 22",
+					Mimetype:   "image/jpeg",
+					Extension:  "jpg",
+					Size:       23343,
+					Visibility: "public",
+					Status:     "available",
+					CreatedAt:  time.UnixMilli(currentTs.UnixMilli()).UTC(),
+					UpdatedAt:  typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+					UploadedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
+					DeletedAt:  typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+					Meta:       map[string]string{},
+					Locations:  []repository.FindFileLocation{},
+				}
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("success find using slug", func() {
+			It("should return result", func() {
+				p := repository.FindFileParam{
+					Slug: "dolphin-22.jpg",
+				}
+
+				findRows := sqlmock.
+					NewRows([]string{
+						"id", "slug", "name", "mimetype",
+						"extension", "size", "visibility", "status",
+						"created_at", "updated_at", "deleted_at", "uploaded_at",
+					}).
+					AddRow(
+						r.Id, r.Slug, r.Name, r.Mimetype,
+						r.Extension, r.Size, r.Visibility, r.Status,
+						currentTs.UnixMilli(), currentTs.UnixMilli(),
+						currentTs.UnixMilli(), currentTs.UnixMilli(),
+					)
+				findStmt := regexp.QuoteMeta("SELECT id, slug, name, mimetype, extension, size, visibility, status, created_at, updated_at, deleted_at, uploaded_at FROM `file` WHERE slug = ? ORDER BY `file`.`id` LIMIT 1")
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.Slug).
+					WillReturnRows(findRows)
+
+				findLocationRows := sqlmock.NewRows([]string{
+					"file_id", "barrel_id", "external_id",
+					"priority", "status",
+					"created_at", "updated_at", "uploaded_at",
+				})
+				dbClient.
+					ExpectQuery(findLocationStmt).
+					WithArgs("id").
+					WillReturnRows(findLocationRows)
+
+				findMetaRows := sqlmock.NewRows([]string{
+					"file_id", "key", "value",
+				})
+				dbClient.
+					ExpectQuery(findMetaStmt).
+					WithArgs("id").
+					WillReturnRows(findMetaRows)
+
+				res, err := fileRepo.FindFile(ctx, p)
+
+				r := &repository.FindFileResult{
+					Id:         "id",
+					Slug:       "dolphin-22.jpg",
+					Name:       "Dolhpin 22",
+					Mimetype:   "image/jpeg",
+					Extension:  "jpg",
+					Size:       23343,
+					Visibility: "public",
+					Status:     "available",
+					CreatedAt:  time.UnixMilli(currentTs.UnixMilli()).UTC(),
+					UpdatedAt:  typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+					UploadedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
+					DeletedAt:  typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+					Meta:       map[string]string{},
+					Locations:  []repository.FindFileLocation{},
+				}
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
 })

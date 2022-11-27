@@ -16,6 +16,7 @@ import (
 	mock_identifier "github.com/go-seidon/provider/identifier/mock"
 	mock_io "github.com/go-seidon/provider/io/mock"
 	mock_slug "github.com/go-seidon/provider/slug/mock"
+	"github.com/go-seidon/provider/system"
 	"github.com/go-seidon/provider/typeconv"
 	mock_validation "github.com/go-seidon/provider/validation/mock"
 	"github.com/golang/mock/gomock"
@@ -628,6 +629,406 @@ var _ = Describe("File Package", func() {
 				Expect(res.Status).To(Equal(createFileRes.Status))
 				Expect(res.Meta).To(Equal(createFileRes.Meta))
 				Expect(res.UploadedAt).To(Equal(createFileRes.UploadedAt))
+			})
+		})
+	})
+
+	Context("RetrieveFileBySlug function", Label("unit"), func() {
+
+		var (
+			ctx            context.Context
+			currentTs      time.Time
+			fileClient     file.File
+			validator      *mock_validation.MockValidator
+			identifier     *mock_identifier.MockIdentifier
+			clock          *mock_datetime.MockClock
+			slugger        *mock_slug.MockSlugger
+			barrelRepo     *mock_repository.MockBarrel
+			fileRepo       *mock_repository.MockFile
+			storageRouter  *mock_storage.MockRouter
+			storagePrimary *mock_storage.MockStorage
+			fileData       *mock_io.MockReadCloser
+			p              file.RetrieveFileBySlugParam
+			r              *file.RetrieveFileBySlugResult
+			createStgParam router.CreateStorageParam
+			retrieveParam  storage.RetrieveObjectParam
+			retrieveRes    *storage.RetrieveObjectResult
+			findFileParam  repository.FindFileParam
+			findFileRes    *repository.FindFileResult
+		)
+
+		BeforeEach(func() {
+			ctx = context.Background()
+			currentTs = time.Now().UTC()
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			validator = mock_validation.NewMockValidator(ctrl)
+			identifier = mock_identifier.NewMockIdentifier(ctrl)
+			clock = mock_datetime.NewMockClock(ctrl)
+			slugger = mock_slug.NewMockSlugger(ctrl)
+			barrelRepo = mock_repository.NewMockBarrel(ctrl)
+			fileRepo = mock_repository.NewMockFile(ctrl)
+			storageRouter = mock_storage.NewMockRouter(ctrl)
+			storagePrimary = mock_storage.NewMockStorage(ctrl)
+			fileData = mock_io.NewMockReadCloser(ctrl)
+			fileClient = file.NewFile(file.FileParam{
+				Validator:  validator,
+				Identifier: identifier,
+				Clock:      clock,
+				Slugger:    slugger,
+				BarrelRepo: barrelRepo,
+				FileRepo:   fileRepo,
+				Router:     storageRouter,
+			})
+
+			createStgParam = router.CreateStorageParam{
+				BarrelCode: "b1",
+			}
+			retrieveParam = storage.RetrieveObjectParam{
+				ObjectId: "e1",
+			}
+			retrieveRes = &storage.RetrieveObjectResult{
+				Data:        fileData,
+				RetrievedAt: currentTs,
+			}
+			findFileParam = repository.FindFileParam{
+				Slug: p.Slug,
+			}
+			findFileRes = &repository.FindFileResult{
+				Id: "id",
+				Locations: []repository.FindFileLocation{
+					{
+						Barrel: repository.FindFileBarrel{
+							Id:       "b1",
+							Code:     "b1",
+							Provider: "goseidon_hippo",
+							Status:   "active",
+						},
+						ExternalId: typeconv.String("e1"),
+						Priority:   1,
+						Status:     "available",
+						CreatedAt:  currentTs,
+						UpdatedAt:  typeconv.Time(currentTs),
+						UploadedAt: typeconv.Time(currentTs),
+					},
+					{
+						Barrel: repository.FindFileBarrel{
+							Id:       "b2",
+							Code:     "b2",
+							Provider: "goseidon_hippo",
+							Status:   "active",
+						},
+						ExternalId: typeconv.String("e2"),
+						Priority:   2,
+						Status:     "uploading",
+						CreatedAt:  currentTs,
+						UpdatedAt:  typeconv.Time(currentTs),
+						UploadedAt: nil,
+					},
+				},
+			}
+			p = file.RetrieveFileBySlugParam{
+				Slug: "dolphin-22.jpg",
+			}
+			r = &file.RetrieveFileBySlugResult{
+				Success: system.SystemSuccess{
+					Code:    1000,
+					Message: "success retrieve file",
+				},
+				Data: fileData,
+				Id:   "id",
+			}
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(fmt.Errorf("invalid data")).
+					Times(1)
+
+				res, err := fileClient.RetrieveFileBySlug(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1002)))
+				Expect(err.Message).To(Equal("invalid data"))
+			})
+		})
+
+		When("failed find file", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := fileClient.RetrieveFileBySlug(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("network error"))
+			})
+		})
+
+		When("file is not available", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(nil, repository.ErrNotFound).
+					Times(1)
+
+				res, err := fileClient.RetrieveFileBySlug(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1004)))
+				Expect(err.Message).To(Equal("file is not available"))
+			})
+		})
+
+		When("barrels are not active", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				findFileRes = &repository.FindFileResult{
+					Locations: []repository.FindFileLocation{
+						{
+							Barrel: repository.FindFileBarrel{
+								Status: "inactive",
+							},
+						},
+					},
+				}
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				res, err := fileClient.RetrieveFileBySlug(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("barrels are not active"))
+			})
+		})
+
+		When("data is invalid", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				findFileRes = &repository.FindFileResult{
+					Locations: []repository.FindFileLocation{},
+				}
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				res, err := fileClient.RetrieveFileBySlug(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("file data is invalid"))
+			})
+		})
+
+		When("failed create storage", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(nil, fmt.Errorf("unsupported storage")).
+					Times(1)
+
+				res, err := fileClient.RetrieveFileBySlug(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("unsupported storage"))
+			})
+		})
+
+		When("success retrieve object", func() {
+			It("should return result", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(storagePrimary, nil).
+					Times(1)
+
+				storagePrimary.
+					EXPECT().
+					RetrieveObject(gomock.Eq(ctx), gomock.Eq(retrieveParam)).
+					Return(retrieveRes, nil).
+					Times(1)
+
+				res, err := fileClient.RetrieveFileBySlug(ctx, p)
+
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("success retrieve object on last location", func() {
+			It("should return result", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				createStgParam := router.CreateStorageParam{
+					BarrelCode: "b1",
+				}
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(storagePrimary, nil).
+					Times(1)
+
+				retrieveParam := storage.RetrieveObjectParam{
+					ObjectId: "e1",
+				}
+				storagePrimary.
+					EXPECT().
+					RetrieveObject(gomock.Eq(ctx), gomock.Eq(retrieveParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				createStgParam = router.CreateStorageParam{
+					BarrelCode: "b2",
+				}
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(storagePrimary, nil).
+					Times(1)
+
+				retrieveParam = storage.RetrieveObjectParam{
+					ObjectId: "e2",
+				}
+				storagePrimary.
+					EXPECT().
+					RetrieveObject(gomock.Eq(ctx), gomock.Eq(retrieveParam)).
+					Return(retrieveRes, nil).
+					Times(1)
+
+				res, err := fileClient.RetrieveFileBySlug(ctx, p)
+
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("failed retrieve object on last location", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				createStgParam := router.CreateStorageParam{
+					BarrelCode: "b1",
+				}
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(storagePrimary, nil).
+					Times(1)
+
+				retrieveParam := storage.RetrieveObjectParam{
+					ObjectId: "e1",
+				}
+				storagePrimary.
+					EXPECT().
+					RetrieveObject(gomock.Eq(ctx), gomock.Eq(retrieveParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				createStgParam = router.CreateStorageParam{
+					BarrelCode: "b2",
+				}
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(storagePrimary, nil).
+					Times(1)
+
+				retrieveParam = storage.RetrieveObjectParam{
+					ObjectId: "e2",
+				}
+				storagePrimary.
+					EXPECT().
+					RetrieveObject(gomock.Eq(ctx), gomock.Eq(retrieveParam)).
+					Return(nil, fmt.Errorf("i/o error")).
+					Times(1)
+
+				res, err := fileClient.RetrieveFileBySlug(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("failed retrieve file from barrel"))
 			})
 		})
 	})
