@@ -3,7 +3,7 @@ value:
   message: success
   data:
     id: 2FfnA2ifBQDT5bMFRCvcdnIhVmg
-    slug: lumba-lumba
+    slug: lumba-lumba.jpg
     name: Lumba Lumba
     mimetype: image/jpeg
     extension: jpg
@@ -14,4 +14,24 @@ value:
       user_id: ac1fd52f-734a-456e-bd06-df71b5caadc5
       feature: upload-profile
     uploaded_at: 1664891858912
-    created_at: 1664891858856
+    created_at: 1669446813050
+    updated_at: 1669446813050
+    locations:
+      - barrel_code: hippo1
+        barrel_id: 2HxGGarZnWeNqKjJWzEjUNB8EBN
+        barrel_provider: goseidon_hippo
+        barrel_status: active
+        external_id: 2I4hYo9veIJxqvKJHceYAAS4ijd
+        priority: 1
+        status: available
+        created_at: 1669446813050
+        updated_at: 1669446813050778
+        uploaded_at: 1669446812998
+      - barrel_code: hippo2
+        barrel_id: 2HxGHHXdebWBaaiUZNrrD83L08s
+        barrel_provider: goseidon_hippo
+        barrel_status: active
+        priority: 2
+        status: uploading
+        created_at: 1669446813050
+        updated_at: 1669446813050778
