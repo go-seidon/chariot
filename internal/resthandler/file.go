@@ -95,6 +95,26 @@ func (h *fileHandler) UploadFile(ctx echo.Context) error {
 	})
 }
 
+func (h *fileHandler) RetrieveFileBySlug(ctx echo.Context) error {
+	findFile, err := h.fileClient.RetrieveFileBySlug(ctx.Request().Context(), file.RetrieveFileBySlugParam{
+		Slug: ctx.Param("slug"),
+	})
+	if err != nil {
+		httpCode := http.StatusInternalServerError
+		switch err.Code {
+		case status.INVALID_PARAM:
+			httpCode = http.StatusBadRequest
+		case status.RESOURCE_NOTFOUND:
+			httpCode = http.StatusNotFound
+		}
+		return echo.NewHTTPError(httpCode, &restapp.ResponseBodyInfo{
+			Code:    err.Code,
+			Message: err.Message,
+		})
+	}
+	return ctx.Stream(http.StatusOK, findFile.Mimetype, findFile.Data)
+}
+
 type FileParam struct {
 	File       file.File
 	FileParser multipart.Parser
