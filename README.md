@@ -77,7 +77,6 @@ TBA
 ```
 
 ## Todo
-5. Admin: GetFileById
 6. Admin: SearchFiles
 
 7. Client: Secure Access
