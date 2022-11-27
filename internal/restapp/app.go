@@ -174,6 +174,9 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		fileAccessGroup := echo.Group("/file")
 		fileAccessGroup.POST("", fileHandler.UploadFile)
 		fileAccessGroup.GET("/:slug", fileHandler.RetrieveFileBySlug)
+
+		fileGroup := echo.Group("/v1/file")
+		fileGroup.GET("/:id", fileHandler.GetFileById)
 	}
 
 	app := &restApp{

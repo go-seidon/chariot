@@ -19,6 +19,7 @@ import (
 	"github.com/go-seidon/provider/serialization/json"
 	serialization "github.com/go-seidon/provider/serialization/mock"
 	"github.com/go-seidon/provider/system"
+	"github.com/go-seidon/provider/typeconv"
 	"github.com/golang/mock/gomock"
 	"github.com/labstack/echo/v4"
 	. "github.com/onsi/ginkgo/v2"
@@ -441,6 +442,317 @@ var _ = Describe("Basic Handler", func() {
 				err := h(ctx)
 
 				Expect(err).To(BeNil())
+			})
+		})
+	})
+
+	Context("GetFileById function", Label("unit"), func() {
+		var (
+			currentTs  time.Time
+			ctx        echo.Context
+			h          func(ctx echo.Context) error
+			rec        *httptest.ResponseRecorder
+			fileClient *mock_file.MockFile
+			findParam  file.GetFileByIdParam
+			findRes    *file.GetFileByIdResult
+		)
+
+		BeforeEach(func() {
+			currentTs = time.Now().UTC()
+
+			req := httptest.NewRequest(http.MethodPost, "/", nil)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec = httptest.NewRecorder()
+
+			e := echo.New()
+			ctx = e.NewContext(req, rec)
+			ctx.SetParamNames("id")
+			ctx.SetParamValues("id")
+
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			fileClient = mock_file.NewMockFile(ctrl)
+			fileHandler := resthandler.NewFile(resthandler.FileParam{
+				File: fileClient,
+			})
+			h = fileHandler.GetFileById
+			findParam = file.GetFileByIdParam{
+				Id: "id",
+			}
+			findRes = &file.GetFileByIdResult{
+				Success: system.SystemSuccess{
+					Code:    1000,
+					Message: "success get file",
+				},
+				Id:         "id",
+				Slug:       "lumba.jpg",
+				Name:       "Lumba",
+				Mimetype:   "image/jpeg",
+				Extension:  "jpg",
+				Size:       23343,
+				Visibility: "public",
+				Status:     "available",
+				Meta: map[string]string{
+					"feature": "profile",
+					"user_id": "123",
+				},
+				UploadedAt: currentTs,
+				CreatedAt:  currentTs,
+				UpdatedAt:  &currentTs,
+				DeletedAt:  nil,
+				Locations: []file.GetFileByIdLocation{
+					{
+						Barrel: file.GetFileByIdBarrel{
+							Id: "b1",
+						},
+						ExternalId: typeconv.String("e1"),
+						Priority:   1,
+						Status:     "available",
+						CreatedAt:  currentTs,
+						UpdatedAt:  &currentTs,
+						UploadedAt: &currentTs,
+					},
+					{
+						Barrel: file.GetFileByIdBarrel{
+							Id: "b2",
+						},
+						ExternalId: nil,
+						Priority:   2,
+						Status:     "uploading",
+						CreatedAt:  currentTs,
+						UpdatedAt:  &currentTs,
+						UploadedAt: nil,
+					},
+				},
+			}
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				fileClient.
+					EXPECT().
+					GetFileById(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
+					Return(nil, &system.SystemError{
+						Code:    1002,
+						Message: "invalid data",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 400,
+					Message: &restapp.ResponseBodyInfo{
+						Code:    1002,
+						Message: "invalid data",
+					},
+				}))
+			})
+		})
+
+		When("file is not available", func() {
+			It("should return error", func() {
+				fileClient.
+					EXPECT().
+					GetFileById(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
+					Return(nil, &system.SystemError{
+						Code:    1004,
+						Message: "file is not available",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 404,
+					Message: &restapp.ResponseBodyInfo{
+						Code:    1004,
+						Message: "file is not available",
+					},
+				}))
+			})
+		})
+
+		When("failed get file", func() {
+			It("should return error", func() {
+				fileClient.
+					EXPECT().
+					GetFileById(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
+					Return(nil, &system.SystemError{
+						Code:    1001,
+						Message: "network error",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 500,
+					Message: &restapp.ResponseBodyInfo{
+						Code:    1001,
+						Message: "network error",
+					},
+				}))
+			})
+		})
+
+		When("success get file", func() {
+			It("should return result", func() {
+				fileClient.
+					EXPECT().
+					GetFileById(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
+					Return(findRes, nil).
+					Times(1)
+
+				err := h(ctx)
+
+				res := &restapp.GetFileByIdResponse{}
+				encoding_json.Unmarshal(rec.Body.Bytes(), res)
+
+				Expect(err).To(BeNil())
+				Expect(rec.Code).To(Equal(http.StatusOK))
+				Expect(res.Code).To(Equal(int32(1000)))
+				Expect(res.Message).To(Equal("success get file"))
+				Expect(res.Data).To(Equal(restapp.GetFileByIdData{
+					Id:         findRes.Id,
+					Slug:       findRes.Slug,
+					Name:       findRes.Name,
+					Mimetype:   findRes.Mimetype,
+					Extension:  findRes.Extension,
+					Size:       findRes.Size,
+					Status:     restapp.GetFileByIdDataStatus(findRes.Status),
+					Visibility: restapp.GetFileByIdDataVisibility(findRes.Visibility),
+					UploadedAt: findRes.UploadedAt.UnixMilli(),
+					CreatedAt:  findRes.CreatedAt.UnixMilli(),
+					UpdatedAt:  typeconv.Int64(findRes.UpdatedAt.UnixMilli()),
+					DeletedAt:  nil,
+					Locations: []restapp.GetFileByIdLocation{
+						{
+							BarrelId:   "b1",
+							ExternalId: typeconv.String("e1"),
+							Priority:   1,
+							Status:     "available",
+							CreatedAt:  currentTs.UnixMilli(),
+							UpdatedAt:  typeconv.Int64(currentTs.UnixMilli()),
+							UploadedAt: typeconv.Int64(currentTs.UnixMilli()),
+						},
+						{
+							BarrelId:   "b2",
+							ExternalId: nil,
+							Priority:   2,
+							Status:     "uploading",
+							CreatedAt:  currentTs.UnixMilli(),
+							UpdatedAt:  typeconv.Int64(currentTs.UnixMilli()),
+							UploadedAt: nil,
+						},
+					},
+					Meta: &restapp.GetFileByIdData_Meta{
+						AdditionalProperties: findRes.Meta,
+					},
+				}))
+			})
+		})
+
+		When("success get deleted file", func() {
+			It("should return result", func() {
+				findRes := &file.GetFileByIdResult{
+					Success: system.SystemSuccess{
+						Code:    1000,
+						Message: "success get file",
+					},
+					Id:         "id",
+					Slug:       "lumba.jpg",
+					Name:       "Lumba",
+					Mimetype:   "image/jpeg",
+					Extension:  "jpg",
+					Size:       23343,
+					Visibility: "public",
+					Status:     "deleted",
+					Meta: map[string]string{
+						"feature": "profile",
+						"user_id": "123",
+					},
+					UploadedAt: currentTs,
+					CreatedAt:  currentTs,
+					UpdatedAt:  &currentTs,
+					DeletedAt:  &currentTs,
+					Locations: []file.GetFileByIdLocation{
+						{
+							Barrel: file.GetFileByIdBarrel{
+								Id: "b1",
+							},
+							ExternalId: typeconv.String("e1"),
+							Priority:   1,
+							Status:     "available",
+							CreatedAt:  currentTs,
+							UpdatedAt:  &currentTs,
+							UploadedAt: &currentTs,
+						},
+						{
+							Barrel: file.GetFileByIdBarrel{
+								Id: "b2",
+							},
+							ExternalId: nil,
+							Priority:   2,
+							Status:     "uploading",
+							CreatedAt:  currentTs,
+							UpdatedAt:  &currentTs,
+							UploadedAt: nil,
+						},
+					},
+				}
+				fileClient.
+					EXPECT().
+					GetFileById(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
+					Return(findRes, nil).
+					Times(1)
+
+				err := h(ctx)
+
+				res := &restapp.GetFileByIdResponse{}
+				encoding_json.Unmarshal(rec.Body.Bytes(), res)
+
+				Expect(err).To(BeNil())
+				Expect(rec.Code).To(Equal(http.StatusOK))
+				Expect(res.Code).To(Equal(int32(1000)))
+				Expect(res.Message).To(Equal("success get file"))
+				Expect(res.Data).To(Equal(restapp.GetFileByIdData{
+					Id:         findRes.Id,
+					Slug:       findRes.Slug,
+					Name:       findRes.Name,
+					Mimetype:   findRes.Mimetype,
+					Extension:  findRes.Extension,
+					Size:       findRes.Size,
+					Status:     restapp.GetFileByIdDataStatus(findRes.Status),
+					Visibility: restapp.GetFileByIdDataVisibility(findRes.Visibility),
+					UploadedAt: findRes.UploadedAt.UnixMilli(),
+					CreatedAt:  findRes.CreatedAt.UnixMilli(),
+					UpdatedAt:  typeconv.Int64(findRes.UpdatedAt.UnixMilli()),
+					DeletedAt:  typeconv.Int64(findRes.DeletedAt.UnixMilli()),
+					Locations: []restapp.GetFileByIdLocation{
+						{
+							BarrelId:   "b1",
+							ExternalId: typeconv.String("e1"),
+							Priority:   1,
+							Status:     "available",
+							CreatedAt:  currentTs.UnixMilli(),
+							UpdatedAt:  typeconv.Int64(currentTs.UnixMilli()),
+							UploadedAt: typeconv.Int64(currentTs.UnixMilli()),
+						},
+						{
+							BarrelId:   "b2",
+							ExternalId: nil,
+							Priority:   2,
+							Status:     "uploading",
+							CreatedAt:  currentTs.UnixMilli(),
+							UpdatedAt:  typeconv.Int64(currentTs.UnixMilli()),
+							UploadedAt: nil,
+						},
+					},
+					Meta: &restapp.GetFileByIdData_Meta{
+						AdditionalProperties: findRes.Meta,
+					},
+				}))
 			})
 		})
 	})

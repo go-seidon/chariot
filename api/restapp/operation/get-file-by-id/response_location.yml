@@ -1,0 +1,34 @@
+type: object
+required:
+- barrel_id
+- barrel_code
+- barrel_provider
+- barrel_status
+- priority
+- status
+- created_at
+properties:
+  barrel_id:
+    type: string
+  barrel_code:
+    type: string
+  barrel_provider:
+    type: string
+  barrel_status:
+    type: string
+  external_id:
+    type: string
+  priority:
+    type: integer
+    format: int32
+  status:
+    type: string
+  created_at:
+    type: integer
+    format: int64
+  updated_at:
+    type: integer
+    format: int64
+  uploaded_at:
+    type: integer
+    format: int64

@@ -138,6 +138,8 @@ components:
       $ref: "./operation/get-file-by-id/response_body.yml"
     GetFileByIdData:
       $ref: "./operation/get-file-by-id/response_data.yml"
+    GetFileByIdLocation:
+      $ref: "./operation/get-file-by-id/response_location.yml"
 
     DeleteFileByIdResponse:
       $ref: "./operation/delete-file-by-id/response_body.yml"

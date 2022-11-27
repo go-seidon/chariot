@@ -10,6 +10,7 @@ required:
 - status
 - created_at
 - uploaded_at
+- locations
 properties:
   id:
     type: string
@@ -23,6 +24,7 @@ properties:
     type: string
   size:
     type: integer
+    format: int64
   visibility:
     type: string
     enum:
@@ -31,12 +33,10 @@ properties:
   status:
     type: string
     enum:
+    - uploading
     - available
+    - deleting
     - deleted
-  meta:
-    type: object
-    additionalProperties:
-      type: string
   uploaded_at:
     type: integer
     format: int64
@@ -49,3 +49,11 @@ properties:
   deleted_at:
     type: integer
     format: int64
+  meta:
+    type: object
+    additionalProperties:
+      type: string
+  locations:
+    type: array
+    items:
+      $ref: "./response_location.yml"

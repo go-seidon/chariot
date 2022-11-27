@@ -27,6 +27,8 @@ const (
 const (
 	GetFileByIdDataStatusAvailable GetFileByIdDataStatus = "available"
 	GetFileByIdDataStatusDeleted   GetFileByIdDataStatus = "deleted"
+	GetFileByIdDataStatusDeleting  GetFileByIdDataStatus = "deleting"
+	GetFileByIdDataStatusUploading GetFileByIdDataStatus = "uploading"
 )
 
 // Defines values for GetFileByIdDataVisibility.
@@ -234,10 +236,11 @@ type GetFileByIdData struct {
 	DeletedAt  *int64                    `json:"deleted_at,omitempty"`
 	Extension  string                    `json:"extension"`
 	Id         string                    `json:"id"`
+	Locations  []GetFileByIdLocation     `json:"locations"`
 	Meta       *GetFileByIdData_Meta     `json:"meta,omitempty"`
 	Mimetype   string                    `json:"mimetype"`
 	Name       string                    `json:"name"`
-	Size       int                       `json:"size"`
+	Size       int64                     `json:"size"`
 	Slug       string                    `json:"slug"`
 	Status     GetFileByIdDataStatus     `json:"status"`
 	UpdatedAt  *int64                    `json:"updated_at,omitempty"`
@@ -255,6 +258,20 @@ type GetFileByIdDataStatus string
 
 // GetFileByIdDataVisibility defines model for GetFileByIdData.Visibility.
 type GetFileByIdDataVisibility string
+
+// GetFileByIdLocation defines model for GetFileByIdLocation.
+type GetFileByIdLocation struct {
+	BarrelCode     string  `json:"barrel_code"`
+	BarrelId       string  `json:"barrel_id"`
+	BarrelProvider string  `json:"barrel_provider"`
+	BarrelStatus   string  `json:"barrel_status"`
+	CreatedAt      int64   `json:"created_at"`
+	ExternalId     *string `json:"external_id,omitempty"`
+	Priority       int32   `json:"priority"`
+	Status         string  `json:"status"`
+	UpdatedAt      *int64  `json:"updated_at,omitempty"`
+	UploadedAt     *int64  `json:"uploaded_at,omitempty"`
+}
 
 // GetFileByIdResponse defines model for GetFileByIdResponse.
 type GetFileByIdResponse struct {

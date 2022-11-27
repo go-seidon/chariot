@@ -36,6 +36,21 @@ func (m *MockFile) EXPECT() *MockFileMockRecorder {
 	return m.recorder
 }
 
+// GetFileById mocks base method.
+func (m *MockFile) GetFileById(ctx context.Context, p file.GetFileByIdParam) (*file.GetFileByIdResult, *system.SystemError) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFileById", ctx, p)
+	ret0, _ := ret[0].(*file.GetFileByIdResult)
+	ret1, _ := ret[1].(*system.SystemError)
+	return ret0, ret1
+}
+
+// GetFileById indicates an expected call of GetFileById.
+func (mr *MockFileMockRecorder) GetFileById(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFileById", reflect.TypeOf((*MockFile)(nil).GetFileById), ctx, p)
+}
+
 // RetrieveFileBySlug mocks base method.
 func (m *MockFile) RetrieveFileBySlug(ctx context.Context, p file.RetrieveFileBySlugParam) (*file.RetrieveFileBySlugResult, *system.SystemError) {
 	m.ctrl.T.Helper()
