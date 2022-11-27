@@ -111,6 +111,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			Serializer: jsonSerializer,
 			Encoder:    base64Encoder,
 			HttpClient: httpClient,
+			Clock:      clock,
 		})
 		if err != nil {
 			return nil, err
@@ -172,6 +173,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		})
 		fileAccessGroup := echo.Group("/file")
 		fileAccessGroup.POST("", fileHandler.UploadFile)
+		fileAccessGroup.GET("/:slug", fileHandler.RetrieveFileBySlug)
 	}
 
 	app := &restApp{
