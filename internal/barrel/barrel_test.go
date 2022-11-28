@@ -442,7 +442,7 @@ var _ = Describe("Barrel Package", func() {
 			})
 		})
 
-		When("failed update client", func() {
+		When("failed update barrel", func() {
 			It("should return error", func() {
 				validator.
 					EXPECT().
@@ -470,7 +470,7 @@ var _ = Describe("Barrel Package", func() {
 			})
 		})
 
-		When("client is not available", func() {
+		When("barrel is not available", func() {
 			It("should return error", func() {
 				validator.
 					EXPECT().
@@ -498,7 +498,7 @@ var _ = Describe("Barrel Package", func() {
 			})
 		})
 
-		When("success update client", func() {
+		When("success update barrel", func() {
 			It("should return result", func() {
 				validator.
 					EXPECT().
@@ -618,7 +618,7 @@ var _ = Describe("Barrel Package", func() {
 			})
 		})
 
-		When("failed search client", func() {
+		When("failed search barrel", func() {
 			It("should return error", func() {
 				validator.
 					EXPECT().
@@ -640,7 +640,7 @@ var _ = Describe("Barrel Package", func() {
 			})
 		})
 
-		When("there is no client", func() {
+		When("there is no barrel", func() {
 			It("should return empty result", func() {
 				validator.
 					EXPECT().
@@ -671,7 +671,7 @@ var _ = Describe("Barrel Package", func() {
 			})
 		})
 
-		When("there is one client", func() {
+		When("there is one barrel", func() {
 			It("should return result", func() {
 				validator.
 					EXPECT().

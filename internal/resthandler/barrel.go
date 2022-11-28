@@ -6,6 +6,7 @@ import (
 	"github.com/go-seidon/chariot/generated/restapp"
 	"github.com/go-seidon/chariot/internal/barrel"
 	"github.com/go-seidon/provider/status"
+	"github.com/go-seidon/provider/typeconv"
 	"github.com/labstack/echo/v4"
 )
 
@@ -82,8 +83,7 @@ func (h *barrelHandler) GetBarrelById(ctx echo.Context) error {
 
 	var updatedAt *int64
 	if findRes.UpdatedAt != nil {
-		updatedDate := findRes.UpdatedAt.UnixMilli()
-		updatedAt = &updatedDate
+		updatedAt = typeconv.Int64(findRes.UpdatedAt.UnixMilli())
 	}
 
 	return ctx.JSON(http.StatusOK, &restapp.GetBarrelByIdResponse{
@@ -160,22 +160,15 @@ func (h *barrelHandler) SearchBarrel(ctx echo.Context) error {
 		})
 	}
 
-	keyword := ""
-	if req.Keyword != nil {
-		keyword = *req.Keyword
-	}
-
 	statuses := []string{}
+	providers := []string{}
 	if req.Filter != nil {
 		if req.Filter.StatusIn != nil {
 			for _, status := range *req.Filter.StatusIn {
 				statuses = append(statuses, string(status))
 			}
 		}
-	}
 
-	providers := []string{}
-	if req.Filter != nil {
 		if req.Filter.ProviderIn != nil {
 			for _, provider := range *req.Filter.ProviderIn {
 				providers = append(providers, string(provider))
@@ -191,7 +184,7 @@ func (h *barrelHandler) SearchBarrel(ctx echo.Context) error {
 	}
 
 	searchRes, err := h.barrelClient.SearchBarrel(ctx.Request().Context(), barrel.SearchBarrelParam{
-		Keyword:    keyword,
+		Keyword:    typeconv.StringVal(req.Keyword),
 		Statuses:   statuses,
 		Providers:  providers,
 		TotalItems: totalItems,
@@ -215,8 +208,7 @@ func (h *barrelHandler) SearchBarrel(ctx echo.Context) error {
 	for _, searchItem := range searchRes.Items {
 		var updatedAt *int64
 		if searchItem.UpdatedAt != nil {
-			updated := searchItem.UpdatedAt.UnixMilli()
-			updatedAt = &updated
+			updatedAt = typeconv.Int64(searchItem.UpdatedAt.UnixMilli())
 		}
 
 		items = append(items, restapp.SearchBarrelItem{

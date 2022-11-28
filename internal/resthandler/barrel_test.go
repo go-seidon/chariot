@@ -18,7 +18,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Auth Handler", func() {
+var _ = Describe("Barrel Handler", func() {
 
 	Context("CreateBarrel function", Label("unit"), func() {
 		var (
