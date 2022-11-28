@@ -28,9 +28,7 @@ requestBody:
               size_lte: 100000
               upload_date_gte: 1665590518212
               upload_date_lte: 1665590518212
-            sort:
-              upload_date: desc
-              size: desc
+            sort: 'latest_upload'
         'Keyword':
           value:
             keyword: lum
@@ -53,15 +51,18 @@ requestBody:
               size_lte: 100000
               upload_date_gte: 1665590518212
               upload_date_lte: 1665590518212
-        'Some Sort':
+        'Latest Upload Sort':
           value:
-            sort:
-              size: desc
-        'All Sort':
+            sort: 'latest_upload'
+        'Newest Upload Sort':
           value:
-            sort:
-              upload_date: asc
-              size: desc
+            sort: 'newest_upload'
+        'Highest Size Sort':
+          value:
+            sort: 'highest_size'
+        'Lowest Size Sort':
+          value:
+            sort: 'lowest_size'
 responses:
   '200':
     description: success search file

@@ -5,8 +5,10 @@ properties:
     items:
       type: string
       enum:
-      - active
-      - inactive
+      - uploading
+      - available
+      - deleting
+      - deleted
       description: file status
   visibility_in:
     type: array
@@ -23,8 +25,10 @@ properties:
       description: file extension
   size_lte:
     type: integer
+    format: int64
   size_gte:
     type: integer
+    format: int64
   upload_date_lte:
     type: integer
     format: int64

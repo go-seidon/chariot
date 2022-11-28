@@ -150,10 +150,12 @@ components:
       $ref: "./operation/search-file/request_body.yml"
     SearchFileFilter:
       $ref: "./operation/search-file/request_filter.yml"
-    SearchFileSort:
-      $ref: "./operation/search-file/request_sort.yml"
     SearchFileResponse:
       $ref: "./operation/search-file/response_body.yml"
+    SearchFileData:
+      $ref: "./operation/search-file/response_data.yml"
+    SearchFileSummary:
+      $ref: "./operation/search-file/response_summary.yml"
     SearchFileItem:
       $ref: "./operation/search-file/response_item.yml"
 

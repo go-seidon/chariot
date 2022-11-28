@@ -59,8 +59,10 @@ const (
 
 // Defines values for SearchFileFilterStatusIn.
 const (
-	SearchFileFilterStatusInActive   SearchFileFilterStatusIn = "active"
-	SearchFileFilterStatusInInactive SearchFileFilterStatusIn = "inactive"
+	SearchFileFilterStatusInAvailable SearchFileFilterStatusIn = "available"
+	SearchFileFilterStatusInDeleted   SearchFileFilterStatusIn = "deleted"
+	SearchFileFilterStatusInDeleting  SearchFileFilterStatusIn = "deleting"
+	SearchFileFilterStatusInUploading SearchFileFilterStatusIn = "uploading"
 )
 
 // Defines values for SearchFileFilterVisibilityIn.
@@ -73,6 +75,8 @@ const (
 const (
 	SearchFileItemStatusAvailable SearchFileItemStatus = "available"
 	SearchFileItemStatusDeleted   SearchFileItemStatus = "deleted"
+	SearchFileItemStatusDeleting  SearchFileItemStatus = "deleting"
+	SearchFileItemStatusUploading SearchFileItemStatus = "uploading"
 )
 
 // Defines values for SearchFileItemVisibility.
@@ -81,10 +85,18 @@ const (
 	SearchFileItemVisibilityPublic    SearchFileItemVisibility = "public"
 )
 
+// Defines values for SearchFileRequestSort.
+const (
+	HighestSize  SearchFileRequestSort = "highest_size"
+	LatestUpload SearchFileRequestSort = "latest_upload"
+	LowestSize   SearchFileRequestSort = "lowest_size"
+	NewestUpload SearchFileRequestSort = "newest_upload"
+)
+
 // Defines values for UpdateAuthClientByIdRequestStatus.
 const (
-	Active   UpdateAuthClientByIdRequestStatus = "active"
-	Inactive UpdateAuthClientByIdRequestStatus = "inactive"
+	UpdateAuthClientByIdRequestStatusActive   UpdateAuthClientByIdRequestStatus = "active"
+	UpdateAuthClientByIdRequestStatusInactive UpdateAuthClientByIdRequestStatus = "inactive"
 )
 
 // Defines values for UpdateAuthClientByIdRequestType.
@@ -94,10 +106,10 @@ const (
 
 // Defines values for UploadFileDataStatus.
 const (
-	Available UploadFileDataStatus = "available"
-	Deleted   UploadFileDataStatus = "deleted"
-	Deleting  UploadFileDataStatus = "deleting"
-	Uploading UploadFileDataStatus = "uploading"
+	UploadFileDataStatusAvailable UploadFileDataStatus = "available"
+	UploadFileDataStatusDeleted   UploadFileDataStatus = "deleted"
+	UploadFileDataStatusDeleting  UploadFileDataStatus = "deleting"
+	UploadFileDataStatusUploading UploadFileDataStatus = "uploading"
 )
 
 // Defines values for UploadFileDataVisibility.
@@ -402,11 +414,17 @@ type SearchBarrelSummary struct {
 	TotalItems int64 `json:"total_items"`
 }
 
+// SearchFileData defines model for SearchFileData.
+type SearchFileData struct {
+	Items   []SearchFileItem  `json:"items"`
+	Summary SearchFileSummary `json:"summary"`
+}
+
 // SearchFileFilter defines model for SearchFileFilter.
 type SearchFileFilter struct {
 	ExtensionIn   *[]string                       `json:"extension_in,omitempty"`
-	SizeGte       *int                            `json:"size_gte,omitempty"`
-	SizeLte       *int                            `json:"size_lte,omitempty"`
+	SizeGte       *int64                          `json:"size_gte,omitempty"`
+	SizeLte       *int64                          `json:"size_lte,omitempty"`
 	StatusIn      *[]SearchFileFilterStatusIn     `json:"status_in,omitempty"`
 	UploadDateGte *int64                          `json:"upload_date_gte,omitempty"`
 	UploadDateLte *int64                          `json:"upload_date_lte,omitempty"`
@@ -428,7 +446,7 @@ type SearchFileItem struct {
 	Meta       *SearchFileItem_Meta     `json:"meta,omitempty"`
 	Mimetype   string                   `json:"mimetype"`
 	Name       string                   `json:"name"`
-	Size       int                      `json:"size"`
+	Size       int64                    `json:"size"`
 	Slug       string                   `json:"slug"`
 	Status     SearchFileItemStatus     `json:"status"`
 	UpdatedAt  *int64                   `json:"updated_at,omitempty"`
@@ -452,15 +470,28 @@ type SearchFileRequest struct {
 	Filter *SearchFileFilter `json:"filter,omitempty"`
 
 	// min = 2 character
-	Keyword    *string            `json:"keyword,omitempty"`
-	Pagination *RequestPagination `json:"pagination,omitempty"`
+	Keyword    *string                `json:"keyword,omitempty"`
+	Pagination *RequestPagination     `json:"pagination,omitempty"`
+	Sort       *SearchFileRequestSort `json:"sort,omitempty"`
 }
+
+// SearchFileRequestSort defines model for SearchFileRequest.Sort.
+type SearchFileRequestSort string
 
 // SearchFileResponse defines model for SearchFileResponse.
 type SearchFileResponse struct {
-	Code    int32            `json:"code"`
-	Data    []SearchFileItem `json:"data"`
-	Message string           `json:"message"`
+	Code    int32          `json:"code"`
+	Data    SearchFileData `json:"data"`
+	Message string         `json:"message"`
+}
+
+// SearchFileSummary defines model for SearchFileSummary.
+type SearchFileSummary struct {
+	// current page
+	Page int64 `json:"page"`
+
+	// total matched items with a given parameter
+	TotalItems int64 `json:"total_items"`
 }
 
 // UpdateAuthClientByIdData defines model for UpdateAuthClientByIdData.
