@@ -37,7 +37,7 @@ type File interface {
 type UploadFileInfo struct {
 	Name      string            `validate:"max=256" label:"name"`
 	Mimetype  string            `validate:"max=128" label:"mimetype"`
-	Extension string            `validate:"max=32" label:"extension"`
+	Extension string            `validate:"max=32,printascii" label:"extension"`
 	Size      int64             `validate:"min=1" label:"size"`
 	Meta      map[string]string `validate:"min=0,max=24,dive,keys,printascii,min=1,max=64,endkeys,required,printascii,min=1,max=128" label:"meta"`
 }
@@ -126,7 +126,7 @@ type GetFileByIdLocation struct {
 }
 
 type SearchFileParam struct {
-	Keyword       string   `validate:"omitempty,printascii,min=2,max=64" label:"keyword"`
+	Keyword       string   `validate:"omitempty,min=2,max=64" label:"keyword"`
 	TotalItems    int32    `validate:"numeric,min=1,max=100" label:"total_items"`
 	Page          int64    `validate:"numeric,min=1" label:"page"`
 	StatusIn      []string `validate:"unique,min=0,max=4,dive,oneof='uploading' 'available' 'deleting' 'deleted'" label:"status_in"`
