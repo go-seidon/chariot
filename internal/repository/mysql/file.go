@@ -330,10 +330,20 @@ func (r *file) SearchFile(ctx context.Context, p repository.SearchFileParam) (*r
 
 	countQuery := searchQuery.Table("file")
 
+	switch p.Sort {
+	case "latest_upload":
+		searchQuery = searchQuery.Order("uploaded_at DESC")
+	case "newest_upload":
+		searchQuery = searchQuery.Order("uploaded_at ASC")
+	case "highest_size":
+		searchQuery = searchQuery.Order("size DESC")
+	case "lowest_size":
+		searchQuery = searchQuery.Order("size ASC")
+	}
+
 	if p.Limit > 0 {
 		searchQuery = searchQuery.Limit(int(p.Limit))
 	}
-
 	if p.Offset > 0 {
 		searchQuery = searchQuery.Offset(int(p.Offset))
 	}

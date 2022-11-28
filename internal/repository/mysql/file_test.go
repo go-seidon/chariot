@@ -1384,5 +1384,90 @@ var _ = Describe("File Repository", func() {
 				Expect(err).To(BeNil())
 			})
 		})
+
+		DescribeTable("search using custom sort", func(sort string, query string) {
+			searchStmt := regexp.QuoteMeta(strings.TrimSpace(`
+				SELECT id, slug, name, mimetype, extension, size, visibility, status, uploaded_at, created_at, updated_at, deleted_at
+				FROM ` + "`file`" + ` 
+				WHERE name LIKE ?
+				AND status IN (?,?)
+				AND visibility IN (?)
+				AND extension IN (?,?)
+				AND size >= ?
+				AND size <= ?
+				AND uploaded_at >= ?
+				AND uploaded_at <= ?
+				ORDER BY ` + query + `
+				LIMIT 24
+				OFFSET 48
+			`))
+			dbClient.
+				ExpectQuery(searchStmt).
+				WithArgs(
+					"%"+p.Keyword+"%",
+					p.StatusIn[0],
+					p.StatusIn[1],
+					p.VisibilityIn[0],
+					p.ExtensionIn[0],
+					p.ExtensionIn[1],
+					p.SizeGte,
+					p.SizeLte,
+					p.UploadDateGte,
+					p.UploadDateLte,
+				).
+				WillReturnRows(searchRows)
+
+			findMetaRows := sqlmock.NewRows([]string{
+				"file_id", "key", "value",
+			}).
+				AddRow("id-1", "user_id", "123").
+				AddRow("id-1", "feature", "profile").
+				AddRow("id-2", "user_id", "456").
+				AddRow("id-2", "feature", "background")
+			dbClient.
+				ExpectQuery(findMetaStmt).
+				WithArgs("id-1", "id-2").
+				WillReturnRows(findMetaRows)
+
+			dbClient.
+				ExpectQuery(countStmt).
+				WithArgs(
+					"%"+p.Keyword+"%",
+					p.StatusIn[0],
+					p.StatusIn[1],
+					p.VisibilityIn[0],
+					p.ExtensionIn[0],
+					p.ExtensionIn[1],
+					p.SizeGte,
+					p.SizeLte,
+					p.UploadDateGte,
+					p.UploadDateLte,
+				).
+				WillReturnRows(countRows)
+
+			p := repository.SearchFileParam{
+				Limit:         24,
+				Offset:        48,
+				Keyword:       "sa",
+				StatusIn:      []string{"available", "deleted"},
+				VisibilityIn:  []string{"public"},
+				ExtensionIn:   []string{"jpg", "png"},
+				SizeGte:       1024,
+				SizeLte:       2048,
+				UploadDateGte: 1669638670000,
+				UploadDateLte: 1669638670476,
+				Sort:          sort,
+			}
+			res, err := fileRepo.SearchFile(ctx, p)
+
+			Expect(res).To(Equal(r))
+			Expect(err).To(BeNil())
+		},
+			Entry("should query using uploaded_at desc", "latest_upload", "uploaded_at DESC"),
+			Entry("should query using uploaded_at asc", "newest_upload", "uploaded_at ASC"),
+			Entry("should query using size desc", "highest_size", "size DESC"),
+			Entry("should query using size asc", "lowest_size", "size ASC"),
+		)
+
 	})
 })

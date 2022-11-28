@@ -129,6 +129,7 @@ type SearchFileParam struct {
 	Keyword       string   `validate:"omitempty,min=2,max=64" label:"keyword"`
 	TotalItems    int32    `validate:"numeric,min=1,max=100" label:"total_items"`
 	Page          int64    `validate:"numeric,min=1" label:"page"`
+	Sort          string   `validate:"omitempty,oneof='latest_upload' 'newest_upload' 'highest_size' 'lowest_size'" label:"sort"`
 	StatusIn      []string `validate:"unique,min=0,max=4,dive,oneof='uploading' 'available' 'deleting' 'deleted'" label:"status_in"`
 	VisibilityIn  []string `validate:"unique,min=0,max=2,dive,oneof='public' 'protected'" label:"visibility_in"`
 	ExtensionIn   []string `validate:"unique,min=0,max=16,dive" label:"extension_in"`
@@ -498,6 +499,7 @@ func (f *file) SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileRe
 	}
 
 	searchRes, err := f.fileRepo.SearchFile(ctx, repository.SearchFileParam{
+		Sort:          p.Sort,
 		Limit:         p.TotalItems,
 		Offset:        offset,
 		Keyword:       p.Keyword,

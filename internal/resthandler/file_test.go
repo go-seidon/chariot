@@ -814,6 +814,7 @@ var _ = Describe("File Handler", func() {
 				SizeLte:       2048,
 				UploadDateGte: 1669638670000,
 				UploadDateLte: 1669638670476,
+				Sort:          "latest_upload",
 			}
 			searchRes = &file.SearchFileResult{
 				Success: system.SystemSuccess{

@@ -1289,6 +1289,7 @@ var _ = Describe("File Package", func() {
 				SizeLte:       2048,
 				UploadDateGte: 1669638670000,
 				UploadDateLte: 1669638670476,
+				Sort:          "latest_upload",
 			}
 			searchParam = repository.SearchFileParam{
 				Keyword:       "sa",
@@ -1301,6 +1302,7 @@ var _ = Describe("File Package", func() {
 				SizeLte:       2048,
 				UploadDateGte: 1669638670000,
 				UploadDateLte: 1669638670476,
+				Sort:          "latest_upload",
 			}
 			searchRes = &repository.SearchFileResult{
 				Summary: repository.SearchFileSummary{

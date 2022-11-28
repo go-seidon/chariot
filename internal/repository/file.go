@@ -90,6 +90,7 @@ type FindFileLocation struct {
 }
 
 type SearchFileParam struct {
+	Sort          string
 	Limit         int32
 	Offset        int64
 	Keyword       string

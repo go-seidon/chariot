@@ -192,7 +192,6 @@ func (h *fileHandler) GetFileById(ctx echo.Context) error {
 	})
 }
 
-// @todo: add unit test
 func (h *fileHandler) SearchFile(ctx echo.Context) error {
 	req := &restapp.SearchFileRequest{}
 	if err := ctx.Bind(req); err != nil {
@@ -232,7 +231,13 @@ func (h *fileHandler) SearchFile(ctx echo.Context) error {
 		page = req.Pagination.Page
 	}
 
+	sort := ""
+	if req.Sort != nil {
+		sort = string(*req.Sort)
+	}
+
 	searchRes, err := h.fileClient.SearchFile(ctx.Request().Context(), file.SearchFileParam{
+		Sort:          sort,
 		Keyword:       typeconv.StringVal(req.Keyword),
 		TotalItems:    totalItems,
 		Page:          page,
