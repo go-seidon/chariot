@@ -8,6 +8,7 @@ import (
 type File interface {
 	CreateFile(ctx context.Context, p CreateFileParam) (*CreateFileResult, error)
 	FindFile(ctx context.Context, p FindFileParam) (*FindFileResult, error)
+	SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileResult, error)
 }
 
 type CreateFileParam struct {
@@ -86,4 +87,42 @@ type FindFileLocation struct {
 	CreatedAt  time.Time
 	UpdatedAt  *time.Time
 	UploadedAt *time.Time
+}
+
+type SearchFileParam struct {
+	Limit         int32
+	Offset        int64
+	Keyword       string
+	StatusIn      []string
+	VisibilityIn  []string
+	ExtensionIn   []string
+	SizeGte       int64
+	SizeLte       int64
+	UploadDateGte int64
+	UploadDateLte int64
+}
+
+type SearchFileResult struct {
+	Summary SearchFileSummary
+	Items   []SearchFileItem
+}
+
+type SearchFileSummary struct {
+	TotalItems int64
+}
+
+type SearchFileItem struct {
+	Id         string
+	Slug       string
+	Name       string
+	Mimetype   string
+	Extension  string
+	Size       int64
+	Visibility string
+	Status     string
+	CreatedAt  time.Time
+	UpdatedAt  *time.Time
+	UploadedAt time.Time
+	DeletedAt  *time.Time
+	Meta       map[string]string
 }

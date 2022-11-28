@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -963,6 +964,422 @@ var _ = Describe("File Repository", func() {
 					Meta:       map[string]string{},
 					Locations:  []repository.FindFileLocation{},
 				}
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
+
+	Context("SearchFile function", Label("unit"), func() {
+
+		var (
+			ctx          context.Context
+			currentTs    time.Time
+			dbClient     sqlmock.Sqlmock
+			fileRepo     repository.File
+			p            repository.SearchFileParam
+			r            *repository.SearchFileResult
+			searchStmt   string
+			findMetaStmt string
+			countStmt    string
+			searchRows   *sqlmock.Rows
+			countRows    *sqlmock.Rows
+		)
+
+		BeforeEach(func() {
+			var (
+				db  *sql.DB
+				err error
+			)
+
+			ctx = context.Background()
+			currentTs = time.Now().UTC()
+			db, dbClient, err = sqlmock.New()
+			if err != nil {
+				AbortSuite("failed create db mock: " + err.Error())
+			}
+
+			gormClient, err := gorm.Open(gorm_mysql.New(gorm_mysql.Config{
+				Conn:                      db,
+				SkipInitializeWithVersion: true,
+			}), &gorm.Config{
+				DisableAutomaticPing: true,
+			})
+			if err != nil {
+				AbortSuite("failed create gorm client: " + err.Error())
+			}
+			fileRepo = mysql.NewFile(mysql.FileParam{
+				GormClient: gormClient,
+			})
+
+			p = repository.SearchFileParam{
+				Limit:         24,
+				Offset:        48,
+				Keyword:       "sa",
+				StatusIn:      []string{"available", "deleted"},
+				VisibilityIn:  []string{"public"},
+				ExtensionIn:   []string{"jpg", "png"},
+				SizeGte:       1024,
+				SizeLte:       2048,
+				UploadDateGte: 1669638670000,
+				UploadDateLte: 1669638670476,
+			}
+			r = &repository.SearchFileResult{
+				Summary: repository.SearchFileSummary{
+					TotalItems: 2,
+				},
+				Items: []repository.SearchFileItem{
+					{
+						Id:         "id-1",
+						Slug:       "dolphin-22.jpg",
+						Mimetype:   "image/jpeg",
+						Extension:  "jpg",
+						Size:       1025,
+						Name:       "Dolphin 22",
+						Visibility: "public",
+						Status:     "available",
+						UploadedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
+						CreatedAt:  time.UnixMilli(currentTs.UnixMilli()).UTC(),
+						UpdatedAt:  typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+						DeletedAt:  nil,
+						Meta: map[string]string{
+							"feature": "profile",
+							"user_id": "123",
+						},
+					},
+					{
+						Id:         "id-2",
+						Slug:       "sakura.png",
+						Mimetype:   "image/png",
+						Extension:  "png",
+						Size:       1026,
+						Name:       "Sakura",
+						Visibility: "public",
+						Status:     "deleted",
+						UploadedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
+						CreatedAt:  time.UnixMilli(currentTs.UnixMilli()).UTC(),
+						UpdatedAt:  typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+						DeletedAt:  typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+						Meta: map[string]string{
+							"feature": "background",
+							"user_id": "456",
+						},
+					},
+				},
+			}
+			searchStmt = regexp.QuoteMeta(strings.TrimSpace(`
+				SELECT id, slug, name, mimetype, extension, size, visibility, status, uploaded_at, created_at, updated_at, deleted_at
+				FROM ` + "`file`" + ` 
+				WHERE name LIKE ?
+				AND status IN (?,?)
+				AND visibility IN (?)
+				AND extension IN (?,?)
+				AND size >= ?
+				AND size <= ?
+				AND uploaded_at >= ?
+				AND uploaded_at <= ?
+				LIMIT 24
+				OFFSET 48
+			`))
+			findMetaStmt = regexp.QuoteMeta("SELECT file_id, `key`, value FROM `file_meta` WHERE `file_meta`.`file_id` IN (?,?)")
+			countStmt = regexp.QuoteMeta(strings.TrimSpace(`
+				SELECT count(*)
+				FROM ` + "`file`" + `
+				WHERE name LIKE ?
+				AND status IN (?,?)
+				AND visibility IN (?)
+				AND extension IN (?,?)
+				AND size >= ?
+				AND size <= ?
+				AND uploaded_at >= ?
+				AND uploaded_at <= ?
+				LIMIT 24
+				OFFSET 48
+			`))
+			searchRows = sqlmock.NewRows([]string{
+				"id", "slug", "name", "mimetype",
+				"extension", "size", "visibility", "status",
+				"uploaded_at", "created_at", "updated_at", "deleted_at",
+			}).AddRow(
+				"id-1", "dolphin-22.jpg", "Dolphin 22", "image/jpeg",
+				"jpg", 1025, "public", "available",
+				currentTs.UnixMilli(), currentTs.UnixMilli(),
+				currentTs.UnixMilli(), nil,
+			).AddRow(
+				"id-2", "sakura.png", "Sakura", "image/png",
+				"png", 1026, "public", "deleted",
+				currentTs.UnixMilli(), currentTs.UnixMilli(),
+				currentTs.UnixMilli(), currentTs.UnixMilli(),
+			)
+
+			countRows = sqlmock.
+				NewRows([]string{"count(*)"}).
+				AddRow(2)
+		})
+
+		AfterEach(func() {
+			err := dbClient.ExpectationsWereMet()
+			if err != nil {
+				AbortSuite("some expectations were not met " + err.Error())
+			}
+		})
+
+		When("failed search file", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						"%"+p.Keyword+"%",
+						p.StatusIn[0],
+						p.StatusIn[1],
+						p.VisibilityIn[0],
+						p.ExtensionIn[0],
+						p.ExtensionIn[1],
+						p.SizeGte,
+						p.SizeLte,
+						p.UploadDateGte,
+						p.UploadDateLte,
+					).
+					WillReturnError(fmt.Errorf("network error"))
+
+				res, err := fileRepo.SearchFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("there are no file", func() {
+			It("should return empty result", func() {
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						"%"+p.Keyword+"%",
+						p.StatusIn[0],
+						p.StatusIn[1],
+						p.VisibilityIn[0],
+						p.ExtensionIn[0],
+						p.ExtensionIn[1],
+						p.SizeGte,
+						p.SizeLte,
+						p.UploadDateGte,
+						p.UploadDateLte,
+					).
+					WillReturnError(gorm.ErrRecordNotFound)
+
+				res, err := fileRepo.SearchFile(ctx, p)
+
+				r := &repository.SearchFileResult{
+					Summary: repository.SearchFileSummary{
+						TotalItems: 0,
+					},
+					Items: []repository.SearchFileItem{},
+				}
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("failed count search file", func() {
+			It("should return result", func() {
+				searchRows := sqlmock.NewRows([]string{
+					"id", "slug", "name", "mimetype",
+					"extension", "size", "visibility", "status",
+					"uploaded_at", "created_at", "updated_at", "deleted_at",
+				}).AddRow(
+					"id-1", "dolphin-22.jpg", "Dolphin 22", "image/jpeg",
+					"jpg", 1025, "public", "available",
+					currentTs.UnixMilli(), currentTs.UnixMilli(),
+					currentTs.UnixMilli(), nil,
+				)
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						"%"+p.Keyword+"%",
+						p.StatusIn[0],
+						p.StatusIn[1],
+						p.VisibilityIn[0],
+						p.ExtensionIn[0],
+						p.ExtensionIn[1],
+						p.SizeGte,
+						p.SizeLte,
+						p.UploadDateGte,
+						p.UploadDateLte,
+					).
+					WillReturnRows(searchRows)
+
+				findMetaStmt := regexp.QuoteMeta("SELECT file_id, `key`, value FROM `file_meta` WHERE `file_meta`.`file_id` = ?")
+				findMetaRows := sqlmock.NewRows([]string{
+					"file_id", "key", "value",
+				}).
+					AddRow("id-1", "user_id", "123").
+					AddRow("id-1", "feature", "profile")
+				dbClient.
+					ExpectQuery(findMetaStmt).
+					WithArgs("id-1").
+					WillReturnRows(findMetaRows)
+
+				dbClient.
+					ExpectQuery(countStmt).
+					WithArgs(
+						"%"+p.Keyword+"%",
+						p.StatusIn[0],
+						p.StatusIn[1],
+						p.VisibilityIn[0],
+						p.ExtensionIn[0],
+						p.ExtensionIn[1],
+						p.SizeGte,
+						p.SizeLte,
+						p.UploadDateGte,
+						p.UploadDateLte,
+					).
+					WillReturnError(fmt.Errorf("network error"))
+
+				res, err := fileRepo.SearchFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("there is one file", func() {
+			It("should return result", func() {
+				searchRows := sqlmock.NewRows([]string{
+					"id", "slug", "name", "mimetype",
+					"extension", "size", "visibility", "status",
+					"uploaded_at", "created_at", "updated_at", "deleted_at",
+				}).AddRow(
+					"id-1", "dolphin-22.jpg", "Dolphin 22", "image/jpeg",
+					"jpg", 1025, "public", "available",
+					currentTs.UnixMilli(), currentTs.UnixMilli(),
+					currentTs.UnixMilli(), nil,
+				)
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						"%"+p.Keyword+"%",
+						p.StatusIn[0],
+						p.StatusIn[1],
+						p.VisibilityIn[0],
+						p.ExtensionIn[0],
+						p.ExtensionIn[1],
+						p.SizeGte,
+						p.SizeLte,
+						p.UploadDateGte,
+						p.UploadDateLte,
+					).
+					WillReturnRows(searchRows)
+
+				findMetaStmt := regexp.QuoteMeta("SELECT file_id, `key`, value FROM `file_meta` WHERE `file_meta`.`file_id` = ?")
+				findMetaRows := sqlmock.NewRows([]string{
+					"file_id", "key", "value",
+				}).
+					AddRow("id-1", "user_id", "123").
+					AddRow("id-1", "feature", "profile")
+				dbClient.
+					ExpectQuery(findMetaStmt).
+					WithArgs("id-1").
+					WillReturnRows(findMetaRows)
+
+				countRows := sqlmock.
+					NewRows([]string{"count(*)"}).
+					AddRow(1)
+				dbClient.
+					ExpectQuery(countStmt).
+					WithArgs(
+						"%"+p.Keyword+"%",
+						p.StatusIn[0],
+						p.StatusIn[1],
+						p.VisibilityIn[0],
+						p.ExtensionIn[0],
+						p.ExtensionIn[1],
+						p.SizeGte,
+						p.SizeLte,
+						p.UploadDateGte,
+						p.UploadDateLte,
+					).
+					WillReturnRows(countRows)
+
+				res, err := fileRepo.SearchFile(ctx, p)
+
+				r := &repository.SearchFileResult{
+					Summary: repository.SearchFileSummary{
+						TotalItems: 1,
+					},
+					Items: []repository.SearchFileItem{
+						{
+							Id:         "id-1",
+							Slug:       "dolphin-22.jpg",
+							Mimetype:   "image/jpeg",
+							Extension:  "jpg",
+							Size:       1025,
+							Name:       "Dolphin 22",
+							Visibility: "public",
+							Status:     "available",
+							UploadedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
+							CreatedAt:  time.UnixMilli(currentTs.UnixMilli()).UTC(),
+							UpdatedAt:  typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+							DeletedAt:  nil,
+							Meta: map[string]string{
+								"feature": "profile",
+								"user_id": "123",
+							},
+						},
+					},
+				}
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("there are some files", func() {
+			It("should return result", func() {
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						"%"+p.Keyword+"%",
+						p.StatusIn[0],
+						p.StatusIn[1],
+						p.VisibilityIn[0],
+						p.ExtensionIn[0],
+						p.ExtensionIn[1],
+						p.SizeGte,
+						p.SizeLte,
+						p.UploadDateGte,
+						p.UploadDateLte,
+					).
+					WillReturnRows(searchRows)
+
+				findMetaRows := sqlmock.NewRows([]string{
+					"file_id", "key", "value",
+				}).
+					AddRow("id-1", "user_id", "123").
+					AddRow("id-1", "feature", "profile").
+					AddRow("id-2", "user_id", "456").
+					AddRow("id-2", "feature", "background")
+				dbClient.
+					ExpectQuery(findMetaStmt).
+					WithArgs("id-1", "id-2").
+					WillReturnRows(findMetaRows)
+
+				dbClient.
+					ExpectQuery(countStmt).
+					WithArgs(
+						"%"+p.Keyword+"%",
+						p.StatusIn[0],
+						p.StatusIn[1],
+						p.VisibilityIn[0],
+						p.ExtensionIn[0],
+						p.ExtensionIn[1],
+						p.SizeGte,
+						p.SizeLte,
+						p.UploadDateGte,
+						p.UploadDateLte,
+					).
+					WillReturnRows(countRows)
+
+				res, err := fileRepo.SearchFile(ctx, p)
+
 				Expect(res).To(Equal(r))
 				Expect(err).To(BeNil())
 			})

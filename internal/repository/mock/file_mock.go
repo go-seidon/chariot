@@ -64,3 +64,18 @@ func (mr *MockFileMockRecorder) FindFile(ctx, p interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindFile", reflect.TypeOf((*MockFile)(nil).FindFile), ctx, p)
 }
+
+// SearchFile mocks base method.
+func (m *MockFile) SearchFile(ctx context.Context, p repository.SearchFileParam) (*repository.SearchFileResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchFile", ctx, p)
+	ret0, _ := ret[0].(*repository.SearchFileResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchFile indicates an expected call of SearchFile.
+func (mr *MockFileMockRecorder) SearchFile(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchFile", reflect.TypeOf((*MockFile)(nil).SearchFile), ctx, p)
+}
