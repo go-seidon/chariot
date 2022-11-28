@@ -192,6 +192,118 @@ func (h *fileHandler) GetFileById(ctx echo.Context) error {
 	})
 }
 
+func (h *fileHandler) SearchFile(ctx echo.Context) error {
+	req := &restapp.SearchFileRequest{}
+	if err := ctx.Bind(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, &restapp.ResponseBodyInfo{
+			Code:    status.INVALID_PARAM,
+			Message: "invalid request",
+		})
+	}
+
+	statusIn := []string{}
+	visibilityIn := []string{}
+	extensionIn := []string{}
+	if req.Filter != nil {
+		if req.Filter.StatusIn != nil {
+			for _, status := range *req.Filter.StatusIn {
+				statusIn = append(statusIn, string(status))
+			}
+		}
+
+		if req.Filter.VisibilityIn != nil {
+			for _, status := range *req.Filter.VisibilityIn {
+				visibilityIn = append(visibilityIn, string(status))
+			}
+		}
+
+		if req.Filter.ExtensionIn != nil {
+			for _, status := range *req.Filter.ExtensionIn {
+				extensionIn = append(extensionIn, string(status))
+			}
+		}
+	}
+
+	totalItems := int32(0)
+	page := int64(0)
+	if req.Pagination != nil {
+		totalItems = req.Pagination.TotalItems
+		page = req.Pagination.Page
+	}
+
+	sort := ""
+	if req.Sort != nil {
+		sort = string(*req.Sort)
+	}
+
+	searchRes, err := h.fileClient.SearchFile(ctx.Request().Context(), file.SearchFileParam{
+		Sort:          sort,
+		Keyword:       typeconv.StringVal(req.Keyword),
+		TotalItems:    totalItems,
+		Page:          page,
+		StatusIn:      statusIn,
+		VisibilityIn:  visibilityIn,
+		ExtensionIn:   extensionIn,
+		SizeGte:       typeconv.Int64Val(req.Filter.SizeGte),
+		SizeLte:       typeconv.Int64Val(req.Filter.SizeLte),
+		UploadDateGte: typeconv.Int64Val(req.Filter.UploadDateGte),
+		UploadDateLte: typeconv.Int64Val(req.Filter.UploadDateLte),
+	})
+	if err != nil {
+		switch err.Code {
+		case status.INVALID_PARAM:
+			return echo.NewHTTPError(http.StatusBadRequest, &restapp.ResponseBodyInfo{
+				Code:    err.Code,
+				Message: err.Message,
+			})
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, &restapp.ResponseBodyInfo{
+			Code:    err.Code,
+			Message: err.Message,
+		})
+	}
+
+	items := []restapp.SearchFileItem{}
+	for _, searchItem := range searchRes.Items {
+		var updatedAt *int64
+		if searchItem.UpdatedAt != nil {
+			updatedAt = typeconv.Int64(searchItem.UpdatedAt.UnixMilli())
+		}
+
+		var deletedAt *int64
+		if searchItem.DeletedAt != nil {
+			deletedAt = typeconv.Int64(searchItem.DeletedAt.UnixMilli())
+		}
+
+		items = append(items, restapp.SearchFileItem{
+			Id:         searchItem.Id,
+			Slug:       searchItem.Slug,
+			Name:       searchItem.Name,
+			Mimetype:   searchItem.Mimetype,
+			Extension:  searchItem.Extension,
+			Size:       searchItem.Size,
+			Status:     restapp.SearchFileItemStatus(searchItem.Status),
+			Visibility: restapp.SearchFileItemVisibility(searchItem.Visibility),
+			UploadedAt: searchItem.UploadedAt.UnixMilli(),
+			CreatedAt:  searchItem.CreatedAt.UnixMilli(),
+			UpdatedAt:  updatedAt,
+			DeletedAt:  deletedAt,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, &restapp.SearchFileResponse{
+		Code:    searchRes.Success.Code,
+		Message: searchRes.Success.Message,
+		Data: restapp.SearchFileData{
+			Items: items,
+			Summary: restapp.SearchFileSummary{
+				Page:       searchRes.Summary.Page,
+				TotalItems: searchRes.Summary.TotalItems,
+			},
+		},
+	})
+}
+
 type FileParam struct {
 	File       file.File
 	FileParser multipart.Parser

@@ -995,7 +995,7 @@ var _ = Describe("Barrel Repository", func() {
 			}
 		})
 
-		When("failed search client", func() {
+		When("failed search barrel", func() {
 			It("should return error", func() {
 				dbClient.
 					ExpectQuery(searchStmt).
@@ -1015,7 +1015,7 @@ var _ = Describe("Barrel Repository", func() {
 			})
 		})
 
-		When("there are no client", func() {
+		When("there are no barrel", func() {
 			It("should return empty result", func() {
 				dbClient.
 					ExpectQuery(searchStmt).
@@ -1041,7 +1041,7 @@ var _ = Describe("Barrel Repository", func() {
 			})
 		})
 
-		When("failed count search client", func() {
+		When("failed count search barrel", func() {
 			It("should return result", func() {
 				searchRows := sqlmock.NewRows([]string{
 					"id", "code",
@@ -1081,7 +1081,7 @@ var _ = Describe("Barrel Repository", func() {
 			})
 		})
 
-		When("there is one client", func() {
+		When("there is one barrel", func() {
 			It("should return result", func() {
 				searchRows := sqlmock.NewRows([]string{
 					"id", "code",
@@ -1140,7 +1140,7 @@ var _ = Describe("Barrel Repository", func() {
 			})
 		})
 
-		When("there are some clients", func() {
+		When("there are some barrels", func() {
 			It("should return result", func() {
 				dbClient.
 					ExpectQuery(searchStmt).

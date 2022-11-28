@@ -8,3 +8,10 @@ properties:
     $ref: "./../../main.yml#/components/schemas/RequestPagination"
   filter:
     $ref: "./request_filter.yml"
+  sort:
+    type: string
+    enum:
+    - latest_upload
+    - newest_upload
+    - highest_size
+    - lowest_size

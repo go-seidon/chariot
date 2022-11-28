@@ -1,0 +1,13 @@
+type: object
+required:
+- total_items
+- page
+properties:
+  total_items:
+    type: integer
+    format: int64
+    description: total matched items with a given parameter
+  page:
+    type: integer
+    format: int64
+    description: current page

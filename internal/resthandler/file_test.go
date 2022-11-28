@@ -26,7 +26,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Basic Handler", func() {
+var _ = Describe("File Handler", func() {
 	Context("UploadFile function", Label("unit", "slow"), func() {
 		var (
 			ctx         echo.Context
@@ -751,6 +751,306 @@ var _ = Describe("Basic Handler", func() {
 					},
 					Meta: &restapp.GetFileByIdData_Meta{
 						AdditionalProperties: findRes.Meta,
+					},
+				}))
+			})
+		})
+	})
+
+	Context("SearchFile function", Label("unit"), func() {
+		var (
+			currentTs   time.Time
+			ctx         echo.Context
+			h           func(ctx echo.Context) error
+			rec         *httptest.ResponseRecorder
+			fileClient  *mock_file.MockFile
+			searchParam file.SearchFileParam
+			searchRes   *file.SearchFileResult
+		)
+
+		BeforeEach(func() {
+			currentTs = time.Now().UTC()
+			reqBody := &restapp.SearchFileRequest{
+				Filter: &restapp.SearchFileFilter{
+					StatusIn:      &[]restapp.SearchFileFilterStatusIn{"available", "deleted"},
+					VisibilityIn:  &[]restapp.SearchFileFilterVisibilityIn{"public"},
+					ExtensionIn:   &[]string{"jpg", "png"},
+					SizeGte:       typeconv.Int64(1024),
+					SizeLte:       typeconv.Int64(2048),
+					UploadDateGte: typeconv.Int64(1669638670000),
+					UploadDateLte: typeconv.Int64(1669638670476),
+				},
+				Keyword: typeconv.String("sa"),
+				Pagination: &restapp.RequestPagination{
+					Page:       2,
+					TotalItems: 24,
+				},
+				Sort: (*restapp.SearchFileRequestSort)(typeconv.String("latest_upload")),
+			}
+			body, _ := encoding_json.Marshal(reqBody)
+			buffer := bytes.NewBuffer(body)
+			req := httptest.NewRequest(http.MethodPost, "/", buffer)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec = httptest.NewRecorder()
+
+			e := echo.New()
+			ctx = e.NewContext(req, rec)
+
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			fileClient = mock_file.NewMockFile(ctrl)
+			fileHandler := resthandler.NewFile(resthandler.FileParam{
+				File: fileClient,
+			})
+			h = fileHandler.SearchFile
+			searchParam = file.SearchFileParam{
+				Keyword:       "sa",
+				TotalItems:    24,
+				Page:          2,
+				StatusIn:      []string{"available", "deleted"},
+				VisibilityIn:  []string{"public"},
+				ExtensionIn:   []string{"jpg", "png"},
+				SizeGte:       1024,
+				SizeLte:       2048,
+				UploadDateGte: 1669638670000,
+				UploadDateLte: 1669638670476,
+				Sort:          "latest_upload",
+			}
+			searchRes = &file.SearchFileResult{
+				Success: system.SystemSuccess{
+					Code:    1000,
+					Message: "success search file",
+				},
+				Items: []file.SearchFileItem{
+					{
+						Id:         "id-1",
+						Name:       "name-1",
+						Status:     "deleted",
+						UploadedAt: currentTs,
+						CreatedAt:  currentTs,
+						UpdatedAt:  &currentTs,
+						DeletedAt:  &currentTs,
+					},
+					{
+						Id:         "id-2",
+						Name:       "name-2",
+						Status:     "available",
+						UploadedAt: currentTs,
+						CreatedAt:  currentTs,
+						UpdatedAt:  &currentTs,
+						DeletedAt:  nil,
+					},
+				},
+				Summary: file.SearchFileSummary{
+					TotalItems: 2,
+					Page:       2,
+				},
+			}
+		})
+
+		When("failed binding request body", func() {
+			It("should return error", func() {
+				reqBody, _ := encoding_json.Marshal(struct {
+					Filter int `json:"filter"`
+				}{
+					Filter: 1,
+				})
+				buffer := bytes.NewBuffer(reqBody)
+
+				req := httptest.NewRequest(http.MethodPost, "/", buffer)
+				req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+				rec := httptest.NewRecorder()
+
+				e := echo.New()
+				ctx := e.NewContext(req, rec)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 400,
+					Message: &restapp.ResponseBodyInfo{
+						Code:    1002,
+						Message: "invalid request",
+					},
+				}))
+			})
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				fileClient.
+					EXPECT().
+					SearchFile(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
+					Return(nil, &system.SystemError{
+						Code:    1002,
+						Message: "invalid data",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 400,
+					Message: &restapp.ResponseBodyInfo{
+						Code:    1002,
+						Message: "invalid data",
+					},
+				}))
+			})
+		})
+
+		When("failed search file", func() {
+			It("should return error", func() {
+				fileClient.
+					EXPECT().
+					SearchFile(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
+					Return(nil, &system.SystemError{
+						Code:    1001,
+						Message: "network error",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 500,
+					Message: &restapp.ResponseBodyInfo{
+						Code:    1001,
+						Message: "network error",
+					},
+				}))
+			})
+		})
+
+		When("there is no file", func() {
+			It("should return empty result", func() {
+				searchRes := &file.SearchFileResult{
+					Success: system.SystemSuccess{
+						Code:    1000,
+						Message: "success search file",
+					},
+					Items: []file.SearchFileItem{},
+					Summary: file.SearchFileSummary{
+						TotalItems: 0,
+						Page:       2,
+					},
+				}
+				fileClient.
+					EXPECT().
+					SearchFile(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				err := h(ctx)
+
+				res := &restapp.SearchFileResponse{}
+				encoding_json.Unmarshal(rec.Body.Bytes(), res)
+
+				Expect(err).To(BeNil())
+				Expect(rec.Code).To(Equal(http.StatusOK))
+				Expect(res.Code).To(Equal(int32(1000)))
+				Expect(res.Message).To(Equal("success search file"))
+				Expect(res.Data.Summary).To(Equal(restapp.SearchFileSummary{
+					Page:       2,
+					TotalItems: 0,
+				}))
+				Expect(res.Data.Items).To(Equal([]restapp.SearchFileItem{}))
+			})
+		})
+
+		When("there is one file", func() {
+			It("should return result", func() {
+				searchRes := &file.SearchFileResult{
+					Success: system.SystemSuccess{
+						Code:    1000,
+						Message: "success search file",
+					},
+					Items: []file.SearchFileItem{
+						{
+							Id:         "id-1",
+							Name:       "name-1",
+							Status:     "available",
+							CreatedAt:  currentTs,
+							UploadedAt: currentTs,
+							UpdatedAt:  &currentTs,
+						},
+					},
+					Summary: file.SearchFileSummary{
+						TotalItems: 1,
+						Page:       2,
+					},
+				}
+				fileClient.
+					EXPECT().
+					SearchFile(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				err := h(ctx)
+
+				res := &restapp.SearchFileResponse{}
+				encoding_json.Unmarshal(rec.Body.Bytes(), res)
+
+				Expect(err).To(BeNil())
+				Expect(rec.Code).To(Equal(http.StatusOK))
+				Expect(res.Code).To(Equal(int32(1000)))
+				Expect(res.Message).To(Equal("success search file"))
+				Expect(res.Data.Summary).To(Equal(restapp.SearchFileSummary{
+					Page:       2,
+					TotalItems: 1,
+				}))
+				Expect(res.Data.Items).To(Equal([]restapp.SearchFileItem{
+					{
+						Id:         "id-1",
+						Name:       "name-1",
+						Status:     "available",
+						CreatedAt:  currentTs.UnixMilli(),
+						UpdatedAt:  typeconv.Int64(currentTs.UnixMilli()),
+						UploadedAt: currentTs.UnixMilli(),
+					},
+				}))
+			})
+		})
+
+		When("there are some files", func() {
+			It("should return result", func() {
+				fileClient.
+					EXPECT().
+					SearchFile(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				err := h(ctx)
+
+				res := &restapp.SearchFileResponse{}
+				encoding_json.Unmarshal(rec.Body.Bytes(), res)
+
+				updatedAt := currentTs.UnixMilli()
+				Expect(err).To(BeNil())
+				Expect(rec.Code).To(Equal(http.StatusOK))
+				Expect(res.Code).To(Equal(int32(1000)))
+				Expect(res.Message).To(Equal("success search file"))
+				Expect(res.Data.Summary).To(Equal(restapp.SearchFileSummary{
+					Page:       2,
+					TotalItems: 2,
+				}))
+				Expect(res.Data.Items).To(Equal([]restapp.SearchFileItem{
+					{
+						Id:         "id-1",
+						Name:       "name-1",
+						Status:     "deleted",
+						UploadedAt: currentTs.UnixMilli(),
+						CreatedAt:  currentTs.UnixMilli(),
+						UpdatedAt:  &updatedAt,
+						DeletedAt:  typeconv.Int64(currentTs.UnixMilli()),
+					},
+					{
+						Id:         "id-2",
+						Name:       "name-2",
+						Status:     "available",
+						UploadedAt: currentTs.UnixMilli(),
+						CreatedAt:  currentTs.UnixMilli(),
+						UpdatedAt:  &updatedAt,
 					},
 				}))
 			})

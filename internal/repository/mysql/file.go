@@ -282,6 +282,126 @@ func (r *file) FindFile(ctx context.Context, p repository.FindFileParam) (*repos
 	return res, nil
 }
 
+func (r *file) SearchFile(ctx context.Context, p repository.SearchFileParam) (*repository.SearchFileResult, error) {
+	query := r.gormClient.
+		WithContext(ctx).
+		Clauses(dbresolver.Read)
+
+	searchQuery := query
+	if p.Keyword != "" {
+		searchQuery = searchQuery.
+			Where("name LIKE ?", "%"+p.Keyword+"%")
+	}
+
+	if len(p.StatusIn) > 0 {
+		searchQuery = searchQuery.
+			Where("status IN ?", p.StatusIn)
+	}
+
+	if len(p.VisibilityIn) > 0 {
+		searchQuery = searchQuery.
+			Where("visibility IN ?", p.VisibilityIn)
+	}
+
+	if len(p.ExtensionIn) > 0 {
+		searchQuery = searchQuery.
+			Where("extension IN ?", p.ExtensionIn)
+	}
+
+	if p.SizeGte > 0 {
+		searchQuery = searchQuery.
+			Where("size >= ?", p.SizeGte)
+	}
+
+	if p.SizeLte > 0 {
+		searchQuery = searchQuery.
+			Where("size <= ?", p.SizeLte)
+	}
+
+	if p.UploadDateGte > 0 {
+		searchQuery = searchQuery.
+			Where("uploaded_at >= ?", p.UploadDateGte)
+	}
+
+	if p.UploadDateLte > 0 {
+		searchQuery = searchQuery.
+			Where("uploaded_at <= ?", p.UploadDateLte)
+	}
+
+	countQuery := searchQuery.Table("file")
+
+	switch p.Sort {
+	case "latest_upload":
+		searchQuery = searchQuery.Order("uploaded_at DESC")
+	case "newest_upload":
+		searchQuery = searchQuery.Order("uploaded_at ASC")
+	case "highest_size":
+		searchQuery = searchQuery.Order("size DESC")
+	case "lowest_size":
+		searchQuery = searchQuery.Order("size ASC")
+	}
+
+	if p.Limit > 0 {
+		searchQuery = searchQuery.Limit(int(p.Limit))
+	}
+	if p.Offset > 0 {
+		searchQuery = searchQuery.Offset(int(p.Offset))
+	}
+
+	files := []File{}
+	searchRes := searchQuery.
+		Select(`id, slug, name, mimetype, extension, size, visibility, status, uploaded_at, created_at, updated_at, deleted_at`).
+		Preload("Metas", func(tx *gorm.DB) *gorm.DB {
+			return tx.Select("file_id, `key`, value")
+		}).
+		Find(&files)
+
+	res := &repository.SearchFileResult{
+		Summary: repository.SearchFileSummary{},
+		Items:   []repository.SearchFileItem{},
+	}
+	if searchRes.Error != nil {
+		if errors.Is(searchRes.Error, gorm.ErrRecordNotFound) {
+			return res, nil
+		}
+		return nil, searchRes.Error
+	}
+
+	for _, file := range files {
+		var deletedAt *time.Time
+		if file.DeletedAt.Valid {
+			deletedAt = typeconv.Time(time.UnixMilli(file.DeletedAt.Int64).UTC())
+		}
+
+		meta := map[string]string{}
+		for _, item := range file.Metas {
+			meta[item.Key] = item.Value
+		}
+
+		res.Items = append(res.Items, repository.SearchFileItem{
+			Id:         file.Id,
+			Slug:       file.Slug,
+			Name:       file.Name,
+			Mimetype:   file.Mimetype,
+			Extension:  file.Extension,
+			Size:       file.Size,
+			Visibility: file.Visibility,
+			Status:     file.Status,
+			UploadedAt: time.UnixMilli(file.UploadedAt).UTC(),
+			CreatedAt:  time.UnixMilli(file.CreatedAt).UTC(),
+			UpdatedAt:  typeconv.Time(time.UnixMilli(file.UpdatedAt).UTC()),
+			DeletedAt:  deletedAt,
+			Meta:       meta,
+		})
+	}
+
+	countRes := countQuery.Count(&res.Summary.TotalItems)
+	if countRes.Error != nil {
+		return nil, countRes.Error
+	}
+	return res, nil
+}
+
 type FileParam struct {
 	GormClient *gorm.DB
 	Randomizer random.Randomizer

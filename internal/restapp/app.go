@@ -177,6 +177,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 
 		fileGroup := echo.Group("/v1/file")
 		fileGroup.GET("/:id", fileHandler.GetFileById)
+		fileGroup.POST("/search", fileHandler.SearchFile)
 	}
 
 	app := &restApp{

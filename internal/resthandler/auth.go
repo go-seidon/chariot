@@ -6,6 +6,7 @@ import (
 	"github.com/go-seidon/chariot/generated/restapp"
 	"github.com/go-seidon/chariot/internal/auth"
 	"github.com/go-seidon/provider/status"
+	"github.com/go-seidon/provider/typeconv"
 	"github.com/labstack/echo/v4"
 )
 
@@ -83,8 +84,7 @@ func (h *authHandler) GetClientById(ctx echo.Context) error {
 
 	var updatedAt *int64
 	if findRes.UpdatedAt != nil {
-		updatedDate := findRes.UpdatedAt.UnixMilli()
-		updatedAt = &updatedDate
+		updatedAt = typeconv.Int64(findRes.UpdatedAt.UnixMilli())
 	}
 
 	return ctx.JSON(http.StatusOK, &restapp.GetAuthClientByIdResponse{
@@ -161,11 +161,6 @@ func (h *authHandler) SearchClient(ctx echo.Context) error {
 		})
 	}
 
-	keyword := ""
-	if req.Keyword != nil {
-		keyword = *req.Keyword
-	}
-
 	statuses := []string{}
 	if req.Filter != nil {
 		if req.Filter.StatusIn != nil {
@@ -183,7 +178,7 @@ func (h *authHandler) SearchClient(ctx echo.Context) error {
 	}
 
 	searchRes, err := h.authClient.SearchClient(ctx.Request().Context(), auth.SearchClientParam{
-		Keyword:    keyword,
+		Keyword:    typeconv.StringVal(req.Keyword),
 		Statuses:   statuses,
 		TotalItems: totalItems,
 		Page:       page,

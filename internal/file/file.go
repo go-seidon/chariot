@@ -31,12 +31,13 @@ type File interface {
 	UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileResult, *system.SystemError)
 	RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam) (*RetrieveFileBySlugResult, *system.SystemError)
 	GetFileById(ctx context.Context, p GetFileByIdParam) (*GetFileByIdResult, *system.SystemError)
+	SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileResult, *system.SystemError)
 }
 
 type UploadFileInfo struct {
 	Name      string            `validate:"max=256" label:"name"`
 	Mimetype  string            `validate:"max=128" label:"mimetype"`
-	Extension string            `validate:"max=32" label:"extension"`
+	Extension string            `validate:"max=32,printascii" label:"extension"`
 	Size      int64             `validate:"min=1" label:"size"`
 	Meta      map[string]string `validate:"min=0,max=24,dive,keys,printascii,min=1,max=64,endkeys,required,printascii,min=1,max=128" label:"meta"`
 }
@@ -122,6 +123,47 @@ type GetFileByIdLocation struct {
 	CreatedAt  time.Time
 	UpdatedAt  *time.Time
 	UploadedAt *time.Time
+}
+
+type SearchFileParam struct {
+	Keyword       string   `validate:"omitempty,min=2,max=64" label:"keyword"`
+	TotalItems    int32    `validate:"numeric,min=1,max=100" label:"total_items"`
+	Page          int64    `validate:"numeric,min=1" label:"page"`
+	Sort          string   `validate:"omitempty,oneof='latest_upload' 'newest_upload' 'highest_size' 'lowest_size'" label:"sort"`
+	StatusIn      []string `validate:"unique,min=0,max=4,dive,oneof='uploading' 'available' 'deleting' 'deleted'" label:"status_in"`
+	VisibilityIn  []string `validate:"unique,min=0,max=2,dive,oneof='public' 'protected'" label:"visibility_in"`
+	ExtensionIn   []string `validate:"unique,min=0,max=16,dive" label:"extension_in"`
+	SizeGte       int64    `validate:"numeric,min=0" label:"size_gte"`
+	SizeLte       int64    `validate:"numeric,min=0" label:"size_lte"`
+	UploadDateGte int64    `validate:"numeric,min=0" label:"upload_date_gte"`
+	UploadDateLte int64    `validate:"numeric,min=0" label:"upload_date_lte"`
+}
+
+type SearchFileResult struct {
+	Success system.SystemSuccess
+	Items   []SearchFileItem
+	Summary SearchFileSummary
+}
+
+type SearchFileItem struct {
+	Id         string
+	Slug       string
+	Name       string
+	Mimetype   string
+	Extension  string
+	Size       int64
+	Visibility string
+	Status     string
+	UploadedAt time.Time
+	CreatedAt  time.Time
+	UpdatedAt  *time.Time
+	DeletedAt  *time.Time
+	Meta       map[string]string
+}
+
+type SearchFileSummary struct {
+	TotalItems int64
+	Page       int64
 }
 
 type file struct {
@@ -438,6 +480,73 @@ func (f *file) GetFileById(ctx context.Context, p GetFileByIdParam) (*GetFileByI
 		DeletedAt:  findFile.DeletedAt,
 		Meta:       findFile.Meta,
 		Locations:  locations,
+	}
+	return res, nil
+}
+
+func (f *file) SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileResult, *system.SystemError) {
+	err := f.validator.Validate(p)
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.INVALID_PARAM,
+			Message: err.Error(),
+		}
+	}
+
+	offset := int64(0)
+	if p.Page > 1 {
+		offset = (p.Page - 1) * int64(p.TotalItems)
+	}
+
+	searchRes, err := f.fileRepo.SearchFile(ctx, repository.SearchFileParam{
+		Sort:          p.Sort,
+		Limit:         p.TotalItems,
+		Offset:        offset,
+		Keyword:       p.Keyword,
+		StatusIn:      p.StatusIn,
+		VisibilityIn:  p.VisibilityIn,
+		ExtensionIn:   p.ExtensionIn,
+		SizeGte:       p.SizeGte,
+		SizeLte:       p.SizeLte,
+		UploadDateGte: p.UploadDateGte,
+		UploadDateLte: p.UploadDateLte,
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	items := []SearchFileItem{}
+	for _, file := range searchRes.Items {
+		items = append(items, SearchFileItem{
+			Id:         file.Id,
+			Name:       file.Name,
+			Slug:       file.Slug,
+			Mimetype:   file.Mimetype,
+			Extension:  file.Extension,
+			Size:       file.Size,
+			Visibility: file.Visibility,
+			Status:     file.Status,
+			UploadedAt: file.UploadedAt,
+			CreatedAt:  file.CreatedAt,
+			UpdatedAt:  file.UpdatedAt,
+			DeletedAt:  file.DeletedAt,
+			Meta:       file.Meta,
+		})
+	}
+
+	res := &SearchFileResult{
+		Success: system.SystemSuccess{
+			Code:    status.ACTION_SUCCESS,
+			Message: "success search file",
+		},
+		Items: items,
+		Summary: SearchFileSummary{
+			TotalItems: searchRes.Summary.TotalItems,
+			Page:       p.Page,
+		},
 	}
 	return res, nil
 }

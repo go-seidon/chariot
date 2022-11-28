@@ -1247,4 +1247,215 @@ var _ = Describe("File Package", func() {
 			})
 		})
 	})
+
+	Context("SearchFile function", Label("unit"), func() {
+
+		var (
+			ctx         context.Context
+			currentTs   time.Time
+			fileClient  file.File
+			p           file.SearchFileParam
+			validator   *mock_validation.MockValidator
+			identifier  *mock_identifier.MockIdentifier
+			clock       *mock_datetime.MockClock
+			fileRepo    *mock_repository.MockFile
+			searchParam repository.SearchFileParam
+			searchRes   *repository.SearchFileResult
+		)
+
+		BeforeEach(func() {
+			ctx = context.Background()
+			currentTs = time.Now().UTC()
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			validator = mock_validation.NewMockValidator(ctrl)
+			identifier = mock_identifier.NewMockIdentifier(ctrl)
+			clock = mock_datetime.NewMockClock(ctrl)
+			fileRepo = mock_repository.NewMockFile(ctrl)
+			fileClient = file.NewFile(file.FileParam{
+				Validator:  validator,
+				Identifier: identifier,
+				Clock:      clock,
+				FileRepo:   fileRepo,
+			})
+			p = file.SearchFileParam{
+				Keyword:       "sa",
+				TotalItems:    24,
+				Page:          2,
+				StatusIn:      []string{"available", "deleted"},
+				VisibilityIn:  []string{"public"},
+				ExtensionIn:   []string{"png", "jpg"},
+				SizeGte:       1024,
+				SizeLte:       2048,
+				UploadDateGte: 1669638670000,
+				UploadDateLte: 1669638670476,
+				Sort:          "latest_upload",
+			}
+			searchParam = repository.SearchFileParam{
+				Keyword:       "sa",
+				Limit:         24,
+				Offset:        24,
+				StatusIn:      []string{"available", "deleted"},
+				VisibilityIn:  []string{"public"},
+				ExtensionIn:   []string{"png", "jpg"},
+				SizeGte:       1024,
+				SizeLte:       2048,
+				UploadDateGte: 1669638670000,
+				UploadDateLte: 1669638670476,
+				Sort:          "latest_upload",
+			}
+			searchRes = &repository.SearchFileResult{
+				Summary: repository.SearchFileSummary{
+					TotalItems: 2,
+				},
+				Items: []repository.SearchFileItem{
+					{
+						Id:        "id-1",
+						Name:      "name-1",
+						Status:    "deleted",
+						CreatedAt: currentTs,
+					},
+					{
+						Id:        "id-2",
+						Name:      "name-2",
+						Status:    "available",
+						CreatedAt: currentTs,
+						UpdatedAt: &currentTs,
+					},
+				},
+			}
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(fmt.Errorf("invalid data")).
+					Times(1)
+
+				res, err := fileClient.SearchFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1002)))
+				Expect(err.Message).To(Equal("invalid data"))
+			})
+		})
+
+		When("failed search file", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					SearchFile(gomock.Eq(ctx), gomock.Eq(searchParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := fileClient.SearchFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("network error"))
+			})
+		})
+
+		When("there is no file", func() {
+			It("should return empty result", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				searchRes := &repository.SearchFileResult{
+					Summary: repository.SearchFileSummary{
+						TotalItems: 0,
+					},
+					Items: []repository.SearchFileItem{},
+				}
+				fileRepo.
+					EXPECT().
+					SearchFile(gomock.Eq(ctx), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				res, err := fileClient.SearchFile(ctx, p)
+
+				Expect(res.Success.Code).To(Equal(int32(1000)))
+				Expect(res.Success.Message).To(Equal("success search file"))
+				Expect(res.Summary.Page).To(Equal(p.Page))
+				Expect(res.Summary.TotalItems).To(Equal(int64(0)))
+				Expect(len(res.Items)).To(Equal(0))
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("there is one file", func() {
+			It("should return result", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				searchRes := &repository.SearchFileResult{
+					Summary: repository.SearchFileSummary{
+						TotalItems: 1,
+					},
+					Items: []repository.SearchFileItem{
+						{
+							Id:        "id-1",
+							Name:      "name-1",
+							Status:    "deleted",
+							CreatedAt: currentTs,
+						},
+					},
+				}
+				fileRepo.
+					EXPECT().
+					SearchFile(gomock.Eq(ctx), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				res, err := fileClient.SearchFile(ctx, p)
+
+				Expect(res.Success.Code).To(Equal(int32(1000)))
+				Expect(res.Success.Message).To(Equal("success search file"))
+				Expect(res.Summary.Page).To(Equal(p.Page))
+				Expect(res.Summary.TotalItems).To(Equal(int64(1)))
+				Expect(len(res.Items)).To(Equal(1))
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("there are some files", func() {
+			It("should return result", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					SearchFile(gomock.Eq(ctx), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				res, err := fileClient.SearchFile(ctx, p)
+
+				Expect(res.Success.Code).To(Equal(int32(1000)))
+				Expect(res.Success.Message).To(Equal("success search file"))
+				Expect(res.Summary.Page).To(Equal(p.Page))
+				Expect(res.Summary.TotalItems).To(Equal(int64(2)))
+				Expect(len(res.Items)).To(Equal(2))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
 })
