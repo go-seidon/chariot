@@ -77,8 +77,6 @@ TBA
 ```
 
 ## Todo
-6. Admin: SearchFiles
-
 7. Client: Secure Access
 - GenerateAccessToken
 8. Client: Secure RetrieveFile 
