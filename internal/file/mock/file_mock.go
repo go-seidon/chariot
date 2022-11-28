@@ -66,6 +66,21 @@ func (mr *MockFileMockRecorder) RetrieveFileBySlug(ctx, p interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RetrieveFileBySlug", reflect.TypeOf((*MockFile)(nil).RetrieveFileBySlug), ctx, p)
 }
 
+// SearchFile mocks base method.
+func (m *MockFile) SearchFile(ctx context.Context, p file.SearchFileParam) (*file.SearchFileResult, *system.SystemError) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchFile", ctx, p)
+	ret0, _ := ret[0].(*file.SearchFileResult)
+	ret1, _ := ret[1].(*system.SystemError)
+	return ret0, ret1
+}
+
+// SearchFile indicates an expected call of SearchFile.
+func (mr *MockFileMockRecorder) SearchFile(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchFile", reflect.TypeOf((*MockFile)(nil).SearchFile), ctx, p)
+}
+
 // UploadFile mocks base method.
 func (m *MockFile) UploadFile(ctx context.Context, p file.UploadFileParam) (*file.UploadFileResult, *system.SystemError) {
 	m.ctrl.T.Helper()
