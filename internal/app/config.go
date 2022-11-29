@@ -32,6 +32,9 @@ type Config struct {
 
 	UploadFormSize int64 `env:"UPLOAD_FORM_SIZE"`
 
+	SignatureIssuer string `env:"SIGNATURE_ISSUER"`
+	SignatureKey    string `env:"SIGNATURE_KEY"`
+
 	Barrels map[string]BarrelConfig `env:"BARRELS"`
 }
 
