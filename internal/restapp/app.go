@@ -10,6 +10,8 @@ import (
 	"github.com/go-seidon/chariot/internal/file"
 	"github.com/go-seidon/chariot/internal/repository"
 	"github.com/go-seidon/chariot/internal/resthandler"
+	"github.com/go-seidon/chariot/internal/session"
+	"github.com/go-seidon/chariot/internal/signature/jwt"
 	"github.com/go-seidon/chariot/internal/storage/multipart"
 	"github.com/go-seidon/provider/datetime"
 	"github.com/go-seidon/provider/encoding/base64"
@@ -178,6 +180,23 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		fileGroup := echo.Group("/v1/file")
 		fileGroup.GET("/:id", fileHandler.GetFileById)
 		fileGroup.POST("/search", fileHandler.SearchFile)
+
+		jwtSignature := jwt.NewSignature(
+			jwt.WithIssuer(p.Config.SignatureIssuer),
+			jwt.WithSignKey([]byte(p.Config.SignatureKey)),
+			jwt.WithClock(clock),
+		)
+		sessionClient := session.NewSession(session.SessionParam{
+			Validator:  goValidator,
+			Signature:  jwtSignature,
+			Clock:      clock,
+			Identifier: ksuidIdentifier,
+		})
+		sessionHandler := resthandler.NewSession(resthandler.SessionParam{
+			Session: sessionClient,
+		})
+		sessionGroup := echo.Group("/v1/session")
+		sessionGroup.POST("", sessionHandler.CreateSession)
 	}
 
 	app := &restApp{
