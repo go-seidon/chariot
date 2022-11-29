@@ -23,6 +23,12 @@ const (
 	CreateAuthClientRequestTypeBasicAuth CreateAuthClientRequestType = "basic_auth"
 )
 
+// Defines values for CreateSessionRequestFeatures.
+const (
+	RetrieveFile CreateSessionRequestFeatures = "retrieve_file"
+	UploadFile   CreateSessionRequestFeatures = "upload_file"
+)
+
 // Defines values for GetFileByIdDataStatus.
 const (
 	GetFileByIdDataStatusAvailable GetFileByIdDataStatus = "available"
@@ -179,6 +185,30 @@ type CreateBarrelResponse struct {
 	Code    int32            `json:"code"`
 	Data    CreateBarrelData `json:"data"`
 	Message string           `json:"message"`
+}
+
+// CreateSessionData defines model for CreateSessionData.
+type CreateSessionData struct {
+	CreatedAt int64  `json:"created_at"`
+	ExpiredAt int64  `json:"expired_at"`
+	Token     string `json:"token"`
+}
+
+// CreateSessionRequest defines model for CreateSessionRequest.
+type CreateSessionRequest struct {
+	// duration of the generated session will valid (seconds)
+	Duration int64                          `json:"duration"`
+	Features []CreateSessionRequestFeatures `json:"features"`
+}
+
+// CreateSessionRequestFeatures defines model for CreateSessionRequest.Features.
+type CreateSessionRequestFeatures string
+
+// CreateSessionResponse defines model for CreateSessionResponse.
+type CreateSessionResponse struct {
+	Code    int32             `json:"code"`
+	Data    CreateSessionData `json:"data"`
+	Message string            `json:"message"`
 }
 
 // DeleteFileByIdData defines model for DeleteFileByIdData.
@@ -727,6 +757,15 @@ type GetFileByIdParams struct {
 	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
 }
 
+// CreateSessionJSONBody defines parameters for CreateSession.
+type CreateSessionJSONBody = CreateSessionRequest
+
+// CreateSessionParams defines parameters for CreateSession.
+type CreateSessionParams struct {
+	// correlation id for tracing purposes
+	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
+}
+
 // CreateAuthClientJSONRequestBody defines body for CreateAuthClient for application/json ContentType.
 type CreateAuthClientJSONRequestBody = CreateAuthClientJSONBody
 
@@ -747,6 +786,9 @@ type UpdateBarrelByIdJSONRequestBody = UpdateBarrelByIdJSONBody
 
 // SearchFileJSONRequestBody defines body for SearchFile for application/json ContentType.
 type SearchFileJSONRequestBody = SearchFileJSONBody
+
+// CreateSessionJSONRequestBody defines body for CreateSession for application/json ContentType.
+type CreateSessionJSONRequestBody = CreateSessionJSONBody
 
 // Getter for additional properties for GetFileByIdData_Meta. Returns the specified
 // element and whether it was found

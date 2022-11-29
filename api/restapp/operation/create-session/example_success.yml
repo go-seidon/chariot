@@ -1,0 +1,7 @@
+value:
+  code: 1000
+  message: success create session
+  data:
+    created_at: 1669728546547
+    expires_at: 1669729146547
+    token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjaGFyaW90IiwiZXhwIjoxNjY5NzI5MTQ2LCJuYmYiOjE2Njk3Mjg1NDYsImlhdCI6MTY2OTcyODU0NiwianRpIjoiMklEdWJYZHZPTk5VYTZ5dHhnV3cxeVFOd2doIiwiZGF0YSI6eyJmZWF0dXJlcyI6eyJyZXRyaWV2ZV9maWxlIjoxNjY5NzI5MTQ2LCJ1cGxvYWRfZmlsZSI6MTY2OTcyOTE0Nn19fQ.7GmO8JAEg0zv8JOQj-grVLUUL_MNFetU_jr1Icq0BjnYUnF1E8YbiRHkzWJ0rHJCT8PoCC3NLoINYAQCFWKrtg

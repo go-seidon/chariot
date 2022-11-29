@@ -1,0 +1,46 @@
+
+operationId: CreateSession
+summary: create session
+description: create session
+tags:
+  - session
+parameters:
+  - $ref: "./../../main.yml#/components/parameters/CorrelationId"
+requestBody:
+  description: session information
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: "./request_body.yml"
+      examples:
+        'All Features':
+          value:
+            duration: 600
+            features: ['upload_file', 'retrieve_file']
+        'Upload File':
+          value:
+            duration: 600
+            features: ['upload_file']
+        'Retrieve File':
+          value:
+            duration: 600
+            features: ['retrieve_file']
+responses:
+  '201':
+    description: success create session
+    content: 
+      application/json:
+        schema:
+          $ref: "./response_body.yml"
+        examples:
+          'Success':
+            $ref: "./example_success.yml"
+  '400':
+    $ref: "./../../main.yml#/components/responses/BadRequest"
+  '401':
+    $ref: "./../../main.yml#/components/responses/UnauthenticatedAccess"
+  '500':
+    $ref: "./../../main.yml#/components/responses/ServerError"
+security:
+  - basicAuth: []
