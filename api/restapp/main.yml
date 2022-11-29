@@ -36,6 +36,8 @@ paths:
     $ref: "./path/auth_client_search.yml"
   /v1/auth-client/{id}:
     $ref: "./path/auth_client_id.yml"
+  /v1/session:
+    $ref: "./path/session.yml"
 components:
   parameters:
     ObjectId: 
@@ -122,17 +124,6 @@ components:
     SearchAuthClientItem:
       $ref: "./operation/search-auth-client/response_item.yml"
 
-    # file access
-    UploadFileRequest:
-      $ref: "./operation/upload-file/request_body.yml"
-    UploadFileResponse:
-      $ref: "./operation/upload-file/response_body.yml"
-    UploadFileData:
-      $ref: "./operation/upload-file/response_data.yml"
-
-    RetrieveFileBySlugResponse:
-      $ref: "./operation/retrieve-file-by-slug/response_body.yml"
-
     # file management
     GetFileByIdResponse:
       $ref: "./operation/get-file-by-id/response_body.yml"
@@ -158,6 +149,25 @@ components:
       $ref: "./operation/search-file/response_summary.yml"
     SearchFileItem:
       $ref: "./operation/search-file/response_item.yml"
+
+    # session access
+    CreateSessionRequest:
+      $ref: "./operation/create-session/request_body.yml"
+    CreateSessionResponse:
+      $ref: "./operation/create-session/response_body.yml"
+    CreateSessionData:
+      $ref: "./operation/create-session/response_data.yml"
+
+    # file access
+    UploadFileRequest:
+      $ref: "./operation/upload-file/request_body.yml"
+    UploadFileResponse:
+      $ref: "./operation/upload-file/response_body.yml"
+    UploadFileData:
+      $ref: "./operation/upload-file/response_data.yml"
+
+    RetrieveFileBySlugResponse:
+      $ref: "./operation/retrieve-file-by-slug/response_body.yml"
 
   responses:
     BadRequest:

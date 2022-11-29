@@ -1,0 +1,17 @@
+
+type: object
+required:
+- duration
+- features
+properties:
+  duration:
+    type: integer
+    format: int64
+    description: duration of the generated session will valid (seconds)
+  features:
+    type: array
+    items:
+      type: string
+      enum:
+      - upload_file
+      - retrieve_file
