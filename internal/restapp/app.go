@@ -10,6 +10,7 @@ import (
 	"github.com/go-seidon/chariot/internal/file"
 	"github.com/go-seidon/chariot/internal/repository"
 	"github.com/go-seidon/chariot/internal/resthandler"
+	"github.com/go-seidon/chariot/internal/restmiddleware"
 	"github.com/go-seidon/chariot/internal/session"
 	"github.com/go-seidon/chariot/internal/signature/jwt"
 	"github.com/go-seidon/chariot/internal/storage/multipart"
@@ -96,8 +97,8 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 
 	server := p.Server
 	if server == nil {
-		echo := echo.New()
-		server = &echoServer{echo}
+		e := echo.New()
+		server = &echoServer{e}
 
 		goValidator := govalidator.NewValidator()
 		bcryptHasher := bcrypt.NewHasher()
@@ -119,13 +120,24 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			return nil, err
 		}
 
+		basicClient := auth.NewBasicAuth(auth.NewBasicAuthParam{
+			Encoder:  base64Encoder,
+			Hasher:   bcryptHasher,
+			AuthRepo: repo.GetAuth(),
+		})
+		basicAuth := restmiddleware.NewBasicAuth(restmiddleware.BasicAuthParam{
+			BasicClient: basicClient,
+			Serializer:  jsonSerializer,
+		})
+		basicAuthMiddleware := echo.WrapMiddleware(basicAuth.Handle)
+
 		basicHandler := resthandler.NewBasic(resthandler.BasicParam{
 			Config: &resthandler.BasicConfig{
 				AppName:    config.AppName,
 				AppVersion: config.AppVersion,
 			},
 		})
-		basicGroup := echo.Group("")
+		basicGroup := e.Group("")
 		basicGroup.GET("/", basicHandler.GetAppInfo)
 
 		authClient := auth.NewAuthClient(auth.AuthClientParam{
@@ -138,7 +150,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		authHandler := resthandler.NewAuth(resthandler.AuthParam{
 			AuthClient: authClient,
 		})
-		authClientGroup := echo.Group("/v1/auth-client")
+		authClientGroup := e.Group("/v1/auth-client", basicAuthMiddleware)
 		authClientGroup.POST("", authHandler.CreateClient)
 		authClientGroup.POST("/search", authHandler.SearchClient)
 		authClientGroup.GET("/:id", authHandler.GetClientById)
@@ -153,7 +165,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		barrelHandler := resthandler.NewBarrel(resthandler.BarrelParam{
 			Barrel: barrelClient,
 		})
-		barrelGroup := echo.Group("/v1/barrel")
+		barrelGroup := e.Group("/v1/barrel", basicAuthMiddleware)
 		barrelGroup.POST("", barrelHandler.CreateBarrel)
 		barrelGroup.POST("/search", barrelHandler.SearchBarrel)
 		barrelGroup.GET("/:id", barrelHandler.GetBarrelById)
@@ -173,11 +185,11 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			Serializer: jsonSerializer,
 			FileParser: multipart.FileParser,
 		})
-		fileAccessGroup := echo.Group("/file")
+		fileAccessGroup := e.Group("/file")
 		fileAccessGroup.POST("", fileHandler.UploadFile)
 		fileAccessGroup.GET("/:slug", fileHandler.RetrieveFileBySlug)
 
-		fileGroup := echo.Group("/v1/file")
+		fileGroup := e.Group("/v1/file", basicAuthMiddleware)
 		fileGroup.GET("/:id", fileHandler.GetFileById)
 		fileGroup.POST("/search", fileHandler.SearchFile)
 
@@ -195,7 +207,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		sessionHandler := resthandler.NewSession(resthandler.SessionParam{
 			Session: sessionClient,
 		})
-		sessionGroup := echo.Group("/v1/session")
+		sessionGroup := e.Group("/v1/session")
 		sessionGroup.POST("", sessionHandler.CreateSession)
 	}
 
