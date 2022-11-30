@@ -33,7 +33,8 @@ type CreateClientResult struct {
 }
 
 type FindClientParam struct {
-	Id string
+	Id       string
+	ClientId string
 }
 
 type FindClientResult struct {

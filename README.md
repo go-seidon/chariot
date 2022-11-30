@@ -77,30 +77,29 @@ TBA
 ```
 
 ## Todo
-1. Protect several API using basic auth
-2. Client: Secure RetrieveFile 
+1. Client: Secure RetrieveFile 
 - public file should be public accessible
 - protected file should be validated using `?token=abc` (expirity, feature = retrieve_file)
-3. Client: Secure UploadFile
+2. Client: Secure UploadFile
 - validate upload token (expirity, feature = upload_file)
 - add `file_url` on success upload file
 -> public file should directly use slug
 -> protected file should use slug + `?token=abc`
 
-4. Client: Upload rule (size, resolution, extension)
+3. Client: Upload rule (size, resolution, extension)
 - rule is required
 - rule may have no attribute (free rule)
 - rule may have multiple attribute
 - if rule have multiple attribute than it's mean we're matching at least one rule (or clause)
-5. Daemon: ProceedPendingUpload
-6. Admin: DeleteFileById
+4. Daemon: ProceedPendingUpload
+5. Admin: DeleteFileById
 
-7. Devs: Enhancement
+6. Devs: Enhancement
 - Override default error handler (echo router)
 - Add request logging
 - Unit test: app NewDefaultConfig
 - Unit test: storage multipart test
-8. Admin: dashboard monitoring
+7. Admin: dashboard monitoring
 - data exporter: CollectMetris
 - prometheus (rest exporter)
 - grafana

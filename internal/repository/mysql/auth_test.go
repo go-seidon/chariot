@@ -398,6 +398,7 @@ var _ = Describe("Auth Repository", func() {
 			p         repository.FindClientParam
 			r         *repository.FindClientResult
 			findStmt  string
+			findRows  *sqlmock.Rows
 		)
 
 		BeforeEach(func() {
@@ -437,8 +438,18 @@ var _ = Describe("Auth Repository", func() {
 				Type:         "basic",
 				Status:       "active",
 				CreatedAt:    time.UnixMilli(currentTs.UnixMilli()).UTC(),
+				UpdatedAt:    typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
 			}
 			findStmt = regexp.QuoteMeta("SELECT id, client_id, client_secret, name, type, status, created_at, updated_at FROM `auth_client` WHERE id = ? ORDER BY `auth_client`.`id` LIMIT 1")
+			findRows = sqlmock.NewRows([]string{
+				"id", "client_id", "client_secret",
+				"name", "type", "status",
+				"created_at", "updated_at",
+			}).AddRow(
+				r.Id, r.ClientId, r.ClientSecret,
+				r.Name, r.Type, r.Status,
+				currentTs.UnixMilli(), currentTs.UnixMilli(),
+			)
 		})
 
 		AfterEach(func() {
@@ -478,34 +489,31 @@ var _ = Describe("Auth Repository", func() {
 
 		When("success find client", func() {
 			It("should return result", func() {
-				rows := sqlmock.NewRows([]string{
-					"id", "client_id", "client_secret",
-					"name", "type", "status",
-					"created_at", "updated_at",
-				}).AddRow(
-					r.Id, r.ClientId, r.ClientSecret,
-					r.Name, r.Type, r.Status,
-					currentTs.UnixMilli(), currentTs.UnixMilli(),
-				)
-
 				dbClient.
 					ExpectQuery(findStmt).
 					WithArgs(p.Id).
-					WillReturnRows(rows)
+					WillReturnRows(findRows)
 
 				res, err := authRepo.FindClient(ctx, p)
 
-				updatedAt := time.UnixMilli(currentTs.UnixMilli()).UTC()
-				r := &repository.FindClientResult{
-					Id:           "id",
-					ClientId:     "client-id",
-					ClientSecret: "client-secret",
-					Name:         "name",
-					Type:         "basic",
-					Status:       "active",
-					CreatedAt:    time.UnixMilli(currentTs.UnixMilli()).UTC(),
-					UpdatedAt:    &updatedAt,
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("success find client using client_id", func() {
+			It("should return result", func() {
+				p := repository.FindClientParam{
+					ClientId: "client-id",
 				}
+				findStmt := regexp.QuoteMeta("SELECT id, client_id, client_secret, name, type, status, created_at, updated_at FROM `auth_client` WHERE client_id = ? ORDER BY `auth_client`.`id` LIMIT 1")
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.ClientId).
+					WillReturnRows(findRows)
+
+				res, err := authRepo.FindClient(ctx, p)
+
 				Expect(res).To(Equal(r))
 				Expect(err).To(BeNil())
 			})

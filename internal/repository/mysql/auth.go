@@ -95,9 +95,13 @@ func (r *auth) FindClient(ctx context.Context, p repository.FindClientParam) (*r
 		WithContext(ctx).
 		Clauses(dbresolver.Read)
 
-	findRes := query.
-		Select(`id, client_id, client_secret, name, type, status, created_at, updated_at`).
-		First(authClient, "id = ?", p.Id)
+	findRes := query.Select(`id, client_id, client_secret, name, type, status, created_at, updated_at`)
+	if p.ClientId != "" {
+		findRes = findRes.First(authClient, "client_id = ?", p.ClientId)
+	} else {
+		findRes = findRes.First(authClient, "id = ?", p.Id)
+	}
+
 	if findRes.Error != nil {
 		if errors.Is(findRes.Error, gorm.ErrRecordNotFound) {
 			return nil, repository.ErrNotFound

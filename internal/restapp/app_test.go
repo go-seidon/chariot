@@ -76,7 +76,7 @@ var _ = Describe("App Package", func() {
 				repo.
 					EXPECT().
 					GetAuth().
-					Times(1)
+					Times(2)
 
 				repo.
 					EXPECT().
