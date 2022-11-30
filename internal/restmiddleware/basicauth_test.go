@@ -59,7 +59,7 @@ var _ = Describe("Basic Auth Middleware", func() {
 			It("should return error", func() {
 				req.Header.Del("Authorization")
 
-				b := restapp.ResponseBodyInfo{
+				b := &restapp.ResponseBodyInfo{
 					Code:    1003,
 					Message: "credential is not specified",
 				}
@@ -89,7 +89,7 @@ var _ = Describe("Basic Auth Middleware", func() {
 					Return(nil, fmt.Errorf("db error")).
 					Times(1)
 
-				b := restapp.ResponseBodyInfo{
+				b := &restapp.ResponseBodyInfo{
 					Code:    1003,
 					Message: "failed check credential",
 				}
@@ -122,7 +122,7 @@ var _ = Describe("Basic Auth Middleware", func() {
 					Return(checkRes, nil).
 					Times(1)
 
-				b := restapp.ResponseBodyInfo{
+				b := &restapp.ResponseBodyInfo{
 					Code:    1003,
 					Message: "credential is invalid",
 				}
