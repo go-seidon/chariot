@@ -24,6 +24,7 @@ func (m *basicAuth) Handle(h http.Handler) http.Handler {
 				Message: "credential is not specified",
 			}
 			info, _ := m.serializer.Marshal(response)
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write(info)
 			return
@@ -38,6 +39,7 @@ func (m *basicAuth) Handle(h http.Handler) http.Handler {
 				Message: "failed check credential",
 			}
 			info, _ := m.serializer.Marshal(response)
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write(info)
 			return
@@ -49,6 +51,7 @@ func (m *basicAuth) Handle(h http.Handler) http.Handler {
 				Message: "credential is invalid",
 			}
 			info, _ := m.serializer.Marshal(response)
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write(info)
 			return

@@ -70,6 +70,11 @@ var _ = Describe("Basic Auth Middleware", func() {
 					Times(1)
 				rw.
 					EXPECT().
+					Header().
+					Return(map[string][]string{}).
+					Times(1)
+				rw.
+					EXPECT().
 					WriteHeader(401).
 					Times(1)
 				rw.
@@ -97,6 +102,11 @@ var _ = Describe("Basic Auth Middleware", func() {
 					EXPECT().
 					Marshal(gomock.Eq(b)).
 					Return([]byte{}, nil).
+					Times(1)
+				rw.
+					EXPECT().
+					Header().
+					Return(map[string][]string{}).
 					Times(1)
 				rw.
 					EXPECT().
@@ -130,6 +140,11 @@ var _ = Describe("Basic Auth Middleware", func() {
 					EXPECT().
 					Marshal(gomock.Eq(b)).
 					Return([]byte{}, nil).
+					Times(1)
+				rw.
+					EXPECT().
+					Header().
+					Return(map[string][]string{}).
 					Times(1)
 				rw.
 					EXPECT().
