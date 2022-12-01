@@ -162,7 +162,7 @@ var _ = Describe("Session Handler", func() {
 				Expect(res.Data).To(Equal(restapp.CreateSessionData{
 					Token:     createRes.Token,
 					CreatedAt: createRes.CreatedAt.UnixMilli(),
-					ExpiredAt: createRes.ExpiresAt.UnixMilli(),
+					ExpiresAt: createRes.ExpiresAt.UnixMilli(),
 				}))
 			})
 		})

@@ -10,7 +10,8 @@ value:
     size: 2334
     visibility: public
     status: available
+    file_url: http://localhost:3030/file/lumba-lumba.jpg
+    uploaded_at: 1664891858856
     meta:
       feature: profile
       user_id: 8c7ffa05-70c7-437e-8166-0f6a651a9575
-    uploaded_at: 1664891858856

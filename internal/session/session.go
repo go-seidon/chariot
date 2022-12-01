@@ -14,10 +14,11 @@ import (
 
 type Session interface {
 	CreateSession(ctx context.Context, p CreateSessionParam) (*CreateSessionResult, *system.SystemError)
+	VerifySession(ctx context.Context, p VerifySessionParam) (*VerifySessionResult, *system.SystemError)
 }
 
 type CreateSessionParam struct {
-	Duration time.Duration `validate:"required,min=1" label:"duration"`
+	Duration time.Duration `validate:"required,min=1,max=31622400" label:"duration"`
 	Features []string      `validate:"required,unique,min=1,max=2,dive,required,oneof='upload_file' 'retrieve_file'" label:"features"`
 }
 
@@ -26,6 +27,14 @@ type CreateSessionResult struct {
 	CreatedAt time.Time
 	ExpiresAt time.Time
 	Token     string
+}
+
+type VerifySessionParam struct {
+	Token   string `validate:"required,min=1" label:"token"`
+	Feature string `validate:"required,min=1" label:"feature"`
+}
+
+type VerifySessionResult struct {
 }
 
 type session struct {
@@ -83,6 +92,53 @@ func (s *session) CreateSession(ctx context.Context, p CreateSessionParam) (*Cre
 		ExpiresAt: createSign.ExpiresAt.UTC(),
 		Token:     createSign.Signature,
 	}
+	return res, nil
+}
+
+func (s *session) VerifySession(ctx context.Context, p VerifySessionParam) (*VerifySessionResult, *system.SystemError) {
+	err := s.validator.Validate(p)
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.INVALID_PARAM,
+			Message: err.Error(),
+		}
+	}
+
+	signature, err := s.signature.VerifySignature(ctx, signature.VerifySignatureParam{
+		Signature: p.Token,
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	data, ok := signature.Data["data"].(map[string]interface{})
+	if !ok {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: "invalid signature data",
+		}
+	}
+
+	features, ok := data["features"].(map[string]interface{})
+	if !ok {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: "invalid features data",
+		}
+	}
+
+	_, ok = features[p.Feature]
+	if !ok {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FORBIDDEN,
+			Message: "feature is not granted",
+		}
+	}
+
+	res := &VerifySessionResult{}
 	return res, nil
 }
 

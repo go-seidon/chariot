@@ -5,11 +5,11 @@ import (
 )
 
 type RestAppConfig struct {
-	AppName        string
-	AppVersion     string
-	AppHost        string
-	AppPort        int
-	UploadFormSize int64
+	AppName         string
+	AppVersion      string
+	AppHost         string
+	AppPort         int
+	StorageFormSize int64
 }
 
 func (c *RestAppConfig) GetAppName() string {

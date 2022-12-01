@@ -194,4 +194,195 @@ var _ = Describe("Session Package", func() {
 			})
 		})
 	})
+
+	Context("VerifySession function", Label("unit"), func() {
+		var (
+			ctx           context.Context
+			sessionClient session.Session
+			p             session.VerifySessionParam
+			r             *session.VerifySessionResult
+			validator     *mock_validation.MockValidator
+			identifier    *mock_identifier.MockIdentifier
+			clock         *mock_datetime.MockClock
+			signer        *mock_signature.MockSignature
+			verifyParam   signature.VerifySignatureParam
+			verifyRes     *signature.VerifySignatureResult
+		)
+
+		BeforeEach(func() {
+			ctx = context.Background()
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			validator = mock_validation.NewMockValidator(ctrl)
+			identifier = mock_identifier.NewMockIdentifier(ctrl)
+			clock = mock_datetime.NewMockClock(ctrl)
+			signer = mock_signature.NewMockSignature(ctrl)
+			sessionClient = session.NewSession(session.SessionParam{
+				Validator:  validator,
+				Identifier: identifier,
+				Clock:      clock,
+				Signature:  signer,
+			})
+
+			p = session.VerifySessionParam{
+				Feature: "upload_file",
+				Token:   "abc",
+			}
+			verifyParam = signature.VerifySignatureParam{
+				Signature: p.Token,
+			}
+			verifyRes = &signature.VerifySignatureResult{
+				Data: map[string]interface{}{
+					"data": map[string]interface{}{
+						"features": map[string]interface{}{
+							"upload_file": 1,
+						},
+					},
+				},
+			}
+			r = &session.VerifySessionResult{}
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(fmt.Errorf("invalid data")).
+					Times(1)
+
+				res, err := sessionClient.VerifySession(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1002)))
+				Expect(err.Message).To(Equal("invalid data"))
+			})
+		})
+
+		When("failed verify signature", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				signer.
+					EXPECT().
+					VerifySignature(gomock.Eq(ctx), gomock.Eq(verifyParam)).
+					Return(nil, fmt.Errorf("key error")).
+					Times(1)
+
+				res, err := sessionClient.VerifySession(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("key error"))
+			})
+		})
+
+		When("data is invalid", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				verifyRes := &signature.VerifySignatureResult{
+					Data: map[string]interface{}{},
+				}
+				signer.
+					EXPECT().
+					VerifySignature(gomock.Eq(ctx), gomock.Eq(verifyParam)).
+					Return(verifyRes, nil).
+					Times(1)
+
+				res, err := sessionClient.VerifySession(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("invalid signature data"))
+			})
+		})
+
+		When("features is invalid", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				verifyRes := &signature.VerifySignatureResult{
+					Data: map[string]interface{}{
+						"data": map[string]interface{}{},
+					},
+				}
+				signer.
+					EXPECT().
+					VerifySignature(gomock.Eq(ctx), gomock.Eq(verifyParam)).
+					Return(verifyRes, nil).
+					Times(1)
+
+				res, err := sessionClient.VerifySession(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("invalid features data"))
+			})
+		})
+
+		When("feature is not granted", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				verifyRes := &signature.VerifySignatureResult{
+					Data: map[string]interface{}{
+						"data": map[string]interface{}{
+							"features": map[string]interface{}{
+								"not_granted": 1,
+							},
+						},
+					},
+				}
+				signer.
+					EXPECT().
+					VerifySignature(gomock.Eq(ctx), gomock.Eq(verifyParam)).
+					Return(verifyRes, nil).
+					Times(1)
+
+				res, err := sessionClient.VerifySession(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1003)))
+				Expect(err.Message).To(Equal("feature is not granted"))
+			})
+		})
+
+		When("feature is granted", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				signer.
+					EXPECT().
+					VerifySignature(gomock.Eq(ctx), gomock.Eq(verifyParam)).
+					Return(verifyRes, nil).
+					Times(1)
+
+				res, err := sessionClient.VerifySession(ctx, p)
+
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
 })

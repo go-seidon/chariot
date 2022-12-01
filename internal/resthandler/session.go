@@ -51,7 +51,7 @@ func (h *sessionHandler) CreateSession(ctx echo.Context) error {
 		Message: createRes.Success.Message,
 		Data: restapp.CreateSessionData{
 			Token:     createRes.Token,
-			ExpiredAt: createRes.ExpiresAt.UnixMilli(),
+			ExpiresAt: createRes.ExpiresAt.UnixMilli(),
 			CreatedAt: createRes.CreatedAt.UnixMilli(),
 		},
 	})

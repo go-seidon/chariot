@@ -9,6 +9,8 @@ import (
 	"github.com/go-seidon/chariot/internal/file"
 	"github.com/go-seidon/chariot/internal/repository"
 	mock_repository "github.com/go-seidon/chariot/internal/repository/mock"
+	"github.com/go-seidon/chariot/internal/session"
+	mock_session "github.com/go-seidon/chariot/internal/session/mock"
 	"github.com/go-seidon/chariot/internal/storage"
 	mock_storage "github.com/go-seidon/chariot/internal/storage/mock"
 	"github.com/go-seidon/chariot/internal/storage/router"
@@ -43,10 +45,14 @@ var _ = Describe("File Package", func() {
 			slugger         *mock_slug.MockSlugger
 			barrelRepo      *mock_repository.MockBarrel
 			fileRepo        *mock_repository.MockFile
+			sessionClient   *mock_session.MockSession
 			storageRouter   *mock_storage.MockRouter
 			storagePrimary  *mock_storage.MockStorage
 			fileData        *mock_io.MockReader
 			p               file.UploadFileParam
+			r               *file.UploadFileResult
+			createSessParam session.CreateSessionParam
+			createSessRes   *session.CreateSessionResult
 			searchParam     repository.SearchBarrelParam
 			searchRes       *repository.SearchBarrelResult
 			createStgParam  router.CreateStorageParam
@@ -70,14 +76,19 @@ var _ = Describe("File Package", func() {
 			storageRouter = mock_storage.NewMockRouter(ctrl)
 			storagePrimary = mock_storage.NewMockStorage(ctrl)
 			fileData = mock_io.NewMockReader(ctrl)
+			sessionClient = mock_session.NewMockSession(ctrl)
 			fileClient = file.NewFile(file.FileParam{
-				Validator:  validator,
-				Identifier: identifier,
-				Clock:      clock,
-				Slugger:    slugger,
-				BarrelRepo: barrelRepo,
-				FileRepo:   fileRepo,
-				Router:     storageRouter,
+				Config: &file.FileConfig{
+					AppHost: "http://localhost",
+				},
+				Validator:     validator,
+				Identifier:    identifier,
+				Clock:         clock,
+				Slugger:       slugger,
+				BarrelRepo:    barrelRepo,
+				FileRepo:      fileRepo,
+				Router:        storageRouter,
+				SessionClient: sessionClient,
 			})
 			p = file.UploadFileParam{
 				Data: fileData,
@@ -95,6 +106,16 @@ var _ = Describe("File Package", func() {
 					Visibility: "public",
 					Barrels:    []string{"hippo1", "s3backup"},
 				},
+			}
+			createSessParam = session.CreateSessionParam{
+				Duration: 30 * time.Minute,
+				Features: []string{"retrieve_file"},
+			}
+			createSessRes = &session.CreateSessionResult{
+				Success:   system.SystemSuccess{},
+				CreatedAt: currentTs.UTC(),
+				ExpiresAt: currentTs.Add(30 * time.Minute).UTC(),
+				Token:     "secret-token",
 			}
 			searchParam = repository.SearchBarrelParam{
 				Codes:    []string{"hippo1", "s3backup"},
@@ -173,6 +194,23 @@ var _ = Describe("File Package", func() {
 				CreatedAt:  createFileParam.CreatedAt,
 				UploadedAt: createFileParam.UploadedAt,
 			}
+			r = &file.UploadFileResult{
+				Success: system.SystemSuccess{
+					Code:    1000,
+					Message: "success upload file",
+				},
+				Id:         createFileRes.Id,
+				Slug:       createFileRes.Slug,
+				Name:       createFileRes.Name,
+				Mimetype:   createFileRes.Mimetype,
+				Extension:  createFileRes.Extension,
+				Size:       createFileRes.Size,
+				Visibility: createFileRes.Visibility,
+				Status:     createFileRes.Status,
+				FileUrl:    fmt.Sprintf("%s/file/%s", "http://localhost", createFileRes.Slug),
+				UploadedAt: createFileRes.UploadedAt,
+				Meta:       createFileRes.Meta,
+			}
 		})
 
 		When("file data is not specified", func() {
@@ -200,6 +238,48 @@ var _ = Describe("File Package", func() {
 				Expect(res).To(BeNil())
 				Expect(err.Code).To(Equal(int32(1002)))
 				Expect(err.Message).To(Equal("invalid data"))
+			})
+		})
+
+		When("failed create session", func() {
+			It("should return error", func() {
+				p := file.UploadFileParam{
+					Data: fileData,
+					Info: file.UploadFileInfo{
+						Name:      "Dolphin 22",
+						Mimetype:  "image/jpeg",
+						Extension: "jpg",
+						Size:      23343,
+						Meta: map[string]string{
+							"feature": "profile",
+							"user_id": "8c7ffa05-70c7-437e-8166-0f6a651a9575",
+						},
+					},
+					Setting: file.UploadFileSetting{
+						Visibility: "protected",
+						Barrels:    []string{"hippo1", "s3backup"},
+					},
+				}
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				sessionClient.
+					EXPECT().
+					CreateSession(gomock.Eq(ctx), gomock.Eq(createSessParam)).
+					Return(nil, &system.SystemError{
+						Code:    1001,
+						Message: "disk error",
+					}).
+					Times(1)
+
+				res, err := fileClient.UploadFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("disk error"))
 			})
 		})
 
@@ -470,18 +550,7 @@ var _ = Describe("File Package", func() {
 				res, err := fileClient.UploadFile(ctx, p)
 
 				Expect(err).To(BeNil())
-				Expect(res.Success.Code).To(Equal(int32(1000)))
-				Expect(res.Success.Message).To(Equal("success upload file"))
-				Expect(res.Id).To(Equal(createFileRes.Id))
-				Expect(res.Slug).To(Equal(createFileRes.Slug))
-				Expect(res.Name).To(Equal(createFileRes.Name))
-				Expect(res.Mimetype).To(Equal(createFileRes.Mimetype))
-				Expect(res.Extension).To(Equal(createFileRes.Extension))
-				Expect(res.Size).To(Equal(createFileRes.Size))
-				Expect(res.Visibility).To(Equal(createFileRes.Visibility))
-				Expect(res.Status).To(Equal(createFileRes.Status))
-				Expect(res.Meta).To(Equal(createFileRes.Meta))
-				Expect(res.UploadedAt).To(Equal(createFileRes.UploadedAt))
+				Expect(res).To(Equal(r))
 			})
 		})
 
@@ -616,19 +685,166 @@ var _ = Describe("File Package", func() {
 
 				res, err := fileClient.UploadFile(ctx, p)
 
+				r := &file.UploadFileResult{
+					Success: system.SystemSuccess{
+						Code:    1000,
+						Message: "success upload file",
+					},
+					Id:         createFileRes.Id,
+					Slug:       createFileRes.Slug,
+					Name:       createFileRes.Name,
+					Mimetype:   createFileRes.Mimetype,
+					Extension:  createFileRes.Extension,
+					Size:       createFileRes.Size,
+					Visibility: createFileRes.Visibility,
+					Status:     createFileRes.Status,
+					FileUrl:    fmt.Sprintf("%s/file/%s", "http://localhost", createFileRes.Slug),
+					UploadedAt: createFileRes.UploadedAt,
+					Meta:       createFileRes.Meta,
+				}
 				Expect(err).To(BeNil())
-				Expect(res.Success.Code).To(Equal(int32(1000)))
-				Expect(res.Success.Message).To(Equal("success upload file"))
-				Expect(res.Id).To(Equal(createFileRes.Id))
-				Expect(res.Slug).To(Equal(createFileRes.Slug))
-				Expect(res.Name).To(Equal(createFileRes.Name))
-				Expect(res.Mimetype).To(Equal(createFileRes.Mimetype))
-				Expect(res.Extension).To(Equal(createFileRes.Extension))
-				Expect(res.Size).To(Equal(createFileRes.Size))
-				Expect(res.Visibility).To(Equal(createFileRes.Visibility))
-				Expect(res.Status).To(Equal(createFileRes.Status))
-				Expect(res.Meta).To(Equal(createFileRes.Meta))
-				Expect(res.UploadedAt).To(Equal(createFileRes.UploadedAt))
+				Expect(res).To(Equal(r))
+			})
+		})
+
+		When("success upload protected file", func() {
+			It("should return result", func() {
+				p := file.UploadFileParam{
+					Data: fileData,
+					Info: file.UploadFileInfo{
+						Name:      "Dolphin 22",
+						Mimetype:  "image/jpeg",
+						Extension: "jpg",
+						Size:      23343,
+						Meta: map[string]string{
+							"feature": "profile",
+							"user_id": "8c7ffa05-70c7-437e-8166-0f6a651a9575",
+						},
+					},
+					Setting: file.UploadFileSetting{
+						Visibility: "protected",
+						Barrels:    []string{"hippo1", "s3backup"},
+					},
+				}
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				sessionClient.
+					EXPECT().
+					CreateSession(gomock.Eq(ctx), gomock.Eq(createSessParam)).
+					Return(createSessRes, nil).
+					Times(1)
+
+				barrelRepo.
+					EXPECT().
+					SearchBarrel(gomock.Eq(ctx), gomock.Eq(searchParam)).
+					Return(searchRes, nil).
+					Times(1)
+
+				identifier.
+					EXPECT().
+					GenerateId().
+					Return("file-id", nil).
+					Times(2)
+
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(storagePrimary, nil).
+					Times(1)
+
+				storagePrimary.
+					EXPECT().
+					UploadObject(gomock.Eq(ctx), gomock.Eq(uploadParam)).
+					Return(uploadRes, nil).
+					Times(1)
+
+				slugger.
+					EXPECT().
+					GenerateSlug(gomock.Eq(p.Info.Name)).
+					Return("dolphin-22").
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				createFileParam := repository.CreateFileParam{
+					Id:         "file-id",
+					Slug:       "dolphin-22.jpg",
+					Name:       p.Info.Name,
+					Mimetype:   p.Info.Mimetype,
+					Extension:  p.Info.Extension,
+					Size:       p.Info.Size,
+					Visibility: p.Setting.Visibility,
+					Status:     "available",
+					Meta:       p.Info.Meta,
+					CreatedAt:  currentTs,
+					UploadedAt: currentTs,
+					Locations: []repository.CreateFileLocation{
+						{
+							BarrelId:   "h1",
+							ExternalId: typeconv.String("object-id"),
+							Priority:   1,
+							CreatedAt:  currentTs,
+							Status:     "available",
+							UploadedAt: &currentTs,
+						},
+						{
+							BarrelId:   "s1",
+							ExternalId: nil,
+							Priority:   2,
+							CreatedAt:  currentTs,
+							Status:     "uploading",
+							UploadedAt: nil,
+						},
+					},
+				}
+				createFileRes := &repository.CreateFileResult{
+					Id:         createFileParam.Id,
+					Slug:       createFileParam.Slug,
+					Name:       createFileParam.Name,
+					Mimetype:   createFileParam.Mimetype,
+					Extension:  createFileParam.Extension,
+					Size:       createFileParam.Size,
+					Visibility: createFileParam.Visibility,
+					Status:     createFileParam.Status,
+					Meta:       createFileParam.Meta,
+					CreatedAt:  createFileParam.CreatedAt,
+					UploadedAt: createFileParam.UploadedAt,
+				}
+				fileRepo.
+					EXPECT().
+					CreateFile(gomock.Eq(ctx), gomock.Eq(createFileParam)).
+					Return(createFileRes, nil).
+					Times(1)
+
+				res, err := fileClient.UploadFile(ctx, p)
+
+				r := &file.UploadFileResult{
+					Success: system.SystemSuccess{
+						Code:    1000,
+						Message: "success upload file",
+					},
+					Id:         createFileRes.Id,
+					Slug:       createFileRes.Slug,
+					Name:       createFileRes.Name,
+					Mimetype:   createFileRes.Mimetype,
+					Extension:  createFileRes.Extension,
+					Size:       createFileRes.Size,
+					Visibility: createFileRes.Visibility,
+					Status:     createFileRes.Status,
+					FileUrl:    fmt.Sprintf("%s/file/%s?token=%s", "http://localhost", createFileRes.Slug, createSessRes.Token),
+					UploadedAt: createFileRes.UploadedAt,
+					Meta:       createFileRes.Meta,
+				}
+				Expect(err).To(BeNil())
+				Expect(res).To(Equal(r))
 			})
 		})
 	})
