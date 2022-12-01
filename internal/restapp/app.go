@@ -71,11 +71,11 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 	}
 
 	config := &RestAppConfig{
-		AppName:        fmt.Sprintf("%s-rest", p.Config.AppName),
-		AppVersion:     p.Config.AppVersion,
-		AppHost:        p.Config.RESTAppHost,
-		AppPort:        p.Config.RESTAppPort,
-		UploadFormSize: p.Config.UploadFormSize,
+		AppName:         fmt.Sprintf("%s-rest", p.Config.AppName),
+		AppVersion:      p.Config.AppVersion,
+		AppHost:         p.Config.RESTAppHost,
+		AppPort:         p.Config.RESTAppPort,
+		StorageFormSize: p.Config.StorageFormSize,
 	}
 
 	var err error
@@ -108,6 +108,11 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		base64Encoder := base64.NewEncoder()
 		httpClient := http.NewClient()
 		clock := datetime.NewClock()
+		jwtSignature := jwt.NewSignature(
+			jwt.WithIssuer(p.Config.SignatureIssuer),
+			jwt.WithSignKey([]byte(p.Config.SignatureKey)),
+			jwt.WithClock(clock),
+		)
 
 		storageRouter, err := app.NewDefaultStorageRouter(app.StorageRouterParam{
 			Config:     p.Config,
@@ -129,7 +134,6 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			BasicClient: basicClient,
 			Serializer:  jsonSerializer,
 		})
-		basicAuthMiddleware := echo.WrapMiddleware(basicAuth.Handle)
 
 		basicHandler := resthandler.NewBasic(resthandler.BasicParam{
 			Config: &resthandler.BasicConfig{
@@ -137,9 +141,6 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 				AppVersion: config.AppVersion,
 			},
 		})
-		basicGroup := e.Group("")
-		basicGroup.GET("/", basicHandler.GetAppInfo)
-
 		authClient := auth.NewAuthClient(auth.AuthClientParam{
 			Validator:  goValidator,
 			Hasher:     bcryptHasher,
@@ -150,11 +151,6 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		authHandler := resthandler.NewAuth(resthandler.AuthParam{
 			AuthClient: authClient,
 		})
-		authClientGroup := e.Group("/v1/auth-client", basicAuthMiddleware)
-		authClientGroup.POST("", authHandler.CreateClient)
-		authClientGroup.POST("/search", authHandler.SearchClient)
-		authClientGroup.GET("/:id", authHandler.GetClientById)
-		authClientGroup.PUT("/:id", authHandler.UpdateClientById)
 
 		barrelClient := barrel.NewBarrel(barrel.BarrelParam{
 			Validator:  goValidator,
@@ -165,50 +161,62 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		barrelHandler := resthandler.NewBarrel(resthandler.BarrelParam{
 			Barrel: barrelClient,
 		})
-		barrelGroup := e.Group("/v1/barrel", basicAuthMiddleware)
-		barrelGroup.POST("", barrelHandler.CreateBarrel)
-		barrelGroup.POST("/search", barrelHandler.SearchBarrel)
-		barrelGroup.GET("/:id", barrelHandler.GetBarrelById)
-		barrelGroup.PUT("/:id", barrelHandler.UpdateBarrelById)
 
-		fileClient := file.NewFile(file.FileParam{
-			Validator:  goValidator,
-			Identifier: ksuidIdentifier,
-			Clock:      clock,
-			Slugger:    goSlugger,
-			Router:     storageRouter,
-			BarrelRepo: repo.GetBarrel(),
-			FileRepo:   repo.GetFile(),
-		})
-		fileHandler := resthandler.NewFile(resthandler.FileParam{
-			File:       fileClient,
-			Serializer: jsonSerializer,
-			FileParser: multipart.FileParser,
-		})
-		fileAccessGroup := e.Group("/file")
-		fileAccessGroup.POST("", fileHandler.UploadFile)
-		fileAccessGroup.GET("/:slug", fileHandler.RetrieveFileBySlug)
-
-		fileGroup := e.Group("/v1/file", basicAuthMiddleware)
-		fileGroup.GET("/:id", fileHandler.GetFileById)
-		fileGroup.POST("/search", fileHandler.SearchFile)
-
-		jwtSignature := jwt.NewSignature(
-			jwt.WithIssuer(p.Config.SignatureIssuer),
-			jwt.WithSignKey([]byte(p.Config.SignatureKey)),
-			jwt.WithClock(clock),
-		)
 		sessionClient := session.NewSession(session.SessionParam{
 			Validator:  goValidator,
 			Signature:  jwtSignature,
 			Clock:      clock,
 			Identifier: ksuidIdentifier,
 		})
+		fileClient := file.NewFile(file.FileParam{
+			Config: &file.FileConfig{
+				AppHost: p.Config.StorageAccessHost,
+			},
+			Validator:     goValidator,
+			Identifier:    ksuidIdentifier,
+			SessionClient: sessionClient,
+			Clock:         clock,
+			Slugger:       goSlugger,
+			Router:        storageRouter,
+			BarrelRepo:    repo.GetBarrel(),
+			FileRepo:      repo.GetFile(),
+		})
+		fileHandler := resthandler.NewFile(resthandler.FileParam{
+			File:       fileClient,
+			Serializer: jsonSerializer,
+			FileParser: multipart.FileParser,
+		})
+
+		uploadAuth := restmiddleware.NewSessionAuth(restmiddleware.SessionAuthParam{
+			SessionClient: sessionClient,
+			Serializer:    jsonSerializer,
+			Feature:       "upload_file",
+		})
 		sessionHandler := resthandler.NewSession(resthandler.SessionParam{
 			Session: sessionClient,
 		})
-		sessionGroup := e.Group("/v1/session")
-		sessionGroup.POST("", sessionHandler.CreateSession)
+
+		basicAuthMiddleware := echo.WrapMiddleware(basicAuth.Handle)
+		uploadMiddleware := echo.WrapMiddleware(uploadAuth.Handle)
+
+		basicGroup := e.Group("")
+		basicGroup.GET("/", basicHandler.GetAppInfo)
+
+		basicAuthGroup := e.Group("", basicAuthMiddleware)
+		basicAuthGroup.POST("/v1/auth-client", authHandler.CreateClient)
+		basicAuthGroup.POST("/v1/auth-client/search", authHandler.SearchClient)
+		basicAuthGroup.GET("/v1/auth-client/:id", authHandler.GetClientById)
+		basicAuthGroup.PUT("/v1/auth-client/:id", authHandler.UpdateClientById)
+		basicAuthGroup.POST("/v1/barrel", barrelHandler.CreateBarrel)
+		basicAuthGroup.POST("/v1/barrel/search", barrelHandler.SearchBarrel)
+		basicAuthGroup.GET("/v1/barrel/:id", barrelHandler.GetBarrelById)
+		basicAuthGroup.PUT("/v1/barrel/:id", barrelHandler.UpdateBarrelById)
+		basicAuthGroup.POST("/v1/session", sessionHandler.CreateSession)
+		basicAuthGroup.GET("/v1/file/:id", fileHandler.GetFileById)
+		basicAuthGroup.POST("/v1/file/search", fileHandler.SearchFile)
+
+		e.POST("/file", fileHandler.UploadFile, uploadMiddleware)
+		e.GET("/file/:slug", fileHandler.RetrieveFileBySlug)
 	}
 
 	app := &restApp{
