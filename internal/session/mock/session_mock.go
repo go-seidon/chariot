@@ -50,3 +50,18 @@ func (mr *MockSessionMockRecorder) CreateSession(ctx, p interface{}) *gomock.Cal
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSession", reflect.TypeOf((*MockSession)(nil).CreateSession), ctx, p)
 }
+
+// VerifySession mocks base method.
+func (m *MockSession) VerifySession(ctx context.Context, p session.VerifySessionParam) (*session.VerifySessionResult, *system.SystemError) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VerifySession", ctx, p)
+	ret0, _ := ret[0].(*session.VerifySessionResult)
+	ret1, _ := ret[1].(*system.SystemError)
+	return ret0, ret1
+}
+
+// VerifySession indicates an expected call of VerifySession.
+func (mr *MockSessionMockRecorder) VerifySession(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifySession", reflect.TypeOf((*MockSession)(nil).VerifySession), ctx, p)
+}
