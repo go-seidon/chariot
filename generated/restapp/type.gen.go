@@ -189,9 +189,11 @@ type CreateBarrelResponse struct {
 
 // CreateSessionData defines model for CreateSessionData.
 type CreateSessionData struct {
-	CreatedAt int64  `json:"created_at"`
-	ExpiredAt int64  `json:"expired_at"`
-	Token     string `json:"token"`
+	CreatedAt int64 `json:"created_at"`
+	ExpiresAt int64 `json:"expires_at"`
+
+	// jwt RFC7519
+	Token string `json:"token"`
 }
 
 // CreateSessionRequest defines model for CreateSessionRequest.
@@ -585,6 +587,7 @@ type UpdateBarrelByIdResponse struct {
 // UploadFileData defines model for UploadFileData.
 type UploadFileData struct {
 	Extension  string                   `json:"extension"`
+	FileUrl    string                   `json:"file_url"`
 	Id         string                   `json:"id"`
 	Meta       *UploadFileData_Meta     `json:"meta,omitempty"`
 	Mimetype   string                   `json:"mimetype"`

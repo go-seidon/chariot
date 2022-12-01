@@ -9,6 +9,7 @@ required:
 - visibility
 - status
 - uploaded_at
+- file_url
 properties:
   id:
     type: string
@@ -38,6 +39,8 @@ properties:
   uploaded_at:
     type: integer
     format: int64
+  file_url:
+    type: string
   meta:
     type: object
     additionalProperties:
