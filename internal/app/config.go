@@ -30,7 +30,8 @@ type Config struct {
 	MySQLSecondaryPassword string `env:"MYSQL_SECONDARY_PASSWORD"`
 	MySQLSecondaryDBName   string `env:"MYSQL_SECONDARY_DB_NAME"`
 
-	UploadFormSize int64 `env:"UPLOAD_FORM_SIZE"`
+	StorageAccessHost string `env:"STORAGE_ACCESS_HOST"`
+	StorageFormSize   int64  `env:"STORAGE_FORM_SIZE"`
 
 	SignatureIssuer string `env:"SIGNATURE_ISSUER"`
 	SignatureKey    string `env:"SIGNATURE_KEY"`
