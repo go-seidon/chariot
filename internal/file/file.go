@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-seidon/chariot/internal/barrel"
 	"github.com/go-seidon/chariot/internal/repository"
+	"github.com/go-seidon/chariot/internal/session"
 	"github.com/go-seidon/chariot/internal/storage"
 	"github.com/go-seidon/chariot/internal/storage/router"
 	"github.com/go-seidon/provider/datetime"
@@ -25,6 +26,9 @@ const (
 	STATUS_AVAILABLE = "available"
 	STATUS_DELETING  = "deleting"
 	STATUS_DELETED   = "deleted"
+
+	VISIBILITY_PUBLIC    = "public"
+	VISIBILITY_PROTECTED = "protected"
 )
 
 type File interface {
@@ -32,6 +36,10 @@ type File interface {
 	RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam) (*RetrieveFileBySlugResult, *system.SystemError)
 	GetFileById(ctx context.Context, p GetFileByIdParam) (*GetFileByIdResult, *system.SystemError)
 	SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileResult, *system.SystemError)
+}
+
+type FileConfig struct {
+	AppHost string
 }
 
 type UploadFileInfo struct {
@@ -63,8 +71,9 @@ type UploadFileResult struct {
 	Size       int64
 	Visibility string
 	Status     string
-	Meta       map[string]string
+	FileUrl    string
 	UploadedAt time.Time
+	Meta       map[string]string
 }
 
 type RetrieveFileBySlugParam struct {
@@ -167,13 +176,15 @@ type SearchFileSummary struct {
 }
 
 type file struct {
-	validator  validation.Validator
-	identifier identifier.Identifier
-	slugger    slug.Slugger
-	clock      datetime.Clock
-	router     router.Router
-	barrelRepo repository.Barrel
-	fileRepo   repository.File
+	config        *FileConfig
+	validator     validation.Validator
+	identifier    identifier.Identifier
+	sessionClient session.Session
+	slugger       slug.Slugger
+	clock         datetime.Clock
+	router        router.Router
+	barrelRepo    repository.Barrel
+	fileRepo      repository.File
 }
 
 func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileResult, *system.SystemError) {
@@ -190,6 +201,21 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
+	}
+
+	var token string
+	if p.Setting.Visibility == VISIBILITY_PROTECTED {
+		session, err := f.sessionClient.CreateSession(ctx, session.CreateSessionParam{
+			Duration: 30 * time.Minute,
+			Features: []string{"retrieve_file"},
+		})
+		if err != nil {
+			return nil, &system.SystemError{
+				Code:    status.ACTION_FAILED,
+				Message: err.Error(),
+			}
+		}
+		token = session.Token
 	}
 
 	searchBarrels, err := f.barrelRepo.SearchBarrel(ctx, repository.SearchBarrelParam{
@@ -309,6 +335,11 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 		}
 	}
 
+	fileUrl := fmt.Sprintf("%s/file/%s", f.config.AppHost, createFile.Slug)
+	if createFile.Visibility == VISIBILITY_PROTECTED {
+		fileUrl = fmt.Sprintf("%s?token=%s", fileUrl, token)
+	}
+
 	res := &UploadFileResult{
 		Success: system.SystemSuccess{
 			Code:    status.ACTION_SUCCESS,
@@ -322,8 +353,9 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 		Size:       createFile.Size,
 		Visibility: createFile.Visibility,
 		Status:     createFile.Status,
-		Meta:       createFile.Meta,
 		UploadedAt: createFile.UploadedAt,
+		FileUrl:    fileUrl,
+		Meta:       createFile.Meta,
 	}
 	return res, nil
 }
@@ -552,23 +584,27 @@ func (f *file) SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileRe
 }
 
 type FileParam struct {
-	Validator  validation.Validator
-	Identifier identifier.Identifier
-	Slugger    slug.Slugger
-	Clock      datetime.Clock
-	Router     router.Router
-	BarrelRepo repository.Barrel
-	FileRepo   repository.File
+	Config        *FileConfig
+	Validator     validation.Validator
+	Identifier    identifier.Identifier
+	SessionClient session.Session
+	Slugger       slug.Slugger
+	Clock         datetime.Clock
+	Router        router.Router
+	BarrelRepo    repository.Barrel
+	FileRepo      repository.File
 }
 
 func NewFile(p FileParam) *file {
 	return &file{
-		validator:  p.Validator,
-		identifier: p.Identifier,
-		slugger:    p.Slugger,
-		clock:      p.Clock,
-		router:     p.Router,
-		barrelRepo: p.BarrelRepo,
-		fileRepo:   p.FileRepo,
+		config:        p.Config,
+		validator:     p.Validator,
+		identifier:    p.Identifier,
+		sessionClient: p.SessionClient,
+		slugger:       p.Slugger,
+		clock:         p.Clock,
+		router:        p.Router,
+		barrelRepo:    p.BarrelRepo,
+		fileRepo:      p.FileRepo,
 	}
 }
