@@ -77,7 +77,8 @@ type UploadFileResult struct {
 }
 
 type RetrieveFileBySlugParam struct {
-	Slug string `validate:"required,min=1,max=288" label:"slug"`
+	Slug  string `validate:"required,min=1,max=288" label:"slug"`
+	Token string
 }
 
 type RetrieveFileBySlugResult struct {
@@ -382,6 +383,19 @@ func (f *file) RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam
 		return nil, &system.SystemError{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
+		}
+	}
+
+	if findFile.Visibility == VISIBILITY_PROTECTED {
+		_, err := f.sessionClient.VerifySession(ctx, session.VerifySessionParam{
+			Token:   p.Token,
+			Feature: "retrieve_file",
+		})
+		if err != nil {
+			return nil, &system.SystemError{
+				Code:    status.ACTION_FORBIDDEN,
+				Message: err.Error(),
+			}
 		}
 	}
 
