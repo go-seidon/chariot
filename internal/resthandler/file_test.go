@@ -317,7 +317,7 @@ var _ = Describe("File Handler", func() {
 		BeforeEach(func() {
 			currentTs = time.Now().UTC()
 
-			req := httptest.NewRequest(http.MethodPost, "/", nil)
+			req := httptest.NewRequest(http.MethodGet, "/?token=session-token", nil)
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec = httptest.NewRecorder()
 
@@ -334,7 +334,8 @@ var _ = Describe("File Handler", func() {
 			})
 			h = fileHandler.RetrieveFileBySlug
 			findParam = file.RetrieveFileBySlugParam{
-				Slug: "lumba.jpg",
+				Slug:  "lumba.jpg",
+				Token: "session-token",
 			}
 			fileData = mock_io.NewMockReadCloser(ctrl)
 			findRes = &file.RetrieveFileBySlugResult{
