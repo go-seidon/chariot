@@ -863,6 +863,7 @@ var _ = Describe("File Package", func() {
 			fileRepo       *mock_repository.MockFile
 			storageRouter  *mock_storage.MockRouter
 			storagePrimary *mock_storage.MockStorage
+			sessionClient  *mock_session.MockSession
 			fileData       *mock_io.MockReadCloser
 			p              file.RetrieveFileBySlugParam
 			r              *file.RetrieveFileBySlugResult
@@ -871,6 +872,8 @@ var _ = Describe("File Package", func() {
 			retrieveRes    *storage.RetrieveObjectResult
 			findFileParam  repository.FindFileParam
 			findFileRes    *repository.FindFileResult
+			verifyParam    session.VerifySessionParam
+			verifyRes      *session.VerifySessionResult
 		)
 
 		BeforeEach(func() {
@@ -886,15 +889,17 @@ var _ = Describe("File Package", func() {
 			fileRepo = mock_repository.NewMockFile(ctrl)
 			storageRouter = mock_storage.NewMockRouter(ctrl)
 			storagePrimary = mock_storage.NewMockStorage(ctrl)
+			sessionClient = mock_session.NewMockSession(ctrl)
 			fileData = mock_io.NewMockReadCloser(ctrl)
 			fileClient = file.NewFile(file.FileParam{
-				Validator:  validator,
-				Identifier: identifier,
-				Clock:      clock,
-				Slugger:    slugger,
-				BarrelRepo: barrelRepo,
-				FileRepo:   fileRepo,
-				Router:     storageRouter,
+				Validator:     validator,
+				Identifier:    identifier,
+				Clock:         clock,
+				Slugger:       slugger,
+				BarrelRepo:    barrelRepo,
+				FileRepo:      fileRepo,
+				Router:        storageRouter,
+				SessionClient: sessionClient,
 			})
 
 			createStgParam = router.CreateStorageParam{
@@ -907,11 +912,16 @@ var _ = Describe("File Package", func() {
 				Data:        fileData,
 				RetrievedAt: currentTs,
 			}
+			p = file.RetrieveFileBySlugParam{
+				Slug:  "dolphin-22.jpg",
+				Token: "session-token",
+			}
 			findFileParam = repository.FindFileParam{
 				Slug: p.Slug,
 			}
 			findFileRes = &repository.FindFileResult{
-				Id: "id",
+				Id:         "id",
+				Visibility: "public",
 				Locations: []repository.FindFileLocation{
 					{
 						Barrel: repository.FindFileBarrel{
@@ -943,17 +953,20 @@ var _ = Describe("File Package", func() {
 					},
 				},
 			}
-			p = file.RetrieveFileBySlugParam{
-				Slug: "dolphin-22.jpg",
-			}
 			r = &file.RetrieveFileBySlugResult{
 				Success: system.SystemSuccess{
 					Code:    1000,
 					Message: "success retrieve file",
 				},
-				Data: fileData,
-				Id:   "id",
+				Data:       fileData,
+				Id:         findFileRes.Id,
+				Visibility: findFileRes.Visibility,
 			}
+			verifyParam = session.VerifySessionParam{
+				Token:   p.Token,
+				Feature: "retrieve_file",
+			}
+			verifyRes = &session.VerifySessionResult{}
 		})
 
 		When("there is invalid data", func() {
@@ -1013,6 +1026,71 @@ var _ = Describe("File Package", func() {
 				Expect(res).To(BeNil())
 				Expect(err.Code).To(Equal(int32(1004)))
 				Expect(err.Message).To(Equal("file is not available"))
+			})
+		})
+
+		When("failed verify session", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				findFileRes := &repository.FindFileResult{
+					Id:         "id",
+					Visibility: "protected",
+					Locations: []repository.FindFileLocation{
+						{
+							Barrel: repository.FindFileBarrel{
+								Id:       "b1",
+								Code:     "b1",
+								Provider: "goseidon_hippo",
+								Status:   "active",
+							},
+							ExternalId: typeconv.String("e1"),
+							Priority:   1,
+							Status:     "available",
+							CreatedAt:  currentTs,
+							UpdatedAt:  typeconv.Time(currentTs),
+							UploadedAt: typeconv.Time(currentTs),
+						},
+						{
+							Barrel: repository.FindFileBarrel{
+								Id:       "b2",
+								Code:     "b2",
+								Provider: "goseidon_hippo",
+								Status:   "active",
+							},
+							ExternalId: typeconv.String("e2"),
+							Priority:   2,
+							Status:     "uploading",
+							CreatedAt:  currentTs,
+							UpdatedAt:  typeconv.Time(currentTs),
+							UploadedAt: nil,
+						},
+					},
+				}
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				sessionClient.
+					EXPECT().
+					VerifySession(gomock.Eq(ctx), gomock.Eq(verifyParam)).
+					Return(nil, &system.SystemError{
+						Code:    1001,
+						Message: "i/o error",
+					}).
+					Times(1)
+
+				res, err := fileClient.RetrieveFileBySlug(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1003)))
+				Expect(err.Message).To(Equal("i/o error"))
 			})
 		})
 
@@ -1245,6 +1323,88 @@ var _ = Describe("File Package", func() {
 				Expect(res).To(BeNil())
 				Expect(err.Code).To(Equal(int32(1001)))
 				Expect(err.Message).To(Equal("failed retrieve file from barrel"))
+			})
+		})
+
+		When("success retrieve protected object", func() {
+			It("should return result", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				findFileRes := &repository.FindFileResult{
+					Id:         "id",
+					Visibility: "protected",
+					Locations: []repository.FindFileLocation{
+						{
+							Barrel: repository.FindFileBarrel{
+								Id:       "b1",
+								Code:     "b1",
+								Provider: "goseidon_hippo",
+								Status:   "active",
+							},
+							ExternalId: typeconv.String("e1"),
+							Priority:   1,
+							Status:     "available",
+							CreatedAt:  currentTs,
+							UpdatedAt:  typeconv.Time(currentTs),
+							UploadedAt: typeconv.Time(currentTs),
+						},
+						{
+							Barrel: repository.FindFileBarrel{
+								Id:       "b2",
+								Code:     "b2",
+								Provider: "goseidon_hippo",
+								Status:   "active",
+							},
+							ExternalId: typeconv.String("e2"),
+							Priority:   2,
+							Status:     "uploading",
+							CreatedAt:  currentTs,
+							UpdatedAt:  typeconv.Time(currentTs),
+							UploadedAt: nil,
+						},
+					},
+				}
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				sessionClient.
+					EXPECT().
+					VerifySession(gomock.Eq(ctx), gomock.Eq(verifyParam)).
+					Return(verifyRes, nil).
+					Times(1)
+
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(storagePrimary, nil).
+					Times(1)
+
+				storagePrimary.
+					EXPECT().
+					RetrieveObject(gomock.Eq(ctx), gomock.Eq(retrieveParam)).
+					Return(retrieveRes, nil).
+					Times(1)
+
+				res, err := fileClient.RetrieveFileBySlug(ctx, p)
+
+				r := &file.RetrieveFileBySlugResult{
+					Success: system.SystemSuccess{
+						Code:    1000,
+						Message: "success retrieve file",
+					},
+					Data:       fileData,
+					Id:         findFileRes.Id,
+					Visibility: findFileRes.Visibility,
+				}
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
 			})
 		})
 	})

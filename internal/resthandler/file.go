@@ -99,7 +99,8 @@ func (h *fileHandler) UploadFile(ctx echo.Context) error {
 
 func (h *fileHandler) RetrieveFileBySlug(ctx echo.Context) error {
 	findFile, err := h.fileClient.RetrieveFileBySlug(ctx.Request().Context(), file.RetrieveFileBySlugParam{
-		Slug: ctx.Param("slug"),
+		Slug:  ctx.Param("slug"),
+		Token: ctx.QueryParam("token"),
 	})
 	if err != nil {
 		httpCode := http.StatusInternalServerError
