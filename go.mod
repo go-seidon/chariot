@@ -11,6 +11,7 @@ require (
 	github.com/labstack/echo/v4 v4.9.1
 	github.com/onsi/ginkgo/v2 v2.3.1
 	github.com/onsi/gomega v1.22.1
+	github.com/rabbitmq/amqp091-go v1.5.0
 	gorm.io/driver/mysql v1.2.1
 	gorm.io/gorm v1.22.4
 	gorm.io/plugin/dbresolver v1.1.0
