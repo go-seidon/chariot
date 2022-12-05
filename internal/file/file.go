@@ -22,6 +22,7 @@ import (
 )
 
 const (
+	STATUS_PENDING   = "pending"
 	STATUS_UPLOADING = "uploading"
 	STATUS_AVAILABLE = "available"
 	STATUS_DELETING  = "deleting"
@@ -291,7 +292,15 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 	currentTs := f.clock.Now()
 	locations := []repository.CreateFileLocation{}
 	for i, barrel := range barrels {
-		status := STATUS_UPLOADING
+		id, err := f.identifier.GenerateId()
+		if err != nil {
+			return nil, &system.SystemError{
+				Code:    status.ACTION_FAILED,
+				Message: err.Error(),
+			}
+		}
+
+		status := STATUS_PENDING
 		var externalId *string
 		var uploadedAt *time.Time
 		if i == 0 {
@@ -301,6 +310,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 		}
 
 		locations = append(locations, repository.CreateFileLocation{
+			Id:         id,
 			BarrelId:   barrel.BarrelId,
 			Priority:   int32(i) + 1,
 			CreatedAt:  currentTs,

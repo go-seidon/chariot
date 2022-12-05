@@ -87,6 +87,7 @@ var _ = Describe("File Repository", func() {
 				},
 				Locations: []repository.CreateFileLocation{
 					{
+						Id:         "i1",
 						BarrelId:   "h1",
 						ExternalId: typeconv.String("e1"),
 						Priority:   1,
@@ -95,6 +96,7 @@ var _ = Describe("File Repository", func() {
 						UploadedAt: &currentTs,
 					},
 					{
+						Id:         "i2",
 						BarrelId:   "b1",
 						ExternalId: typeconv.String("e2"),
 						Priority:   2,
@@ -109,7 +111,7 @@ var _ = Describe("File Repository", func() {
 			checkStmt = regexp.QuoteMeta("SELECT id, slug FROM `file` WHERE slug = ? ORDER BY `file`.`id` LIMIT 1")
 			createFileStmt = regexp.QuoteMeta("INSERT INTO `file` (`id`,`slug`,`name`,`mimetype`,`extension`,`size`,`visibility`,`status`,`uploaded_at`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
 			createMetaStmt = regexp.QuoteMeta("INSERT INTO `file_meta` (`file_id`,`key`,`value`) VALUES (?,?,?),(?,?,?) ON DUPLICATE KEY UPDATE `file_id`=VALUES(`file_id`)")
-			createLocationStmt = regexp.QuoteMeta("INSERT INTO `file_location` (`file_id`,`barrel_id`,`external_id`,`priority`,`status`,`uploaded_at`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,?,?),(?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `file_id`=VALUES(`file_id`)")
+			createLocationStmt = regexp.QuoteMeta("INSERT INTO `file_location` (`id`,`file_id`,`barrel_id`,`external_id`,`priority`,`status`,`uploaded_at`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,?,?,?),(?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `file_id`=VALUES(`file_id`)")
 			findFileStmt = regexp.QuoteMeta("SELECT id, slug, name, mimetype, extension, size, visibility, status, created_at, uploaded_at FROM `file` WHERE id = ? ORDER BY `file`.`id` LIMIT 1")
 			findMetaStmt = regexp.QuoteMeta("SELECT file_id, `key`, value FROM `file_meta` WHERE `file_meta`.`file_id` = ?")
 			findLocationStmt = regexp.QuoteMeta("SELECT file_id, barrel_id, external_id, priority, status, created_at, uploaded_at FROM `file_location` WHERE `file_location`.`file_id` = ?")

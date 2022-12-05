@@ -27,6 +27,7 @@ type CreateFileParam struct {
 }
 
 type CreateFileLocation struct {
+	Id         string
 	BarrelId   string
 	ExternalId *string
 	Priority   int32

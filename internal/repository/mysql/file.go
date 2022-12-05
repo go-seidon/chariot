@@ -91,6 +91,7 @@ func (r *file) CreateFile(ctx context.Context, p repository.CreateFileParam) (*r
 			}
 
 			locations = append(locations, FileLocation{
+				Id:         location.Id,
 				FileId:     p.Id,
 				BarrelId:   location.BarrelId,
 				Status:     location.Status,
@@ -436,6 +437,7 @@ func (File) TableName() string {
 }
 
 type FileLocation struct {
+	Id         string         `gorm:"column:id;primaryKey"`
 	FileId     string         `gorm:"column:file_id"`
 	BarrelId   string         `gorm:"column:barrel_id"`
 	ExternalId sql.NullString `gorm:"column:external_id"`

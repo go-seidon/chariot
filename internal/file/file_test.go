@@ -164,6 +164,7 @@ var _ = Describe("File Package", func() {
 				UploadedAt: currentTs,
 				Locations: []repository.CreateFileLocation{
 					{
+						Id:         "i1",
 						BarrelId:   "h1",
 						ExternalId: typeconv.String("object-id"),
 						Priority:   1,
@@ -172,11 +173,12 @@ var _ = Describe("File Package", func() {
 						UploadedAt: &currentTs,
 					},
 					{
+						Id:         "i2",
 						BarrelId:   "s1",
 						ExternalId: nil,
 						Priority:   2,
 						CreatedAt:  currentTs,
-						Status:     "uploading",
+						Status:     "pending",
 						UploadedAt: nil,
 					},
 				},
@@ -483,6 +485,18 @@ var _ = Describe("File Package", func() {
 					Return(currentTs).
 					Times(1)
 
+				identifier.
+					EXPECT().
+					GenerateId().
+					Return("i1", nil).
+					Times(1)
+
+				identifier.
+					EXPECT().
+					GenerateId().
+					Return("i2", nil).
+					Times(1)
+
 				fileRepo.
 					EXPECT().
 					CreateFile(gomock.Eq(ctx), gomock.Eq(createFileParam)).
@@ -539,6 +553,18 @@ var _ = Describe("File Package", func() {
 					EXPECT().
 					Now().
 					Return(currentTs).
+					Times(1)
+
+				identifier.
+					EXPECT().
+					GenerateId().
+					Return("i1", nil).
+					Times(1)
+
+				identifier.
+					EXPECT().
+					GenerateId().
+					Return("i2", nil).
 					Times(1)
 
 				fileRepo.
@@ -641,6 +667,12 @@ var _ = Describe("File Package", func() {
 					Return(currentTs).
 					Times(1)
 
+				identifier.
+					EXPECT().
+					GenerateId().
+					Return("i1", nil).
+					Times(1)
+
 				createFileParam = repository.CreateFileParam{
 					Id:         "file-id",
 					Slug:       "dolphin-22",
@@ -655,6 +687,7 @@ var _ = Describe("File Package", func() {
 					UploadedAt: currentTs,
 					Locations: []repository.CreateFileLocation{
 						{
+							Id:         "i1",
 							BarrelId:   "h1",
 							ExternalId: typeconv.String("object-id"),
 							Priority:   1,
@@ -774,6 +807,18 @@ var _ = Describe("File Package", func() {
 					Return(currentTs).
 					Times(1)
 
+				identifier.
+					EXPECT().
+					GenerateId().
+					Return("i1", nil).
+					Times(1)
+
+				identifier.
+					EXPECT().
+					GenerateId().
+					Return("i2", nil).
+					Times(1)
+
 				createFileParam := repository.CreateFileParam{
 					Id:         "file-id",
 					Slug:       "dolphin-22.jpg",
@@ -788,6 +833,7 @@ var _ = Describe("File Package", func() {
 					UploadedAt: currentTs,
 					Locations: []repository.CreateFileLocation{
 						{
+							Id:         "i1",
 							BarrelId:   "h1",
 							ExternalId: typeconv.String("object-id"),
 							Priority:   1,
@@ -796,11 +842,12 @@ var _ = Describe("File Package", func() {
 							UploadedAt: &currentTs,
 						},
 						{
+							Id:         "i2",
 							BarrelId:   "s1",
 							ExternalId: nil,
 							Priority:   2,
 							CreatedAt:  currentTs,
-							Status:     "uploading",
+							Status:     "pending",
 							UploadedAt: nil,
 						},
 					},
