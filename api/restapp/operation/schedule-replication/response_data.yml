@@ -1,0 +1,10 @@
+type: object
+required:
+- total_items
+properties:
+  total_items:
+    type: integer
+    format: int32
+  scheduled_at:
+    type: integer
+    format: int64

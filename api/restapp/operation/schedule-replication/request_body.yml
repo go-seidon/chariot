@@ -1,0 +1,8 @@
+
+type: object
+required:
+- max_items
+properties:
+  max_items:
+    type: integer
+    format: int32
