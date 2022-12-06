@@ -58,6 +58,9 @@ generate-mock:
 	mockgen -package=mock_auth -source internal/auth/basic.go -destination=internal/auth/mock/basic_mock.go
 	mockgen -package=mock_barrel -source internal/barrel/barrel.go -destination=internal/barrel/mock/barrel_mock.go
 	mockgen -package=mock_file -source internal/file/file.go -destination=internal/file/mock/file_mock.go
+	mockgen -package=mock_queueing -source internal/queueing/exchange.go -destination=internal/queueing/mock/exchange_mock.go
+	mockgen -package=mock_queueing -source internal/queueing/pubsub.go -destination=internal/queueing/mock/pubsub_mock.go
+	mockgen -package=mock_queueing -source internal/queueing/queue.go -destination=internal/queueing/mock/queue_mock.go
 	mockgen -package=mock_repository -source internal/repository/auth.go -destination=internal/repository/mock/auth_mock.go
 	mockgen -package=mock_repository -source internal/repository/barrel.go -destination=internal/repository/mock/barrel_mock.go
 	mockgen -package=mock_repository -source internal/repository/file.go -destination=internal/repository/mock/file_mock.go
