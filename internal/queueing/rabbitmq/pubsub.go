@@ -4,19 +4,11 @@ import (
 	"context"
 
 	"github.com/go-seidon/chariot/internal/queueing"
-
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type rabbitPubsub struct {
-	conn Connection
-}
-
-func (pub *rabbitPubsub) Publish(ctx context.Context, p queueing.PublishParam) error {
-	var ch Channel
-	var err error
-
-	ch, err = pub.conn.Channel()
+func (que *rabbitQueue) Publish(ctx context.Context, p queueing.PublishParam) error {
+	ch, err := que.conn.Channel()
 	if err != nil {
 		return err
 	}
@@ -33,11 +25,8 @@ func (pub *rabbitPubsub) Publish(ctx context.Context, p queueing.PublishParam) e
 	return nil
 }
 
-func (pub *rabbitPubsub) Subscribe(ctx context.Context, p queueing.SubscribeParam) error {
-	var ch Channel
-	var err error
-
-	ch, err = pub.conn.Channel()
+func (que *rabbitQueue) Subscribe(ctx context.Context, p queueing.SubscribeParam) error {
+	ch, err := que.conn.Channel()
 	if err != nil {
 		return err
 	}
@@ -57,15 +46,4 @@ func (pub *rabbitPubsub) Subscribe(ctx context.Context, p queueing.SubscribePara
 	<-forever
 
 	return nil
-}
-
-func NewPubsub(opts ...RabbitOption) *rabbitPubsub {
-	p := RabbitParam{}
-	for _, opt := range opts {
-		opt(&p)
-	}
-
-	return &rabbitPubsub{
-		conn: p.Connection,
-	}
 }

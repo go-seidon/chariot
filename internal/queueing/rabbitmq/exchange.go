@@ -13,15 +13,8 @@ const (
 	EXCHANGE_HEADERS = "headers"
 )
 
-type rabbitExchange struct {
-	conn Connection
-}
-
-func (ex *rabbitExchange) DeclareExchange(ctx context.Context, p queueing.DeclareExchangeParam) error {
-	var ch Channel
-	var err error
-
-	ch, err = ex.conn.Channel()
+func (que *rabbitQueue) DeclareExchange(ctx context.Context, p queueing.DeclareExchangeParam) error {
+	ch, err := que.conn.Channel()
 	if err != nil {
 		return err
 	}
@@ -34,11 +27,8 @@ func (ex *rabbitExchange) DeclareExchange(ctx context.Context, p queueing.Declar
 	return nil
 }
 
-func (ex *rabbitExchange) BindQueue(ctx context.Context, p queueing.BindQueueParam) error {
-	var ch Channel
-	var err error
-
-	ch, err = ex.conn.Channel()
+func (que *rabbitQueue) BindQueue(ctx context.Context, p queueing.BindQueueParam) error {
+	ch, err := que.conn.Channel()
 	if err != nil {
 		return err
 	}
@@ -49,15 +39,4 @@ func (ex *rabbitExchange) BindQueue(ctx context.Context, p queueing.BindQueuePar
 		return err
 	}
 	return nil
-}
-
-func NewExchange(opts ...RabbitOption) *rabbitExchange {
-	p := RabbitParam{}
-	for _, opt := range opts {
-		opt(&p)
-	}
-
-	return &rabbitExchange{
-		conn: p.Connection,
-	}
 }

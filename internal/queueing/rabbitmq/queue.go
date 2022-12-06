@@ -4,19 +4,16 @@ import (
 	"context"
 
 	"github.com/go-seidon/chariot/internal/queueing"
-
+	"github.com/go-seidon/chariot/internal/rabbitmq"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type rabbitQueue struct {
-	conn Connection
+	conn rabbitmq.Connection
 }
 
-func (ex *rabbitQueue) DeclareQueue(ctx context.Context, p queueing.DeclareQueueParam) (*queueing.DeclareQueueResult, error) {
-	var ch Channel
-	var err error
-
-	ch, err = ex.conn.Channel()
+func (que *rabbitQueue) DeclareQueue(ctx context.Context, p queueing.DeclareQueueParam) (*queueing.DeclareQueueResult, error) {
+	ch, err := que.conn.Channel()
 	if err != nil {
 		return nil, err
 	}
@@ -32,18 +29,18 @@ func (ex *rabbitQueue) DeclareQueue(ctx context.Context, p queueing.DeclareQueue
 		}
 	}
 
-	que, err := ch.QueueDeclare(p.QueueName, true, false, false, false, args)
+	q, err := ch.QueueDeclare(p.QueueName, true, false, false, false, args)
 	if err != nil {
 		return nil, err
 	}
 
 	res := &queueing.DeclareQueueResult{
-		Name: que.Name,
+		Name: q.Name,
 	}
 	return res, nil
 }
 
-func NewQueue(opts ...RabbitOption) *rabbitQueue {
+func NewQueueing(opts ...RabbitOption) *rabbitQueue {
 	p := RabbitParam{}
 	for _, opt := range opts {
 		opt(&p)
