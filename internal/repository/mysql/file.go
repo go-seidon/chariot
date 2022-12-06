@@ -403,6 +403,94 @@ func (r *file) SearchFile(ctx context.Context, p repository.SearchFileParam) (*r
 	return res, nil
 }
 
+func (r *file) SearchLocation(ctx context.Context, p repository.SearchLocationParam) (*repository.SearchLocationResult, error) {
+	query := r.gormClient.
+		WithContext(ctx).
+		Clauses(dbresolver.Read)
+
+	searchQuery := query.Select(`id, file_id, barrel_id, priority, status`)
+
+	if len(p.Statuses) > 0 {
+		searchQuery = searchQuery.
+			Where("status IN ?", p.Statuses)
+	}
+
+	countQuery := searchQuery.Table("file_location")
+
+	if p.Limit > 0 {
+		searchQuery = searchQuery.Limit(int(p.Limit))
+	}
+
+	locations := []FileLocation{}
+	searchRes := searchQuery.
+		Order("created_at ASC").
+		Find(&locations)
+
+	res := &repository.SearchLocationResult{
+		Summary: repository.SearchLocationSummary{
+			TotalItems: 0,
+		},
+		Items: []repository.SearchLocationItem{},
+	}
+	if searchRes.Error != nil {
+		if errors.Is(searchRes.Error, gorm.ErrRecordNotFound) {
+			return res, nil
+		}
+		return nil, searchRes.Error
+	}
+
+	for _, location := range locations {
+		res.Items = append(res.Items, repository.SearchLocationItem{
+			Id:       location.Id,
+			FileId:   location.FileId,
+			BarrelId: location.BarrelId,
+			Priority: location.Priority,
+			Status:   location.Status,
+		})
+	}
+
+	countRes := countQuery.Count(&res.Summary.TotalItems)
+	if countRes.Error != nil {
+		return nil, countRes.Error
+	}
+	return res, nil
+}
+
+func (r *file) UpdateLocationByIds(ctx context.Context, p repository.UpdateLocationByIdsParam) (*repository.UpdateLocationByIdsResult, error) {
+	tx := r.gormClient.
+		WithContext(ctx).
+		Clauses(dbresolver.Write).
+		Begin()
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	updateRes := tx.
+		Model(&FileLocation{}).
+		Where("id IN ?", p.Ids).
+		Updates(map[string]interface{}{
+			"status":     p.Status,
+			"updated_at": p.UpdatedAt.UnixMilli(),
+		})
+	if updateRes.Error != nil {
+		txRes := tx.Rollback()
+		if txRes.Error != nil {
+			return nil, txRes.Error
+		}
+		return nil, updateRes.Error
+	}
+
+	txRes := tx.Commit()
+	if txRes.Error != nil {
+		return nil, txRes.Error
+	}
+
+	res := &repository.UpdateLocationByIdsResult{
+		TotalUpdated: updateRes.RowsAffected,
+	}
+	return res, nil
+}
+
 type FileParam struct {
 	GormClient *gorm.DB
 	Randomizer random.Randomizer

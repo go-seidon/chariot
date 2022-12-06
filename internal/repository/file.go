@@ -9,6 +9,8 @@ type File interface {
 	CreateFile(ctx context.Context, p CreateFileParam) (*CreateFileResult, error)
 	FindFile(ctx context.Context, p FindFileParam) (*FindFileResult, error)
 	SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileResult, error)
+	SearchLocation(ctx context.Context, p SearchLocationParam) (*SearchLocationResult, error)
+	UpdateLocationByIds(ctx context.Context, p UpdateLocationByIdsParam) (*UpdateLocationByIdsResult, error)
 }
 
 type CreateFileParam struct {
@@ -127,4 +129,36 @@ type SearchFileItem struct {
 	UploadedAt time.Time
 	DeletedAt  *time.Time
 	Meta       map[string]string
+}
+
+type SearchLocationParam struct {
+	Limit    int32
+	Statuses []string
+}
+
+type SearchLocationResult struct {
+	Summary SearchLocationSummary
+	Items   []SearchLocationItem
+}
+
+type SearchLocationSummary struct {
+	TotalItems int64
+}
+
+type SearchLocationItem struct {
+	Id       string
+	FileId   string
+	BarrelId string
+	Priority int32
+	Status   string
+}
+
+type UpdateLocationByIdsParam struct {
+	Ids       []string
+	Status    string
+	UpdatedAt time.Time
+}
+
+type UpdateLocationByIdsResult struct {
+	TotalUpdated int64
 }
