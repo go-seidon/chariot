@@ -66,6 +66,21 @@ func (mr *MockFileMockRecorder) RetrieveFileBySlug(ctx, p interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RetrieveFileBySlug", reflect.TypeOf((*MockFile)(nil).RetrieveFileBySlug), ctx, p)
 }
 
+// ScheduleReplication mocks base method.
+func (m *MockFile) ScheduleReplication(ctx context.Context, p file.ScheduleReplicationParam) (*file.ScheduleReplicationResult, *system.SystemError) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ScheduleReplication", ctx, p)
+	ret0, _ := ret[0].(*file.ScheduleReplicationResult)
+	ret1, _ := ret[1].(*system.SystemError)
+	return ret0, ret1
+}
+
+// ScheduleReplication indicates an expected call of ScheduleReplication.
+func (mr *MockFileMockRecorder) ScheduleReplication(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScheduleReplication", reflect.TypeOf((*MockFile)(nil).ScheduleReplication), ctx, p)
+}
+
 // SearchFile mocks base method.
 func (m *MockFile) SearchFile(ctx context.Context, p file.SearchFileParam) (*file.SearchFileResult, *system.SystemError) {
 	m.ctrl.T.Helper()
