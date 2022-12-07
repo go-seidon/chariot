@@ -674,7 +674,7 @@ func (f *file) ScheduleReplication(ctx context.Context, p ScheduleReplicationPar
 		msgs = append(msgs, msg)
 	}
 
-	currentTs := f.clock.Now()
+	currentTs := f.clock.Now().UTC()
 	_, err = f.fileRepo.UpdateLocationByIds(ctx, repository.UpdateLocationByIdsParam{
 		Ids:       ids,
 		Status:    STATUS_UPLOADING,

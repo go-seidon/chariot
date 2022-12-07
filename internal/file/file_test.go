@@ -1984,7 +1984,8 @@ var _ = Describe("File Package", func() {
 					Code:    1000,
 					Message: "success schedule replication",
 				},
-				TotalItems: 3,
+				TotalItems:  3,
+				ScheduledAt: &currentTs,
 			}
 		})
 
