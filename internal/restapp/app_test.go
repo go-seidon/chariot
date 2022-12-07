@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/go-seidon/chariot/internal/app"
+	mock_queueing "github.com/go-seidon/chariot/internal/queueing/mock"
 	"github.com/go-seidon/chariot/internal/restapp"
 
 	mock_repository "github.com/go-seidon/chariot/internal/repository/mock"
@@ -37,6 +38,7 @@ var _ = Describe("App Package", func() {
 			It("should return error", func() {
 				config := &app.Config{
 					RepositoryProvider: "mysql",
+					QueueProvider:      "rabbitmq",
 				}
 				res, err := restapp.NewRestApp(
 					restapp.WithConfig(config),
@@ -48,11 +50,12 @@ var _ = Describe("App Package", func() {
 		})
 
 		When("logger is specified", func() {
-			It("should return error", func() {
+			It("should return result", func() {
 				t := GinkgoT()
 				ctrl := gomock.NewController(t)
 				config := &app.Config{
 					RepositoryProvider: "mysql",
+					QueueProvider:      "rabbitmq",
 				}
 				logger := mock_logging.NewMockLogger(ctrl)
 				res, err := restapp.NewRestApp(
@@ -66,11 +69,12 @@ var _ = Describe("App Package", func() {
 		})
 
 		When("repository is specified", func() {
-			It("should return error", func() {
+			It("should return result", func() {
 				t := GinkgoT()
 				ctrl := gomock.NewController(t)
 				config := &app.Config{
 					RepositoryProvider: "mysql",
+					QueueProvider:      "rabbitmq",
 				}
 				repo := mock_repository.NewMockProvider(ctrl)
 				repo.
@@ -99,11 +103,12 @@ var _ = Describe("App Package", func() {
 		})
 
 		When("server is specified", func() {
-			It("should return error", func() {
+			It("should return result", func() {
 				t := GinkgoT()
 				ctrl := gomock.NewController(t)
 				config := &app.Config{
 					RepositoryProvider: "mysql",
+					QueueProvider:      "rabbitmq",
 				}
 				server := mock_restapp.NewMockServer(ctrl)
 				res, err := restapp.NewRestApp(
@@ -119,11 +124,12 @@ var _ = Describe("App Package", func() {
 
 	Context("Start function", Label("unit"), func() {
 		var (
-			rApp   app.App
-			ctx    context.Context
-			server *mock_restapp.MockServer
-			logger *mock_logging.MockLogger
-			repo   *mock_repository.MockProvider
+			rApp     app.App
+			ctx      context.Context
+			server   *mock_restapp.MockServer
+			logger   *mock_logging.MockLogger
+			repo     *mock_repository.MockProvider
+			queueing *mock_queueing.MockQueueing
 		)
 
 		BeforeEach(func() {
@@ -133,6 +139,7 @@ var _ = Describe("App Package", func() {
 			server = mock_restapp.NewMockServer(ctrl)
 			logger = mock_logging.NewMockLogger(ctrl)
 			repo = mock_repository.NewMockProvider(ctrl)
+			queueing = mock_queueing.NewMockQueueing(ctrl)
 			config := &app.Config{
 				AppName:     "name",
 				AppVersion:  "version",
@@ -144,6 +151,7 @@ var _ = Describe("App Package", func() {
 				restapp.WithServer(server),
 				restapp.WithLogger(logger),
 				restapp.WithRepository(repo),
+				restapp.WithQueueing(queueing),
 			)
 		})
 
@@ -160,10 +168,49 @@ var _ = Describe("App Package", func() {
 
 				logger.
 					EXPECT().
-					Infof(gomock.Eq("Listening on: %s"), gomock.Eq("host:1")).
+					Infof(gomock.Eq("Initializing repository")).
 					Times(1)
 
 				repo.
+					EXPECT().
+					Init(gomock.Eq(ctx)).
+					Return(fmt.Errorf("network error")).
+					Times(1)
+
+				err := rApp.Run(ctx)
+
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("failed init queue", func() {
+			It("should return error", func() {
+				logger.
+					EXPECT().
+					Infof(
+						gomock.Eq("Running %s:%s"),
+						gomock.Eq("name-rest"),
+						gomock.Eq("version"),
+					).
+					Times(1)
+
+				logger.
+					EXPECT().
+					Infof(gomock.Eq("Initializing repository")).
+					Times(1)
+
+				logger.
+					EXPECT().
+					Infof(gomock.Eq("Initializing queue")).
+					Times(1)
+
+				repo.
+					EXPECT().
+					Init(gomock.Eq(ctx)).
+					Return(nil).
+					Times(1)
+
+				queueing.
 					EXPECT().
 					Init(gomock.Eq(ctx)).
 					Return(fmt.Errorf("network error")).
@@ -188,10 +235,26 @@ var _ = Describe("App Package", func() {
 
 				logger.
 					EXPECT().
+					Infof(gomock.Eq("Initializing repository")).
+					Times(1)
+
+				logger.
+					EXPECT().
+					Infof(gomock.Eq("Initializing queue")).
+					Times(1)
+
+				logger.
+					EXPECT().
 					Infof(gomock.Eq("Listening on: %s"), gomock.Eq("host:1")).
 					Times(1)
 
 				repo.
+					EXPECT().
+					Init(gomock.Eq(ctx)).
+					Return(nil).
+					Times(1)
+
+				queueing.
 					EXPECT().
 					Init(gomock.Eq(ctx)).
 					Return(nil).
@@ -222,10 +285,26 @@ var _ = Describe("App Package", func() {
 
 				logger.
 					EXPECT().
+					Infof(gomock.Eq("Initializing repository")).
+					Times(1)
+
+				logger.
+					EXPECT().
+					Infof(gomock.Eq("Initializing queue")).
+					Times(1)
+
+				logger.
+					EXPECT().
 					Infof(gomock.Eq("Listening on: %s"), gomock.Eq("host:1")).
 					Times(1)
 
 				repo.
+					EXPECT().
+					Init(gomock.Eq(ctx)).
+					Return(nil).
+					Times(1)
+
+				queueing.
 					EXPECT().
 					Init(gomock.Eq(ctx)).
 					Return(nil).
@@ -246,11 +325,12 @@ var _ = Describe("App Package", func() {
 
 	Context("Stop function", Label("unit"), func() {
 		var (
-			rApp   app.App
-			ctx    context.Context
-			server *mock_restapp.MockServer
-			logger *mock_logging.MockLogger
-			repo   *mock_repository.MockProvider
+			rApp     app.App
+			ctx      context.Context
+			server   *mock_restapp.MockServer
+			logger   *mock_logging.MockLogger
+			repo     *mock_repository.MockProvider
+			queueing *mock_queueing.MockQueueing
 		)
 
 		BeforeEach(func() {
@@ -260,6 +340,7 @@ var _ = Describe("App Package", func() {
 			server = mock_restapp.NewMockServer(ctrl)
 			logger = mock_logging.NewMockLogger(ctrl)
 			repo = mock_repository.NewMockProvider(ctrl)
+			queueing = mock_queueing.NewMockQueueing(ctrl)
 			config := &app.Config{
 				AppName:     "name",
 				AppVersion:  "version",
@@ -271,6 +352,7 @@ var _ = Describe("App Package", func() {
 				restapp.WithServer(server),
 				restapp.WithLogger(logger),
 				restapp.WithRepository(repo),
+				restapp.WithQueueing(queueing),
 			)
 		})
 

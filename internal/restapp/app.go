@@ -8,6 +8,7 @@ import (
 	"github.com/go-seidon/chariot/internal/auth"
 	"github.com/go-seidon/chariot/internal/barrel"
 	"github.com/go-seidon/chariot/internal/file"
+	"github.com/go-seidon/chariot/internal/queueing"
 	"github.com/go-seidon/chariot/internal/repository"
 	"github.com/go-seidon/chariot/internal/resthandler"
 	"github.com/go-seidon/chariot/internal/restmiddleware"
@@ -21,6 +22,7 @@ import (
 	"github.com/go-seidon/provider/identifier/ksuid"
 	"github.com/go-seidon/provider/logging"
 	"github.com/go-seidon/provider/serialization/json"
+	"github.com/go-seidon/provider/serialization/protobuf"
 	"github.com/go-seidon/provider/slug/goslug"
 	"github.com/go-seidon/provider/validation/govalidator"
 	"github.com/labstack/echo/v4"
@@ -31,18 +33,25 @@ type restApp struct {
 	server     Server
 	logger     logging.Logger
 	repository repository.Provider
+	queueing   queueing.Queueing
 }
 
 func (a *restApp) Run(ctx context.Context) error {
 	a.logger.Infof("Running %s:%s", a.config.GetAppName(), a.config.GetAppVersion())
 
-	a.logger.Infof("Listening on: %s", a.config.GetAddress())
-
+	a.logger.Infof("Initializing repository")
 	err := a.repository.Init(ctx)
 	if err != nil {
 		return err
 	}
 
+	a.logger.Infof("Initializing queue")
+	err = a.queueing.Init(ctx)
+	if err != nil {
+		return err
+	}
+
+	a.logger.Infof("Listening on: %s", a.config.GetAddress())
 	err = a.server.Start(a.config.GetAddress())
 	if err != nil {
 		return err
@@ -95,6 +104,14 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		}
 	}
 
+	queueing := p.Queueing
+	if queueing == nil {
+		queueing, err = app.NewDefaultQueueing(p.Config)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	server := p.Server
 	if server == nil {
 		e := echo.New()
@@ -105,6 +122,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		ksuidIdentifier := ksuid.NewIdentifier()
 		goSlugger := goslug.NewSlugger()
 		jsonSerializer := json.NewSerializer()
+		protobufSerializer := protobuf.NewSerializer()
 		base64Encoder := base64.NewEncoder()
 		httpClient := http.NewClient()
 		clock := datetime.NewClock()
@@ -168,6 +186,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			Clock:      clock,
 			Identifier: ksuidIdentifier,
 		})
+
 		fileClient := file.NewFile(file.FileParam{
 			Config: &file.FileConfig{
 				AppHost: p.Config.StorageAccessHost,
@@ -176,10 +195,12 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			Identifier:    ksuidIdentifier,
 			SessionClient: sessionClient,
 			Clock:         clock,
+			Serializer:    protobufSerializer,
 			Slugger:       goSlugger,
 			Router:        storageRouter,
 			BarrelRepo:    repo.GetBarrel(),
 			FileRepo:      repo.GetFile(),
+			Pubsub:        queueing,
 		})
 		fileHandler := resthandler.NewFile(resthandler.FileParam{
 			File:       fileClient,
@@ -214,6 +235,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		basicAuthGroup.POST("/v1/session", sessionHandler.CreateSession)
 		basicAuthGroup.GET("/v1/file/:id", fileHandler.GetFileById)
 		basicAuthGroup.POST("/v1/file/search", fileHandler.SearchFile)
+		basicAuthGroup.POST("/v1/file/replication", fileHandler.ScheduleReplication)
 
 		e.POST("/file", fileHandler.UploadFile, uploadMiddleware)
 		e.GET("/file/:slug", fileHandler.RetrieveFileBySlug)
@@ -224,6 +246,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		config:     config,
 		repository: repo,
 		logger:     logger,
+		queueing:   queueing,
 	}
 	return app, nil
 }
