@@ -8,6 +8,13 @@ const (
 	PROVIDER_RABBITMQ = "rabbitmq"
 )
 
+const (
+	EXCHANGE_DIRECT  = "direct"
+	EXCHANGE_FANOUT  = "fanout" //broadcasts all the messages it receives to all the queues it knows
+	EXCHANGE_TOPIC   = "topic"
+	EXCHANGE_HEADERS = "headers"
+)
+
 type Queueing interface {
 	Manager
 	Exchange
