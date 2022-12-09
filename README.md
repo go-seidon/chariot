@@ -112,6 +112,7 @@ TBA
 - if rule have multiple attribute than it's mean we're matching at least one rule (or clause)
 7. Client: Upload Rule (resolution)
 8. Devs: Caching support
+9. Devs: Add dead letter exchange & queue for `proceed_file_replication` queue
 
 ## Issue
 1. Gorm not inserting has many association, issue since gorm@v1.22.5 [ref](https://github.com/go-gorm/gorm/issues/5754). Current solution is to use gorm@v1.22.4, mysql@v1.2.1, dbresolver@v1.1.0
