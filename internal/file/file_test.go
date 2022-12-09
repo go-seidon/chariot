@@ -144,7 +144,7 @@ var _ = Describe("File Package", func() {
 			}
 			uploadParam = storage.UploadObjectParam{
 				Data:      p.Data,
-				Id:        typeconv.String("file-id"),
+				Id:        typeconv.String("mock-id"),
 				Name:      typeconv.String(p.Info.Name),
 				Mimetype:  typeconv.String(p.Info.Mimetype),
 				Extension: typeconv.String(p.Info.Extension),
@@ -154,7 +154,7 @@ var _ = Describe("File Package", func() {
 				UploadedAt: currentTs,
 			}
 			createFileParam = repository.CreateFileParam{
-				Id:         "file-id",
+				Id:         "mock-id",
 				Slug:       "dolphin-22.jpg",
 				Name:       p.Info.Name,
 				Mimetype:   p.Info.Mimetype,
@@ -167,7 +167,7 @@ var _ = Describe("File Package", func() {
 				UploadedAt: currentTs,
 				Locations: []repository.CreateFileLocation{
 					{
-						Id:         "i1",
+						Id:         "mock-id",
 						BarrelId:   "h1",
 						ExternalId: typeconv.String("object-id"),
 						Priority:   1,
@@ -176,7 +176,7 @@ var _ = Describe("File Package", func() {
 						UploadedAt: &currentTs,
 					},
 					{
-						Id:         "i2",
+						Id:         "mock-id",
 						BarrelId:   "s1",
 						ExternalId: nil,
 						Priority:   2,
@@ -353,7 +353,7 @@ var _ = Describe("File Package", func() {
 				identifier.
 					EXPECT().
 					GenerateId().
-					Return("file-id", nil).
+					Return("mock-id", nil).
 					Times(1)
 
 				identifier.
@@ -387,7 +387,7 @@ var _ = Describe("File Package", func() {
 				identifier.
 					EXPECT().
 					GenerateId().
-					Return("file-id", nil).
+					Return("mock-id", nil).
 					Times(2)
 
 				storageRouter.
@@ -421,7 +421,7 @@ var _ = Describe("File Package", func() {
 				identifier.
 					EXPECT().
 					GenerateId().
-					Return("file-id", nil).
+					Return("mock-id", nil).
 					Times(2)
 
 				storageRouter.
@@ -461,7 +461,7 @@ var _ = Describe("File Package", func() {
 				identifier.
 					EXPECT().
 					GenerateId().
-					Return("file-id", nil).
+					Return("mock-id", nil).
 					Times(2)
 
 				storageRouter.
@@ -486,18 +486,6 @@ var _ = Describe("File Package", func() {
 					EXPECT().
 					Now().
 					Return(currentTs).
-					Times(1)
-
-				identifier.
-					EXPECT().
-					GenerateId().
-					Return("i1", nil).
-					Times(1)
-
-				identifier.
-					EXPECT().
-					GenerateId().
-					Return("i2", nil).
 					Times(1)
 
 				fileRepo.
@@ -531,7 +519,7 @@ var _ = Describe("File Package", func() {
 				identifier.
 					EXPECT().
 					GenerateId().
-					Return("file-id", nil).
+					Return("mock-id", nil).
 					Times(2)
 
 				storageRouter.
@@ -556,18 +544,6 @@ var _ = Describe("File Package", func() {
 					EXPECT().
 					Now().
 					Return(currentTs).
-					Times(1)
-
-				identifier.
-					EXPECT().
-					GenerateId().
-					Return("i1", nil).
-					Times(1)
-
-				identifier.
-					EXPECT().
-					GenerateId().
-					Return("i2", nil).
 					Times(1)
 
 				fileRepo.
@@ -632,7 +608,7 @@ var _ = Describe("File Package", func() {
 				identifier.
 					EXPECT().
 					GenerateId().
-					Return("file-id", nil).
+					Return("mock-id", nil).
 					Times(1)
 
 				storageRouter.
@@ -643,7 +619,7 @@ var _ = Describe("File Package", func() {
 
 				uploadParam := storage.UploadObjectParam{
 					Data:      p.Data,
-					Id:        typeconv.String("file-id"),
+					Id:        typeconv.String("mock-id"),
 					Name:      typeconv.String(p.Info.Name),
 					Mimetype:  typeconv.String(p.Info.Mimetype),
 					Extension: typeconv.String(p.Info.Extension),
@@ -670,14 +646,8 @@ var _ = Describe("File Package", func() {
 					Return(currentTs).
 					Times(1)
 
-				identifier.
-					EXPECT().
-					GenerateId().
-					Return("i1", nil).
-					Times(1)
-
 				createFileParam = repository.CreateFileParam{
-					Id:         "file-id",
+					Id:         "mock-id",
 					Slug:       "dolphin-22",
 					Name:       p.Info.Name,
 					Mimetype:   p.Info.Mimetype,
@@ -690,7 +660,7 @@ var _ = Describe("File Package", func() {
 					UploadedAt: currentTs,
 					Locations: []repository.CreateFileLocation{
 						{
-							Id:         "i1",
+							Id:         "mock-id",
 							BarrelId:   "h1",
 							ExternalId: typeconv.String("object-id"),
 							Priority:   1,
@@ -783,7 +753,7 @@ var _ = Describe("File Package", func() {
 				identifier.
 					EXPECT().
 					GenerateId().
-					Return("file-id", nil).
+					Return("mock-id", nil).
 					Times(2)
 
 				storageRouter.
@@ -810,20 +780,8 @@ var _ = Describe("File Package", func() {
 					Return(currentTs).
 					Times(1)
 
-				identifier.
-					EXPECT().
-					GenerateId().
-					Return("i1", nil).
-					Times(1)
-
-				identifier.
-					EXPECT().
-					GenerateId().
-					Return("i2", nil).
-					Times(1)
-
 				createFileParam := repository.CreateFileParam{
-					Id:         "file-id",
+					Id:         "mock-id",
 					Slug:       "dolphin-22.jpg",
 					Name:       p.Info.Name,
 					Mimetype:   p.Info.Mimetype,
@@ -836,7 +794,7 @@ var _ = Describe("File Package", func() {
 					UploadedAt: currentTs,
 					Locations: []repository.CreateFileLocation{
 						{
-							Id:         "i1",
+							Id:         "mock-id",
 							BarrelId:   "h1",
 							ExternalId: typeconv.String("object-id"),
 							Priority:   1,
@@ -845,7 +803,7 @@ var _ = Describe("File Package", func() {
 							UploadedAt: &currentTs,
 						},
 						{
-							Id:         "i2",
+							Id:         "mock-id",
 							BarrelId:   "s1",
 							ExternalId: nil,
 							Priority:   2,

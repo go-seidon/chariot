@@ -308,14 +308,6 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 	currentTs := f.clock.Now()
 	locations := []repository.CreateFileLocation{}
 	for i, barrel := range barrels {
-		id, err := f.identifier.GenerateId()
-		if err != nil {
-			return nil, &system.SystemError{
-				Code:    status.ACTION_FAILED,
-				Message: err.Error(),
-			}
-		}
-
 		status := STATUS_PENDING
 		var externalId *string
 		var uploadedAt *time.Time
@@ -326,7 +318,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 		}
 
 		locations = append(locations, repository.CreateFileLocation{
-			Id:         id,
+			Id:         barrel.ObjectId,
 			BarrelId:   barrel.BarrelId,
 			Priority:   int32(i) + 1,
 			CreatedAt:  currentTs,
