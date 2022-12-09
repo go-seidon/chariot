@@ -51,6 +51,30 @@ func (a *restApp) Run(ctx context.Context) error {
 		return err
 	}
 
+	// @note: move to queueing package once queueing is moved to provider
+	err = a.queueing.DeclareExchange(ctx, queueing.DeclareExchangeParam{
+		ExchangeName: "file_replication",
+		ExchangeType: queueing.EXCHANGE_FANOUT,
+	})
+	if err != nil {
+		return err
+	}
+
+	que, err := a.queueing.DeclareQueue(ctx, queueing.DeclareQueueParam{
+		QueueName: "proceed_file_replication",
+	})
+	if err != nil {
+		return err
+	}
+
+	err = a.queueing.BindQueue(ctx, queueing.BindQueueParam{
+		ExchangeName: "file_replication",
+		QueueName:    que.Name,
+	})
+	if err != nil {
+		return err
+	}
+
 	a.logger.Infof("Listening on: %s", a.config.GetAddress())
 	err = a.server.Start(a.config.GetAddress())
 	if err != nil {
