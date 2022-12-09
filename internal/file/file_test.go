@@ -111,13 +111,13 @@ var _ = Describe("File Package", func() {
 				},
 			}
 			createSessParam = session.CreateSessionParam{
-				Duration: 30 * time.Minute,
+				Duration: 1800,
 				Features: []string{"retrieve_file"},
 			}
 			createSessRes = &session.CreateSessionResult{
 				Success:   system.SystemSuccess{},
 				CreatedAt: currentTs.UTC(),
-				ExpiresAt: currentTs.Add(30 * time.Minute).UTC(),
+				ExpiresAt: currentTs.Add(1800 * time.Second).UTC(),
 				Token:     "secret-token",
 			}
 			searchParam = repository.SearchBarrelParam{

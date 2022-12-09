@@ -224,7 +224,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 	var token string
 	if p.Setting.Visibility == VISIBILITY_PROTECTED {
 		session, err := f.sessionClient.CreateSession(ctx, session.CreateSessionParam{
-			Duration: 30 * time.Minute,
+			Duration: 1800,
 			Features: []string{"retrieve_file"},
 		})
 		if err != nil {
