@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package queue;
+
+option go_package = "./queue";
+
+message ScheduleReplicationMessage {
+  string id = 1;
+  string file_id = 2;
+  string barrel_id = 3;
+  int32 priority = 4;
+  string status = 5;
+}

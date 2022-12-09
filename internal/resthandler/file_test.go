@@ -1057,4 +1057,180 @@ var _ = Describe("File Handler", func() {
 			})
 		})
 	})
+
+	Context("ScheduleReplication function", Label("unit"), func() {
+		var (
+			currentTs     time.Time
+			ctx           echo.Context
+			h             func(ctx echo.Context) error
+			rec           *httptest.ResponseRecorder
+			fileClient    *mock_file.MockFile
+			scheduleParam file.ScheduleReplicationParam
+			scheduleRes   *file.ScheduleReplicationResult
+		)
+
+		BeforeEach(func() {
+			currentTs = time.Now().UTC()
+			reqBody := &restapp.ScheduleReplicationRequest{
+				MaxItems: 5,
+			}
+			body, _ := encoding_json.Marshal(reqBody)
+			buffer := bytes.NewBuffer(body)
+			req := httptest.NewRequest(http.MethodPost, "/", buffer)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec = httptest.NewRecorder()
+
+			e := echo.New()
+			ctx = e.NewContext(req, rec)
+
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			fileClient = mock_file.NewMockFile(ctrl)
+			fileHandler := resthandler.NewFile(resthandler.FileParam{
+				File: fileClient,
+			})
+			h = fileHandler.ScheduleReplication
+			scheduleParam = file.ScheduleReplicationParam{
+				MaxItems: 5,
+			}
+			scheduleRes = &file.ScheduleReplicationResult{
+				Success: system.SystemSuccess{
+					Code:    1000,
+					Message: "success schedule replication",
+				},
+				TotalItems:  3,
+				ScheduledAt: typeconv.Time(currentTs),
+			}
+		})
+
+		When("failed binding request body", func() {
+			It("should return error", func() {
+				reqBody, _ := encoding_json.Marshal(struct {
+					MaxItems string `json:"max_items"`
+				}{
+					MaxItems: "x",
+				})
+				buffer := bytes.NewBuffer(reqBody)
+
+				req := httptest.NewRequest(http.MethodPost, "/", buffer)
+				req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+				rec := httptest.NewRecorder()
+
+				e := echo.New()
+				ctx := e.NewContext(req, rec)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 400,
+					Message: &restapp.ResponseBodyInfo{
+						Code:    1002,
+						Message: "invalid request",
+					},
+				}))
+			})
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				fileClient.
+					EXPECT().
+					ScheduleReplication(gomock.Eq(ctx.Request().Context()), gomock.Eq(scheduleParam)).
+					Return(nil, &system.SystemError{
+						Code:    1002,
+						Message: "invalid data",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 400,
+					Message: &restapp.ResponseBodyInfo{
+						Code:    1002,
+						Message: "invalid data",
+					},
+				}))
+			})
+		})
+
+		When("failed schedule replication", func() {
+			It("should return error", func() {
+				fileClient.
+					EXPECT().
+					ScheduleReplication(gomock.Eq(ctx.Request().Context()), gomock.Eq(scheduleParam)).
+					Return(nil, &system.SystemError{
+						Code:    1001,
+						Message: "network error",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 500,
+					Message: &restapp.ResponseBodyInfo{
+						Code:    1001,
+						Message: "network error",
+					},
+				}))
+			})
+		})
+
+		When("success schedule replication", func() {
+			It("should return result", func() {
+				fileClient.
+					EXPECT().
+					ScheduleReplication(gomock.Eq(ctx.Request().Context()), gomock.Eq(scheduleParam)).
+					Return(scheduleRes, nil).
+					Times(1)
+
+				err := h(ctx)
+
+				res := &restapp.ScheduleReplicationResponse{}
+				encoding_json.Unmarshal(rec.Body.Bytes(), res)
+
+				Expect(err).To(BeNil())
+				Expect(rec.Code).To(Equal(http.StatusAccepted))
+				Expect(res.Code).To(Equal(int32(1000)))
+				Expect(res.Message).To(Equal("success schedule replication"))
+				Expect(res.Data).To(Equal(restapp.ScheduleReplicationData{
+					ScheduledAt: typeconv.Int64(currentTs.UnixMilli()),
+					TotalItems:  3,
+				}))
+			})
+		})
+
+		When("skip schedule replication", func() {
+			It("should return result", func() {
+				scheduleRes := &file.ScheduleReplicationResult{
+					Success: system.SystemSuccess{
+						Code:    1000,
+						Message: "skip schedule replication",
+					},
+					TotalItems:  0,
+					ScheduledAt: nil,
+				}
+				fileClient.
+					EXPECT().
+					ScheduleReplication(gomock.Eq(ctx.Request().Context()), gomock.Eq(scheduleParam)).
+					Return(scheduleRes, nil).
+					Times(1)
+
+				err := h(ctx)
+
+				res := &restapp.ScheduleReplicationResponse{}
+				encoding_json.Unmarshal(rec.Body.Bytes(), res)
+
+				Expect(err).To(BeNil())
+				Expect(rec.Code).To(Equal(http.StatusAccepted))
+				Expect(res.Code).To(Equal(int32(1000)))
+				Expect(res.Message).To(Equal("skip schedule replication"))
+				Expect(res.Data).To(Equal(restapp.ScheduleReplicationData{
+					ScheduledAt: nil,
+					TotalItems:  0,
+				}))
+			})
+		})
+	})
 })

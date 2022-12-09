@@ -7,13 +7,16 @@ import (
 	"io"
 	"time"
 
+	"github.com/go-seidon/chariot/api/queue"
 	"github.com/go-seidon/chariot/internal/barrel"
+	"github.com/go-seidon/chariot/internal/queueing"
 	"github.com/go-seidon/chariot/internal/repository"
 	"github.com/go-seidon/chariot/internal/session"
 	"github.com/go-seidon/chariot/internal/storage"
 	"github.com/go-seidon/chariot/internal/storage/router"
 	"github.com/go-seidon/provider/datetime"
 	"github.com/go-seidon/provider/identifier"
+	"github.com/go-seidon/provider/serialization"
 	"github.com/go-seidon/provider/slug"
 	"github.com/go-seidon/provider/status"
 	"github.com/go-seidon/provider/system"
@@ -22,6 +25,7 @@ import (
 )
 
 const (
+	STATUS_PENDING   = "pending"
 	STATUS_UPLOADING = "uploading"
 	STATUS_AVAILABLE = "available"
 	STATUS_DELETING  = "deleting"
@@ -36,6 +40,7 @@ type File interface {
 	RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam) (*RetrieveFileBySlugResult, *system.SystemError)
 	GetFileById(ctx context.Context, p GetFileByIdParam) (*GetFileByIdResult, *system.SystemError)
 	SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileResult, *system.SystemError)
+	ScheduleReplication(ctx context.Context, p ScheduleReplicationParam) (*ScheduleReplicationResult, *system.SystemError)
 }
 
 type FileConfig struct {
@@ -176,6 +181,16 @@ type SearchFileSummary struct {
 	Page       int64
 }
 
+type ScheduleReplicationParam struct {
+	MaxItems int32 `validate:"numeric,min=1,max=50" label:"max_items"`
+}
+
+type ScheduleReplicationResult struct {
+	Success     system.SystemSuccess
+	TotalItems  int32
+	ScheduledAt *time.Time
+}
+
 type file struct {
 	config        *FileConfig
 	validator     validation.Validator
@@ -183,6 +198,8 @@ type file struct {
 	sessionClient session.Session
 	slugger       slug.Slugger
 	clock         datetime.Clock
+	serializer    serialization.Serializer
+	pubsub        queueing.Pubsub
 	router        router.Router
 	barrelRepo    repository.Barrel
 	fileRepo      repository.File
@@ -207,7 +224,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 	var token string
 	if p.Setting.Visibility == VISIBILITY_PROTECTED {
 		session, err := f.sessionClient.CreateSession(ctx, session.CreateSessionParam{
-			Duration: 30 * time.Minute,
+			Duration: 1800,
 			Features: []string{"retrieve_file"},
 		})
 		if err != nil {
@@ -291,7 +308,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 	currentTs := f.clock.Now()
 	locations := []repository.CreateFileLocation{}
 	for i, barrel := range barrels {
-		status := STATUS_UPLOADING
+		status := STATUS_PENDING
 		var externalId *string
 		var uploadedAt *time.Time
 		if i == 0 {
@@ -301,6 +318,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 		}
 
 		locations = append(locations, repository.CreateFileLocation{
+			Id:         barrel.ObjectId,
 			BarrelId:   barrel.BarrelId,
 			Priority:   int32(i) + 1,
 			CreatedAt:  currentTs,
@@ -597,6 +615,94 @@ func (f *file) SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileRe
 	return res, nil
 }
 
+func (f *file) ScheduleReplication(ctx context.Context, p ScheduleReplicationParam) (*ScheduleReplicationResult, *system.SystemError) {
+	err := f.validator.Validate(p)
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.INVALID_PARAM,
+			Message: err.Error(),
+		}
+	}
+
+	searchres, err := f.fileRepo.SearchLocation(ctx, repository.SearchLocationParam{
+		Limit:    p.MaxItems,
+		Statuses: []string{STATUS_PENDING},
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	if len(searchres.Items) == 0 {
+		res := &ScheduleReplicationResult{
+			Success: system.SystemSuccess{
+				Code:    status.ACTION_SUCCESS,
+				Message: "there is no pending replication",
+			},
+			TotalItems: 0,
+		}
+		return res, nil
+	}
+
+	ids := []string{}
+	msgs := [][]byte{}
+	for _, location := range searchres.Items {
+		ids = append(ids, location.Id)
+		msg, err := f.serializer.Marshal(&queue.ScheduleReplicationMessage{
+			Id:       location.Id,
+			FileId:   location.FileId,
+			BarrelId: location.BarrelId,
+			Priority: location.Priority,
+			Status:   location.Status,
+		})
+		if err != nil {
+			return nil, &system.SystemError{
+				Code:    status.ACTION_FAILED,
+				Message: err.Error(),
+			}
+		}
+		msgs = append(msgs, msg)
+	}
+
+	currentTs := f.clock.Now().UTC()
+	_, err = f.fileRepo.UpdateLocationByIds(ctx, repository.UpdateLocationByIdsParam{
+		Ids:       ids,
+		Status:    STATUS_UPLOADING,
+		UpdatedAt: currentTs,
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	for _, msg := range msgs {
+		err = f.pubsub.Publish(ctx, queueing.PublishParam{
+			ExchangeName: "file_replication",
+			MessageBody:  msg,
+		})
+		if err != nil {
+			return nil, &system.SystemError{
+				Code:    status.ACTION_FAILED,
+				Message: err.Error(),
+			}
+		}
+	}
+
+	res := &ScheduleReplicationResult{
+		Success: system.SystemSuccess{
+			Code:    status.ACTION_SUCCESS,
+			Message: "success schedule replication",
+		},
+		TotalItems:  int32(len(searchres.Items)),
+		ScheduledAt: typeconv.Time(currentTs),
+	}
+	return res, nil
+}
+
 type FileParam struct {
 	Config        *FileConfig
 	Validator     validation.Validator
@@ -604,6 +710,8 @@ type FileParam struct {
 	SessionClient session.Session
 	Slugger       slug.Slugger
 	Clock         datetime.Clock
+	Serializer    serialization.Serializer
+	Pubsub        queueing.Pubsub
 	Router        router.Router
 	BarrelRepo    repository.Barrel
 	FileRepo      repository.File
@@ -617,6 +725,8 @@ func NewFile(p FileParam) *file {
 		sessionClient: p.SessionClient,
 		slugger:       p.Slugger,
 		clock:         p.Clock,
+		serializer:    p.Serializer,
+		pubsub:        p.Pubsub,
 		router:        p.Router,
 		barrelRepo:    p.BarrelRepo,
 		fileRepo:      p.FileRepo,

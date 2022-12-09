@@ -1,0 +1,7 @@
+
+value:
+  code: 1000
+  message: success schedule replication
+  data:
+    total_items: 3
+    scheduled_at: 1664803257299

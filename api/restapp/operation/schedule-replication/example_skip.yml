@@ -1,0 +1,6 @@
+
+value:
+  code: 1000
+  message: there is no pending replication
+  data:
+    total_items: 3

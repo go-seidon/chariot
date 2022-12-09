@@ -87,6 +87,7 @@ var _ = Describe("File Repository", func() {
 				},
 				Locations: []repository.CreateFileLocation{
 					{
+						Id:         "i1",
 						BarrelId:   "h1",
 						ExternalId: typeconv.String("e1"),
 						Priority:   1,
@@ -95,6 +96,7 @@ var _ = Describe("File Repository", func() {
 						UploadedAt: &currentTs,
 					},
 					{
+						Id:         "i2",
 						BarrelId:   "b1",
 						ExternalId: typeconv.String("e2"),
 						Priority:   2,
@@ -109,7 +111,7 @@ var _ = Describe("File Repository", func() {
 			checkStmt = regexp.QuoteMeta("SELECT id, slug FROM `file` WHERE slug = ? ORDER BY `file`.`id` LIMIT 1")
 			createFileStmt = regexp.QuoteMeta("INSERT INTO `file` (`id`,`slug`,`name`,`mimetype`,`extension`,`size`,`visibility`,`status`,`uploaded_at`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
 			createMetaStmt = regexp.QuoteMeta("INSERT INTO `file_meta` (`file_id`,`key`,`value`) VALUES (?,?,?),(?,?,?) ON DUPLICATE KEY UPDATE `file_id`=VALUES(`file_id`)")
-			createLocationStmt = regexp.QuoteMeta("INSERT INTO `file_location` (`file_id`,`barrel_id`,`external_id`,`priority`,`status`,`uploaded_at`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,?,?),(?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `file_id`=VALUES(`file_id`)")
+			createLocationStmt = regexp.QuoteMeta("INSERT INTO `file_location` (`id`,`file_id`,`barrel_id`,`external_id`,`priority`,`status`,`uploaded_at`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,?,?,?),(?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `file_id`=VALUES(`file_id`)")
 			findFileStmt = regexp.QuoteMeta("SELECT id, slug, name, mimetype, extension, size, visibility, status, created_at, uploaded_at FROM `file` WHERE id = ? ORDER BY `file`.`id` LIMIT 1")
 			findMetaStmt = regexp.QuoteMeta("SELECT file_id, `key`, value FROM `file_meta` WHERE `file_meta`.`file_id` = ?")
 			findLocationStmt = regexp.QuoteMeta("SELECT file_id, barrel_id, external_id, priority, status, created_at, uploaded_at FROM `file_location` WHERE `file_location`.`file_id` = ?")
@@ -1468,6 +1470,420 @@ var _ = Describe("File Repository", func() {
 			Entry("should query using size desc", "highest_size", "size DESC"),
 			Entry("should query using size asc", "lowest_size", "size ASC"),
 		)
+	})
 
+	Context("SearchLocation function", Label("unit"), func() {
+
+		var (
+			ctx        context.Context
+			dbClient   sqlmock.Sqlmock
+			fileRepo   repository.File
+			p          repository.SearchLocationParam
+			r          *repository.SearchLocationResult
+			searchStmt string
+			countStmt  string
+			searchRows *sqlmock.Rows
+			countRows  *sqlmock.Rows
+		)
+
+		BeforeEach(func() {
+			var (
+				db  *sql.DB
+				err error
+			)
+
+			ctx = context.Background()
+			db, dbClient, err = sqlmock.New()
+			if err != nil {
+				AbortSuite("failed create db mock: " + err.Error())
+			}
+
+			gormClient, err := gorm.Open(gorm_mysql.New(gorm_mysql.Config{
+				Conn:                      db,
+				SkipInitializeWithVersion: true,
+			}), &gorm.Config{
+				DisableAutomaticPing: true,
+			})
+			if err != nil {
+				AbortSuite("failed create gorm client: " + err.Error())
+			}
+			fileRepo = mysql.NewFile(mysql.FileParam{
+				GormClient: gormClient,
+			})
+
+			p = repository.SearchLocationParam{
+				Limit:    5,
+				Statuses: []string{"pending"},
+			}
+			r = &repository.SearchLocationResult{
+				Summary: repository.SearchLocationSummary{
+					TotalItems: 2,
+				},
+				Items: []repository.SearchLocationItem{
+					{
+						Id:       "id1",
+						FileId:   "f1",
+						BarrelId: "b1",
+						Priority: 2,
+						Status:   "pending",
+					},
+					{
+						Id:       "id2",
+						FileId:   "f2",
+						BarrelId: "b2",
+						Priority: 2,
+						Status:   "pending",
+					},
+				},
+			}
+			searchStmt = regexp.QuoteMeta(strings.TrimSpace(`
+				SELECT id, file_id, barrel_id, priority, status
+				FROM ` + "`file_location`" + ` 
+				WHERE status IN (?)
+				ORDER BY created_at ASC
+				LIMIT 5
+			`))
+			countStmt = regexp.QuoteMeta(strings.TrimSpace(`
+				SELECT count(*)
+				FROM ` + "`file_location`" + `
+				WHERE status IN (?)
+				LIMIT 5
+			`))
+			searchRows = sqlmock.NewRows([]string{
+				"id", "file_id", "barrel_id",
+				"priority", "status",
+			}).AddRow(
+				"id1", "f1", "b1",
+				2, "pending",
+			).AddRow(
+				"id2", "f2", "b2",
+				2, "pending",
+			)
+
+			countRows = sqlmock.
+				NewRows([]string{"count(*)"}).
+				AddRow(2)
+		})
+
+		AfterEach(func() {
+			err := dbClient.ExpectationsWereMet()
+			if err != nil {
+				AbortSuite("some expectations were not met " + err.Error())
+			}
+		})
+
+		When("failed search location", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						p.Statuses[0],
+					).
+					WillReturnError(fmt.Errorf("network error"))
+
+				res, err := fileRepo.SearchLocation(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("there are no location", func() {
+			It("should return empty result", func() {
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						p.Statuses[0],
+					).
+					WillReturnError(gorm.ErrRecordNotFound)
+
+				res, err := fileRepo.SearchLocation(ctx, p)
+
+				r := &repository.SearchLocationResult{
+					Summary: repository.SearchLocationSummary{
+						TotalItems: 0,
+					},
+					Items: []repository.SearchLocationItem{},
+				}
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("failed count search location", func() {
+			It("should return result", func() {
+				searchRows = sqlmock.NewRows([]string{
+					"id", "file_id", "barrel_id",
+					"priority", "status",
+				}).AddRow(
+					"id1", "f1", "b1",
+					2, "pending",
+				)
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						p.Statuses[0],
+					).
+					WillReturnRows(searchRows)
+
+				dbClient.
+					ExpectQuery(countStmt).
+					WithArgs(
+						p.Statuses[0],
+					).
+					WillReturnError(fmt.Errorf("network error"))
+
+				res, err := fileRepo.SearchLocation(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("there is one location", func() {
+			It("should return result", func() {
+				searchRows = sqlmock.NewRows([]string{
+					"id", "file_id", "barrel_id",
+					"priority", "status",
+				}).AddRow(
+					"id1", "f1", "b1",
+					2, "pending",
+				)
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						p.Statuses[0],
+					).
+					WillReturnRows(searchRows)
+
+				countRows := sqlmock.
+					NewRows([]string{"count(*)"}).
+					AddRow(1)
+				dbClient.
+					ExpectQuery(countStmt).
+					WithArgs(
+						p.Statuses[0],
+					).
+					WillReturnRows(countRows)
+
+				res, err := fileRepo.SearchLocation(ctx, p)
+
+				r := &repository.SearchLocationResult{
+					Summary: repository.SearchLocationSummary{
+						TotalItems: 1,
+					},
+					Items: []repository.SearchLocationItem{
+						{
+							Id:       "id1",
+							FileId:   "f1",
+							BarrelId: "b1",
+							Priority: 2,
+							Status:   "pending",
+						},
+					},
+				}
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("there are some locations", func() {
+			It("should return result", func() {
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						p.Statuses[0],
+					).
+					WillReturnRows(searchRows)
+
+				dbClient.
+					ExpectQuery(countStmt).
+					WithArgs(
+						p.Statuses[0],
+					).
+					WillReturnRows(countRows)
+
+				res, err := fileRepo.SearchLocation(ctx, p)
+
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
+
+	Context("UpdateLocationByIds function", Label("unit"), func() {
+
+		var (
+			ctx        context.Context
+			currentTs  time.Time
+			dbClient   sqlmock.Sqlmock
+			fileRepo   repository.File
+			p          repository.UpdateLocationByIdsParam
+			r          *repository.UpdateLocationByIdsResult
+			updateStmt string
+		)
+
+		BeforeEach(func() {
+			var (
+				db  *sql.DB
+				err error
+			)
+
+			ctx = context.Background()
+			currentTs = time.Now()
+			db, dbClient, err = sqlmock.New()
+			if err != nil {
+				AbortSuite("failed create db mock: " + err.Error())
+			}
+
+			gormClient, err := gorm.Open(gorm_mysql.New(gorm_mysql.Config{
+				Conn:                      db,
+				SkipInitializeWithVersion: true,
+			}), &gorm.Config{
+				DisableAutomaticPing: true,
+			})
+			if err != nil {
+				AbortSuite("failed create gorm client: " + err.Error())
+			}
+			fileRepo = mysql.NewFile(mysql.FileParam{
+				GormClient: gormClient,
+			})
+
+			p = repository.UpdateLocationByIdsParam{
+				Ids:       []string{"i1", "i2", "i3"},
+				Status:    "uploading",
+				UpdatedAt: currentTs,
+			}
+			r = &repository.UpdateLocationByIdsResult{
+				TotalUpdated: 3,
+			}
+			updateStmt = regexp.QuoteMeta("UPDATE `file_location` SET `status`=?,`updated_at`=? WHERE id IN (?,?,?)")
+		})
+
+		AfterEach(func() {
+			err := dbClient.ExpectationsWereMet()
+			if err != nil {
+				AbortSuite("some expectations were not met " + err.Error())
+			}
+		})
+
+		When("failed begin trx", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin().
+					WillReturnError(fmt.Errorf("begin error"))
+
+				res, err := fileRepo.UpdateLocationByIds(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("begin error")))
+			})
+		})
+
+		When("failed rollback during update location", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.Ids[0],
+						p.Ids[1],
+						p.Ids[2],
+					).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback().
+					WillReturnError(fmt.Errorf("rollback error"))
+
+				res, err := fileRepo.UpdateLocationByIds(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("rollback error")))
+			})
+		})
+
+		When("failed update location", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.Ids[0],
+						p.Ids[1],
+						p.Ids[2],
+					).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback()
+
+				res, err := fileRepo.UpdateLocationByIds(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("failed commit trx", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.Ids[0],
+						p.Ids[1],
+						p.Ids[2],
+					).
+					WillReturnResult(sqlmock.NewResult(3, 3))
+
+				dbClient.
+					ExpectCommit().
+					WillReturnError(fmt.Errorf("commit error"))
+
+				res, err := fileRepo.UpdateLocationByIds(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("commit error")))
+			})
+		})
+
+		When("success update location", func() {
+			It("should return result", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.Ids[0],
+						p.Ids[1],
+						p.Ids[2],
+					).
+					WillReturnResult(sqlmock.NewResult(3, 3))
+
+				dbClient.
+					ExpectCommit()
+
+				res, err := fileRepo.UpdateLocationByIds(ctx, p)
+
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
 	})
 })

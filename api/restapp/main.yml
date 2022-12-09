@@ -22,6 +22,8 @@ paths:
     $ref: "./path/file_slug.yml"
   /v1/file/search:
     $ref: "./path/file_search.yml"
+  /v1/file/replication:
+    $ref: "./path/file_replication.yml"
   /v1/file/{id}:
     $ref: "./path/file_id.yml"
   /v1/barrel:
@@ -149,6 +151,13 @@ components:
       $ref: "./operation/search-file/response_summary.yml"
     SearchFileItem:
       $ref: "./operation/search-file/response_item.yml"
+
+    ScheduleReplicationRequest:
+      $ref: "./operation/schedule-replication/request_body.yml"
+    ScheduleReplicationResponse:
+      $ref: "./operation/schedule-replication/response_body.yml"
+    ScheduleReplicationData:
+      $ref: "./operation/schedule-replication/response_data.yml"
 
     # session access
     CreateSessionRequest:

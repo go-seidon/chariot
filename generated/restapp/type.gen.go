@@ -342,6 +342,24 @@ type ResponseBodyInfo struct {
 // RetrieveFileBySlugResponse defines model for RetrieveFileBySlugResponse.
 type RetrieveFileBySlugResponse = string
 
+// ScheduleReplicationData defines model for ScheduleReplicationData.
+type ScheduleReplicationData struct {
+	ScheduledAt *int64 `json:"scheduled_at,omitempty"`
+	TotalItems  int32  `json:"total_items"`
+}
+
+// ScheduleReplicationRequest defines model for ScheduleReplicationRequest.
+type ScheduleReplicationRequest struct {
+	MaxItems int32 `json:"max_items"`
+}
+
+// ScheduleReplicationResponse defines model for ScheduleReplicationResponse.
+type ScheduleReplicationResponse struct {
+	Code    int32                   `json:"code"`
+	Data    ScheduleReplicationData `json:"data"`
+	Message string                  `json:"message"`
+}
+
 // SearchAuthClientData defines model for SearchAuthClientData.
 type SearchAuthClientData struct {
 	Items   []SearchAuthClientItem  `json:"items"`
@@ -739,6 +757,15 @@ type UpdateBarrelByIdParams struct {
 	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
 }
 
+// ScheduleReplicationJSONBody defines parameters for ScheduleReplication.
+type ScheduleReplicationJSONBody = ScheduleReplicationRequest
+
+// ScheduleReplicationParams defines parameters for ScheduleReplication.
+type ScheduleReplicationParams struct {
+	// correlation id for tracing purposes
+	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
+}
+
 // SearchFileJSONBody defines parameters for SearchFile.
 type SearchFileJSONBody = SearchFileRequest
 
@@ -786,6 +813,9 @@ type SearchBarrelJSONRequestBody = SearchBarrelJSONBody
 
 // UpdateBarrelByIdJSONRequestBody defines body for UpdateBarrelById for application/json ContentType.
 type UpdateBarrelByIdJSONRequestBody = UpdateBarrelByIdJSONBody
+
+// ScheduleReplicationJSONRequestBody defines body for ScheduleReplication for application/json ContentType.
+type ScheduleReplicationJSONRequestBody = ScheduleReplicationJSONBody
 
 // SearchFileJSONRequestBody defines body for SearchFile for application/json ContentType.
 type SearchFileJSONRequestBody = SearchFileJSONBody

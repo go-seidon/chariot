@@ -306,6 +306,47 @@ func (h *fileHandler) SearchFile(ctx echo.Context) error {
 	})
 }
 
+func (h *fileHandler) ScheduleReplication(ctx echo.Context) error {
+	req := &restapp.ScheduleReplicationRequest{}
+	if err := ctx.Bind(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, &restapp.ResponseBodyInfo{
+			Code:    status.INVALID_PARAM,
+			Message: "invalid request",
+		})
+	}
+
+	scheduleRes, err := h.fileClient.ScheduleReplication(ctx.Request().Context(), file.ScheduleReplicationParam{
+		MaxItems: req.MaxItems,
+	})
+	if err != nil {
+		switch err.Code {
+		case status.INVALID_PARAM:
+			return echo.NewHTTPError(http.StatusBadRequest, &restapp.ResponseBodyInfo{
+				Code:    err.Code,
+				Message: err.Message,
+			})
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, &restapp.ResponseBodyInfo{
+			Code:    err.Code,
+			Message: err.Message,
+		})
+	}
+
+	var scheduledAt *int64
+	if scheduleRes.ScheduledAt != nil {
+		scheduledAt = typeconv.Int64(scheduleRes.ScheduledAt.UnixMilli())
+	}
+
+	return ctx.JSON(http.StatusAccepted, &restapp.ScheduleReplicationResponse{
+		Code:    scheduleRes.Success.Code,
+		Message: scheduleRes.Success.Message,
+		Data: restapp.ScheduleReplicationData{
+			ScheduledAt: scheduledAt,
+			TotalItems:  scheduleRes.TotalItems,
+		},
+	})
+}
+
 type FileParam struct {
 	File       file.File
 	FileParser multipart.Parser

@@ -79,3 +79,33 @@ func (mr *MockFileMockRecorder) SearchFile(ctx, p interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchFile", reflect.TypeOf((*MockFile)(nil).SearchFile), ctx, p)
 }
+
+// SearchLocation mocks base method.
+func (m *MockFile) SearchLocation(ctx context.Context, p repository.SearchLocationParam) (*repository.SearchLocationResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchLocation", ctx, p)
+	ret0, _ := ret[0].(*repository.SearchLocationResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchLocation indicates an expected call of SearchLocation.
+func (mr *MockFileMockRecorder) SearchLocation(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchLocation", reflect.TypeOf((*MockFile)(nil).SearchLocation), ctx, p)
+}
+
+// UpdateLocationByIds mocks base method.
+func (m *MockFile) UpdateLocationByIds(ctx context.Context, p repository.UpdateLocationByIdsParam) (*repository.UpdateLocationByIdsResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateLocationByIds", ctx, p)
+	ret0, _ := ret[0].(*repository.UpdateLocationByIdsResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateLocationByIds indicates an expected call of UpdateLocationByIds.
+func (mr *MockFileMockRecorder) UpdateLocationByIds(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateLocationByIds", reflect.TypeOf((*MockFile)(nil).UpdateLocationByIds), ctx, p)
+}

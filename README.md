@@ -77,13 +77,15 @@ TBA
 ```
 
 ## Todo
-1. Client: Upload rule (size, resolution, extension)
-- rule is required
-- rule may have no attribute (free rule)
-- rule may have multiple attribute
-- if rule have multiple attribute than it's mean we're matching at least one rule (or clause)
-2. Daemon: ProceedPendingUpload
-3. Admin: DeleteFileById (need background job/messaging approach)
+1. Daemonapp: Proceed Replication
+- upload pending file concurrently
+
+2. Admin: DeleteFileById
+- proceed pending delete
+- choose when to permanently delete the file
+- update retrieve file should check file status
+3. Daemonapp: Proceed File Deletion
+- delete pending file concurrently
 
 4. Devs: Enhancement
 - Override default error handler (echo router)
@@ -96,14 +98,21 @@ TBA
 - grafana
 
 ## Nice to have
-1. File backup
-2. SDK (golang, js, php)
-3. Middleware (mux, fiber, echo, gin)
-4. Repository provider (mongo, postgres)
-5. Retrieve image
+1. Admin: Backup File
+2. Devs: Goseidon SDK (golang, js, php)
+3. Devs: Middleware (mux, fiber, echo, gin)
+4. Devs: Repository provider (mongo, postgres)
+5. Client: Retrieve image
 - Image manipulation capability (width, height, compression)
-6. Caching support
-7. Enhance Rule: mimetype
+6. Client: Upload rule (size, extension, mimetype)
+- scrape mimetypes & extension from: https://mimetype.io/all-types
+- rule is required
+- rule may have no attribute (free rule)
+- rule may have multiple attribute
+- if rule have multiple attribute than it's mean we're matching at least one rule (or clause)
+7. Client: Upload Rule (resolution)
+8. Devs: Caching support
+9. Devs: Add dead letter exchange & queue for `proceed_file_replication` queue
 
 ## Issue
 1. Gorm not inserting has many association, issue since gorm@v1.22.5 [ref](https://github.com/go-gorm/gorm/issues/5754). Current solution is to use gorm@v1.22.4, mysql@v1.2.1, dbresolver@v1.1.0

@@ -33,6 +33,13 @@ type Config struct {
 	StorageAccessHost string `env:"STORAGE_ACCESS_HOST"`
 	StorageFormSize   int64  `env:"STORAGE_FORM_SIZE"`
 
+	QueueProvider         string `env:"QUEUE_PROVIDER"`
+	QueueRabbitmqProto    string `env:"QUEUE_RABBITMQ_PROTO"`
+	QueueRabbitmqHost     string `env:"QUEUE_RABBITMQ_HOST"`
+	QueueRabbitmqPort     int    `env:"QUEUE_RABBITMQ_PORT"`
+	QueueRabbitmqUser     string `env:"QUEUE_RABBITMQ_USER"`
+	QueueRabbitmqPassword string `env:"QUEUE_RABBITMQ_PASSWORD"`
+
 	SignatureIssuer string `env:"SIGNATURE_ISSUER"`
 	SignatureKey    string `env:"SIGNATURE_KEY"`
 
