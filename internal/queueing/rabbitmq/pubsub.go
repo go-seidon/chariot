@@ -14,7 +14,7 @@ func (que *rabbitQueue) Publish(ctx context.Context, p queueing.PublishParam) er
 	}
 	defer ch.Close()
 
-	err = ch.PublishWithContext(ctx, p.ExchangeName, "", false, false, amqp.Publishing{
+	err = ch.PublishWithContext(ctx, p.ExchangeName, "", true, false, amqp.Publishing{
 		Body:         p.MessageBody,
 		DeliveryMode: amqp.Persistent,
 	})
