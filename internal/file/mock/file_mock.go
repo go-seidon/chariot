@@ -51,6 +51,21 @@ func (mr *MockFileMockRecorder) GetFileById(ctx, p interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFileById", reflect.TypeOf((*MockFile)(nil).GetFileById), ctx, p)
 }
 
+// ProceedReplication mocks base method.
+func (m *MockFile) ProceedReplication(ctx context.Context, p file.ProceedReplicationParam) (*file.ProceedReplicationResult, *system.SystemError) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProceedReplication", ctx, p)
+	ret0, _ := ret[0].(*file.ProceedReplicationResult)
+	ret1, _ := ret[1].(*system.SystemError)
+	return ret0, ret1
+}
+
+// ProceedReplication indicates an expected call of ProceedReplication.
+func (mr *MockFileMockRecorder) ProceedReplication(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProceedReplication", reflect.TypeOf((*MockFile)(nil).ProceedReplication), ctx, p)
+}
+
 // RetrieveFileBySlug mocks base method.
 func (m *MockFile) RetrieveFileBySlug(ctx context.Context, p file.RetrieveFileBySlugParam) (*file.RetrieveFileBySlugResult, *system.SystemError) {
 	m.ctrl.T.Helper()
