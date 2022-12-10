@@ -54,8 +54,9 @@ type CreateFileResult struct {
 }
 
 type FindFileParam struct {
-	Id   string
-	Slug string
+	Id         string
+	Slug       string
+	LocationId string
 }
 
 type FindFileResult struct {
@@ -83,6 +84,7 @@ type FindFileBarrel struct {
 }
 
 type FindFileLocation struct {
+	Id         string
 	Barrel     FindFileBarrel
 	ExternalId *string
 	Priority   int32

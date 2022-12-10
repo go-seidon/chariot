@@ -202,21 +202,30 @@ func (r *file) FindFile(ctx context.Context, p repository.FindFileParam) (*repos
 		Clauses(dbresolver.Read)
 
 	findRes := query.
-		Select(`id, slug, name, mimetype, extension, size, visibility, status, created_at, updated_at, deleted_at, uploaded_at`).
+		Select(`
+			file.id, file.slug, file.name, file.mimetype, 
+			file.extension, file.size, file.visibility, file.status, 
+			file.created_at, file.updated_at, file.deleted_at, file.uploaded_at
+		`).
 		Preload("Metas", func(tx *gorm.DB) *gorm.DB {
 			return tx.Select("file_id, `key`, value")
 		}).
 		Preload("Locations", func(tx *gorm.DB) *gorm.DB {
-			return tx.Select("file_id, barrel_id, external_id, priority, status, created_at, updated_at, uploaded_at")
+			return tx.Select("id, file_id, barrel_id, external_id, priority, status, created_at, updated_at, uploaded_at")
 		}).
 		Preload("Locations.Barrel", func(tx *gorm.DB) *gorm.DB {
 			return tx.Select("id, code, provider, status")
 		})
 
 	if p.Slug != "" {
-		findRes = findRes.First(file, "slug = ?", p.Slug)
+		findRes = findRes.First(file, "file.slug = ?", p.Slug)
+	} else if p.Id != "" {
+		findRes = findRes.First(file, "file.id = ?", p.Id)
 	} else {
-		findRes = findRes.First(file, "id = ?", p.Id)
+		findRes = findRes.
+			Joins("LEFT JOIN file_location AS fl ON fl.file_id = file.id").
+			Where("fl.id = ?", p.LocationId).
+			First(file)
 	}
 
 	if findRes.Error != nil {
@@ -250,6 +259,7 @@ func (r *file) FindFile(ctx context.Context, p repository.FindFileParam) (*repos
 				Provider: item.Barrel.Provider,
 				Status:   item.Barrel.Status,
 			},
+			Id:         item.Id,
 			ExternalId: externalId,
 			Priority:   item.Priority,
 			Status:     item.Status,
