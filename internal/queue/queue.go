@@ -11,26 +11,20 @@ import (
 )
 
 type Queue interface {
-	Init(ctx context.Context) error
+	Start(ctx context.Context) error
 }
 
 type queue struct {
-	queuer     queueing.Queueing
+	queuer     queueing.Queuer
 	logger     logging.Logger
 	serializer serialization.Serializer
 	fileClient file.File
 }
 
-func (q *queue) Init(ctx context.Context) error {
+func (q *queue) Start(ctx context.Context) error {
 	var err error
 
-	fileHandler := queuehandler.NewFile(queuehandler.FileParam{
-		Logger:     q.logger,
-		Serializer: q.serializer,
-		File:       q.fileClient,
-	})
-
-	err = q.queuer.Init(ctx)
+	err = q.queuer.Open(ctx)
 	if err != nil {
 		return err
 	}
@@ -58,6 +52,12 @@ func (q *queue) Init(ctx context.Context) error {
 		return err
 	}
 
+	fileHandler := queuehandler.NewFile(queuehandler.FileParam{
+		Logger:     q.logger,
+		Serializer: q.serializer,
+		File:       q.fileClient,
+	})
+
 	err = q.queuer.Subscribe(ctx, queueing.SubscribeParam{
 		QueueName: que1.Name,
 		Listener:  fileHandler.ProceedReplication,
@@ -70,7 +70,7 @@ func (q *queue) Init(ctx context.Context) error {
 }
 
 type QueueParam struct {
-	Queuer     queueing.Queueing
+	Queuer     queueing.Queuer
 	Logger     logging.Logger
 	Serializer serialization.Serializer
 	File       file.File

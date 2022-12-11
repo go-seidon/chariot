@@ -34,16 +34,16 @@ func (m *MockQueue) EXPECT() *MockQueueMockRecorder {
 	return m.recorder
 }
 
-// Init mocks base method.
-func (m *MockQueue) Init(ctx context.Context) error {
+// Start mocks base method.
+func (m *MockQueue) Start(ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Init", ctx)
+	ret := m.ctrl.Call(m, "Start", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Init indicates an expected call of Init.
-func (mr *MockQueueMockRecorder) Init(ctx interface{}) *gomock.Call {
+// Start indicates an expected call of Start.
+func (mr *MockQueueMockRecorder) Start(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockQueue)(nil).Init), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockQueue)(nil).Start), ctx)
 }

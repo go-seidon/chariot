@@ -23,7 +23,7 @@ var _ = Describe("Queue Package", func() {
 		var (
 			ctx           context.Context
 			que           queue.Queue
-			queuer        *mock_queueing.MockQueueing
+			queuer        *mock_queueing.MockQueuer
 			decExc1Param  queueing.DeclareExchangeParam
 			decQue1Param  queueing.DeclareQueueParam
 			decQue1Res    *queueing.DeclareQueueResult
@@ -34,7 +34,7 @@ var _ = Describe("Queue Package", func() {
 			ctx = context.Background()
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
-			queuer = mock_queueing.NewMockQueueing(ctrl)
+			queuer = mock_queueing.NewMockQueuer(ctrl)
 			que = queue.NewQueue(queue.QueueParam{
 				Queuer: queuer,
 			})
@@ -58,11 +58,11 @@ var _ = Describe("Queue Package", func() {
 			It("should return error", func() {
 				queuer.
 					EXPECT().
-					Init(gomock.Eq(ctx)).
+					Open(gomock.Eq(ctx)).
 					Return(fmt.Errorf("network error")).
 					Times(1)
 
-				err := que.Init(ctx)
+				err := que.Start(ctx)
 
 				Expect(err).To(Equal(fmt.Errorf("network error")))
 			})
@@ -72,7 +72,7 @@ var _ = Describe("Queue Package", func() {
 			It("should return error", func() {
 				queuer.
 					EXPECT().
-					Init(gomock.Eq(ctx)).
+					Open(gomock.Eq(ctx)).
 					Return(nil).
 					Times(1)
 
@@ -82,7 +82,7 @@ var _ = Describe("Queue Package", func() {
 					Return(fmt.Errorf("network error")).
 					Times(1)
 
-				err := que.Init(ctx)
+				err := que.Start(ctx)
 
 				Expect(err).To(Equal(fmt.Errorf("network error")))
 			})
@@ -92,7 +92,7 @@ var _ = Describe("Queue Package", func() {
 			It("should return error", func() {
 				queuer.
 					EXPECT().
-					Init(gomock.Eq(ctx)).
+					Open(gomock.Eq(ctx)).
 					Return(nil).
 					Times(1)
 
@@ -108,7 +108,7 @@ var _ = Describe("Queue Package", func() {
 					Return(nil, fmt.Errorf("network error")).
 					Times(1)
 
-				err := que.Init(ctx)
+				err := que.Start(ctx)
 
 				Expect(err).To(Equal(fmt.Errorf("network error")))
 			})
@@ -118,7 +118,7 @@ var _ = Describe("Queue Package", func() {
 			It("should return error", func() {
 				queuer.
 					EXPECT().
-					Init(gomock.Eq(ctx)).
+					Open(gomock.Eq(ctx)).
 					Return(nil).
 					Times(1)
 
@@ -140,7 +140,7 @@ var _ = Describe("Queue Package", func() {
 					Return(fmt.Errorf("network error")).
 					Times(1)
 
-				err := que.Init(ctx)
+				err := que.Start(ctx)
 
 				Expect(err).To(Equal(fmt.Errorf("network error")))
 			})
@@ -150,7 +150,7 @@ var _ = Describe("Queue Package", func() {
 			It("should return error", func() {
 				queuer.
 					EXPECT().
-					Init(gomock.Eq(ctx)).
+					Open(gomock.Eq(ctx)).
 					Return(nil).
 					Times(1)
 
@@ -178,7 +178,7 @@ var _ = Describe("Queue Package", func() {
 					Return(fmt.Errorf("network error")).
 					Times(1)
 
-				err := que.Init(ctx)
+				err := que.Start(ctx)
 
 				Expect(err).To(Equal(fmt.Errorf("network error")))
 			})
@@ -188,7 +188,7 @@ var _ = Describe("Queue Package", func() {
 			It("should return result", func() {
 				queuer.
 					EXPECT().
-					Init(gomock.Eq(ctx)).
+					Open(gomock.Eq(ctx)).
 					Return(nil).
 					Times(1)
 
@@ -216,7 +216,7 @@ var _ = Describe("Queue Package", func() {
 					Return(nil).
 					Times(1)
 
-				err := que.Init(ctx)
+				err := que.Start(ctx)
 
 				Expect(err).To(BeNil())
 			})
