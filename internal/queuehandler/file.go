@@ -2,7 +2,6 @@ package queuehandler
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/go-seidon/chariot/api/queue"
@@ -19,49 +18,45 @@ type fileHandler struct {
 	fileClient file.File
 }
 
-// @todo: add implmenetation + unit test
 func (h *fileHandler) ProceedReplication(ctx context.Context, message queueing.Message) error {
-	h.logger.Logf(
-		"Processing message: %s published at: %s",
-		message.GetId(),
-		message.GetPublishedAt().UTC().Format(time.RFC3339),
-	)
-
 	var data queue.ScheduleReplicationMessage
 	err := h.serializer.Unmarshal(message.GetBody(), &data)
 	if err != nil {
-		h.logger.Errorf("Failed unmarshal message: %v", err)
+		ackErr := message.Drop()
+		if ackErr != nil {
+			return ackErr
+		}
 		return err
 	}
 
-	fmt.Println("Id", data.Id)
-	fmt.Println("Priority", data.Priority)
-	fmt.Println("Status", data.Status)
-	fmt.Println("BarrelId", data.BarrelId)
-	fmt.Println("FileId", data.FileId)
-
-	proceeded, ferr := h.fileClient.ProceedReplication(ctx, file.ProceedReplicationParam{
+	proceeded, repErr := h.fileClient.ProceedReplication(ctx, file.ProceedReplicationParam{
 		LocationId: data.Id,
 	})
-	if ferr != nil {
-		h.logger.Errorf("Failed proceed replication: %v", ferr)
-		if ferr.Code != status.RESOURCE_NOTFOUND {
-			err := message.Drop()
-			if err != nil {
-				h.logger.Errorf("Failed nacking message: %v", err)
-				return err
-			}
+	if repErr != nil {
+		var ackErr error
+
+		switch repErr.Code {
+		case status.RESOURCE_NOTFOUND:
+			ackErr = message.Ack()
+		default:
+			ackErr = message.Nack()
 		}
+
+		if ackErr != nil {
+			return ackErr
+		}
+		return repErr
 	}
 
-	err = message.Ack()
-	if err != nil {
-		h.logger.Errorf("Failed acknowledge message: %v", err)
-		return err
+	ackErr := message.Ack()
+	if ackErr != nil {
+		return ackErr
 	}
 
-	h.logger.Infof("%s", proceeded.Success.Message)
-	h.logger.Infof("started at: %s, finished at: %s", proceeded.StartedAt.Format(time.RFC3339), proceeded.ProceededAt.Format(time.RFC3339))
+	h.logger.WithFields(map[string]interface{}{
+		"started_at":  proceeded.StartedAt.Format(time.RFC3339),
+		"finished_at": proceeded.ProceededAt.Format(time.RFC3339),
+	}).Infof(proceeded.Success.Message)
 
 	return nil
 }
