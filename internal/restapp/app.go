@@ -8,7 +8,7 @@ import (
 	"github.com/go-seidon/chariot/internal/auth"
 	"github.com/go-seidon/chariot/internal/barrel"
 	"github.com/go-seidon/chariot/internal/file"
-	"github.com/go-seidon/chariot/internal/queueing"
+	"github.com/go-seidon/chariot/internal/queue"
 	"github.com/go-seidon/chariot/internal/repository"
 	"github.com/go-seidon/chariot/internal/resthandler"
 	"github.com/go-seidon/chariot/internal/restmiddleware"
@@ -21,6 +21,7 @@ import (
 	"github.com/go-seidon/provider/http"
 	"github.com/go-seidon/provider/identifier/ksuid"
 	"github.com/go-seidon/provider/logging"
+	"github.com/go-seidon/provider/serialization"
 	"github.com/go-seidon/provider/serialization/json"
 	"github.com/go-seidon/provider/serialization/protobuf"
 	"github.com/go-seidon/provider/slug/goslug"
@@ -33,7 +34,7 @@ type restApp struct {
 	server     Server
 	logger     logging.Logger
 	repository repository.Provider
-	queueing   queueing.Queueing
+	queue      queue.Queue
 }
 
 func (a *restApp) Run(ctx context.Context) error {
@@ -46,31 +47,7 @@ func (a *restApp) Run(ctx context.Context) error {
 	}
 
 	a.logger.Infof("Initializing queue")
-	err = a.queueing.Init(ctx)
-	if err != nil {
-		return err
-	}
-
-	// @note: move to queueing package once queueing is moved to provider
-	err = a.queueing.DeclareExchange(ctx, queueing.DeclareExchangeParam{
-		ExchangeName: "file_replication",
-		ExchangeType: queueing.EXCHANGE_FANOUT,
-	})
-	if err != nil {
-		return err
-	}
-
-	que, err := a.queueing.DeclareQueue(ctx, queueing.DeclareQueueParam{
-		QueueName: "proceed_file_replication",
-	})
-	if err != nil {
-		return err
-	}
-
-	err = a.queueing.BindQueue(ctx, queueing.BindQueueParam{
-		ExchangeName: "file_replication",
-		QueueName:    que.Name,
-	})
+	err = a.queue.Init(ctx)
 	if err != nil {
 		return err
 	}
@@ -128,13 +105,16 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		}
 	}
 
-	queueing := p.Queueing
+	queueing := p.Queuer
 	if queueing == nil {
 		queueing, err = app.NewDefaultQueueing(p.Config)
 		if err != nil {
 			return nil, err
 		}
 	}
+
+	var fileClient file.File
+	var protobufSerializer serialization.Serializer
 
 	server := p.Server
 	if server == nil {
@@ -146,7 +126,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		ksuidIdentifier := ksuid.NewIdentifier()
 		goSlugger := goslug.NewSlugger()
 		jsonSerializer := json.NewSerializer()
-		protobufSerializer := protobuf.NewSerializer()
+		protobufSerializer = protobuf.NewSerializer()
 		base64Encoder := base64.NewEncoder()
 		httpClient := http.NewClient()
 		clock := datetime.NewClock()
@@ -211,7 +191,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			Identifier: ksuidIdentifier,
 		})
 
-		fileClient := file.NewFile(file.FileParam{
+		fileClient = file.NewFile(file.FileParam{
 			Config: &file.FileConfig{
 				AppHost: p.Config.StorageAccessHost,
 			},
@@ -265,12 +245,22 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		e.GET("/file/:slug", fileHandler.RetrieveFileBySlug)
 	}
 
+	que := p.Queue
+	if que == nil {
+		que = queue.NewQueue(queue.QueueParam{
+			Queuer:     queueing,
+			Logger:     logger,
+			File:       fileClient,
+			Serializer: protobufSerializer,
+		})
+	}
+
 	app := &restApp{
 		server:     server,
 		config:     config,
 		repository: repo,
 		logger:     logger,
-		queueing:   queueing,
+		queue:      que,
 	}
 	return app, nil
 }

@@ -2,9 +2,10 @@ package restapp
 
 import (
 	"github.com/go-seidon/chariot/internal/app"
-	"github.com/go-seidon/chariot/internal/queueing"
+	"github.com/go-seidon/chariot/internal/queue"
 	"github.com/go-seidon/chariot/internal/repository"
 	"github.com/go-seidon/provider/logging"
+	"github.com/go-seidon/provider/queueing"
 )
 
 type RestAppParam struct {
@@ -12,7 +13,8 @@ type RestAppParam struct {
 	Logger     logging.Logger
 	Repository repository.Provider
 	Server     Server
-	Queueing   queueing.Queueing
+	Queuer     queueing.Queueing
+	Queue      queue.Queue
 }
 
 type RestAppOption = func(*RestAppParam)
@@ -41,8 +43,14 @@ func WithServer(s Server) RestAppOption {
 	}
 }
 
-func WithQueueing(que queueing.Queueing) RestAppOption {
+func WithQueuer(queuer queueing.Queueing) RestAppOption {
 	return func(p *RestAppParam) {
-		p.Queueing = que
+		p.Queuer = queuer
+	}
+}
+
+func WithQueue(queue queue.Queue) RestAppOption {
+	return func(p *RestAppParam) {
+		p.Queue = queue
 	}
 }

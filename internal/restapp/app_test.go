@@ -6,13 +6,13 @@ import (
 	"testing"
 
 	"github.com/go-seidon/chariot/internal/app"
-	"github.com/go-seidon/chariot/internal/queueing"
-	mock_queueing "github.com/go-seidon/chariot/internal/queueing/mock"
 	"github.com/go-seidon/chariot/internal/restapp"
 
+	mock_queue "github.com/go-seidon/chariot/internal/queue/mock"
 	mock_repository "github.com/go-seidon/chariot/internal/repository/mock"
 	mock_restapp "github.com/go-seidon/chariot/internal/restapp/mock"
 	mock_logging "github.com/go-seidon/provider/logging/mock"
+	mock_queueing "github.com/go-seidon/provider/queueing/mock"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -125,16 +125,12 @@ var _ = Describe("App Package", func() {
 
 	Context("Start function", Label("unit"), func() {
 		var (
-			rApp         app.App
-			ctx          context.Context
-			server       *mock_restapp.MockServer
-			logger       *mock_logging.MockLogger
-			repo         *mock_repository.MockProvider
-			queue        *mock_queueing.MockQueueing
-			decExcParam  queueing.DeclareExchangeParam
-			decQueParam  queueing.DeclareQueueParam
-			decQueRes    *queueing.DeclareQueueResult
-			bindQueParam queueing.BindQueueParam
+			rApp   app.App
+			ctx    context.Context
+			server *mock_restapp.MockServer
+			logger *mock_logging.MockLogger
+			repo   *mock_repository.MockProvider
+			queue  *mock_queue.MockQueue
 		)
 
 		BeforeEach(func() {
@@ -144,7 +140,8 @@ var _ = Describe("App Package", func() {
 			server = mock_restapp.NewMockServer(ctrl)
 			logger = mock_logging.NewMockLogger(ctrl)
 			repo = mock_repository.NewMockProvider(ctrl)
-			queue = mock_queueing.NewMockQueueing(ctrl)
+			queuer := mock_queueing.NewMockQueueing(ctrl)
+			queue = mock_queue.NewMockQueue(ctrl)
 			config := &app.Config{
 				AppName:     "name",
 				AppVersion:  "version",
@@ -156,22 +153,9 @@ var _ = Describe("App Package", func() {
 				restapp.WithServer(server),
 				restapp.WithLogger(logger),
 				restapp.WithRepository(repo),
-				restapp.WithQueueing(queue),
+				restapp.WithQueue(queue),
+				restapp.WithQueuer(queuer),
 			)
-			decExcParam = queueing.DeclareExchangeParam{
-				ExchangeName: "file_replication",
-				ExchangeType: "fanout",
-			}
-			decQueParam = queueing.DeclareQueueParam{
-				QueueName: "proceed_file_replication",
-			}
-			decQueRes = &queueing.DeclareQueueResult{
-				Name: "proceed_file_replication",
-			}
-			bindQueParam = queueing.BindQueueParam{
-				ExchangeName: "file_replication",
-				QueueName:    "proceed_file_replication",
-			}
 		})
 
 		When("failed init repo", func() {
@@ -241,159 +225,6 @@ var _ = Describe("App Package", func() {
 			})
 		})
 
-		When("failed declare exchange", func() {
-			It("should return error", func() {
-				logger.
-					EXPECT().
-					Infof(
-						gomock.Eq("Running %s:%s"),
-						gomock.Eq("name-rest"),
-						gomock.Eq("version"),
-					).
-					Times(1)
-
-				logger.
-					EXPECT().
-					Infof(gomock.Eq("Initializing repository")).
-					Times(1)
-
-				logger.
-					EXPECT().
-					Infof(gomock.Eq("Initializing queue")).
-					Times(1)
-
-				repo.
-					EXPECT().
-					Init(gomock.Eq(ctx)).
-					Return(nil).
-					Times(1)
-
-				queue.
-					EXPECT().
-					Init(gomock.Eq(ctx)).
-					Return(nil).
-					Times(1)
-
-				queue.
-					EXPECT().
-					DeclareExchange(gomock.Eq(ctx), gomock.Eq(decExcParam)).
-					Return(fmt.Errorf("network error")).
-					Times(1)
-
-				err := rApp.Run(ctx)
-
-				Expect(err).To(Equal(fmt.Errorf("network error")))
-			})
-		})
-
-		When("failed declare queue", func() {
-			It("should return error", func() {
-				logger.
-					EXPECT().
-					Infof(
-						gomock.Eq("Running %s:%s"),
-						gomock.Eq("name-rest"),
-						gomock.Eq("version"),
-					).
-					Times(1)
-
-				logger.
-					EXPECT().
-					Infof(gomock.Eq("Initializing repository")).
-					Times(1)
-
-				logger.
-					EXPECT().
-					Infof(gomock.Eq("Initializing queue")).
-					Times(1)
-
-				repo.
-					EXPECT().
-					Init(gomock.Eq(ctx)).
-					Return(nil).
-					Times(1)
-
-				queue.
-					EXPECT().
-					Init(gomock.Eq(ctx)).
-					Return(nil).
-					Times(1)
-
-				queue.
-					EXPECT().
-					DeclareExchange(gomock.Eq(ctx), gomock.Eq(decExcParam)).
-					Return(nil).
-					Times(1)
-
-				queue.
-					EXPECT().
-					DeclareQueue(gomock.Eq(ctx), gomock.Eq(decQueParam)).
-					Return(nil, fmt.Errorf("network error")).
-					Times(1)
-
-				err := rApp.Run(ctx)
-
-				Expect(err).To(Equal(fmt.Errorf("network error")))
-			})
-		})
-
-		When("failed bind queue to exchange", func() {
-			It("should return error", func() {
-				logger.
-					EXPECT().
-					Infof(
-						gomock.Eq("Running %s:%s"),
-						gomock.Eq("name-rest"),
-						gomock.Eq("version"),
-					).
-					Times(1)
-
-				logger.
-					EXPECT().
-					Infof(gomock.Eq("Initializing repository")).
-					Times(1)
-
-				logger.
-					EXPECT().
-					Infof(gomock.Eq("Initializing queue")).
-					Times(1)
-
-				repo.
-					EXPECT().
-					Init(gomock.Eq(ctx)).
-					Return(nil).
-					Times(1)
-
-				queue.
-					EXPECT().
-					Init(gomock.Eq(ctx)).
-					Return(nil).
-					Times(1)
-
-				queue.
-					EXPECT().
-					DeclareExchange(gomock.Eq(ctx), gomock.Eq(decExcParam)).
-					Return(nil).
-					Times(1)
-
-				queue.
-					EXPECT().
-					DeclareQueue(gomock.Eq(ctx), gomock.Eq(decQueParam)).
-					Return(decQueRes, nil).
-					Times(1)
-
-				queue.
-					EXPECT().
-					BindQueue(gomock.Eq(ctx), gomock.Eq(bindQueParam)).
-					Return(fmt.Errorf("network error")).
-					Times(1)
-
-				err := rApp.Run(ctx)
-
-				Expect(err).To(Equal(fmt.Errorf("network error")))
-			})
-		})
-
 		When("failed start server", func() {
 			It("should return error", func() {
 				logger.
@@ -429,24 +260,6 @@ var _ = Describe("App Package", func() {
 				queue.
 					EXPECT().
 					Init(gomock.Eq(ctx)).
-					Return(nil).
-					Times(1)
-
-				queue.
-					EXPECT().
-					DeclareExchange(gomock.Eq(ctx), gomock.Eq(decExcParam)).
-					Return(nil).
-					Times(1)
-
-				queue.
-					EXPECT().
-					DeclareQueue(gomock.Eq(ctx), gomock.Eq(decQueParam)).
-					Return(decQueRes, nil).
-					Times(1)
-
-				queue.
-					EXPECT().
-					BindQueue(gomock.Eq(ctx), gomock.Eq(bindQueParam)).
 					Return(nil).
 					Times(1)
 
@@ -500,24 +313,6 @@ var _ = Describe("App Package", func() {
 					Return(nil).
 					Times(1)
 
-				queue.
-					EXPECT().
-					DeclareExchange(gomock.Eq(ctx), gomock.Eq(decExcParam)).
-					Return(nil).
-					Times(1)
-
-				queue.
-					EXPECT().
-					DeclareQueue(gomock.Eq(ctx), gomock.Eq(decQueParam)).
-					Return(decQueRes, nil).
-					Times(1)
-
-				queue.
-					EXPECT().
-					BindQueue(gomock.Eq(ctx), gomock.Eq(bindQueParam)).
-					Return(nil).
-					Times(1)
-
 				server.
 					EXPECT().
 					Start(gomock.Eq("host:1")).
@@ -533,12 +328,12 @@ var _ = Describe("App Package", func() {
 
 	Context("Stop function", Label("unit"), func() {
 		var (
-			rApp     app.App
-			ctx      context.Context
-			server   *mock_restapp.MockServer
-			logger   *mock_logging.MockLogger
-			repo     *mock_repository.MockProvider
-			queueing *mock_queueing.MockQueueing
+			rApp   app.App
+			ctx    context.Context
+			server *mock_restapp.MockServer
+			logger *mock_logging.MockLogger
+			repo   *mock_repository.MockProvider
+			queue  *mock_queue.MockQueue
 		)
 
 		BeforeEach(func() {
@@ -548,7 +343,8 @@ var _ = Describe("App Package", func() {
 			server = mock_restapp.NewMockServer(ctrl)
 			logger = mock_logging.NewMockLogger(ctrl)
 			repo = mock_repository.NewMockProvider(ctrl)
-			queueing = mock_queueing.NewMockQueueing(ctrl)
+			queuer := mock_queueing.NewMockQueueing(ctrl)
+			queue = mock_queue.NewMockQueue(ctrl)
 			config := &app.Config{
 				AppName:     "name",
 				AppVersion:  "version",
@@ -560,7 +356,8 @@ var _ = Describe("App Package", func() {
 				restapp.WithServer(server),
 				restapp.WithLogger(logger),
 				restapp.WithRepository(repo),
-				restapp.WithQueueing(queueing),
+				restapp.WithQueue(queue),
+				restapp.WithQueuer(queuer),
 			)
 		})
 
