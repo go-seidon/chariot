@@ -5,7 +5,6 @@ import (
 
 	"github.com/go-seidon/chariot/internal/file"
 	"github.com/go-seidon/chariot/internal/queuehandler"
-	"github.com/go-seidon/provider/logging"
 	"github.com/go-seidon/provider/queueing"
 	"github.com/go-seidon/provider/serialization"
 )
@@ -16,7 +15,6 @@ type Queue interface {
 
 type queue struct {
 	queuer     queueing.Queuer
-	logger     logging.Logger
 	serializer serialization.Serializer
 	fileClient file.File
 }
@@ -53,7 +51,6 @@ func (q *queue) Start(ctx context.Context) error {
 	}
 
 	fileHandler := queuehandler.NewFile(queuehandler.FileParam{
-		Logger:     q.logger,
 		Serializer: q.serializer,
 		File:       q.fileClient,
 	})
@@ -71,7 +68,6 @@ func (q *queue) Start(ctx context.Context) error {
 
 type QueueParam struct {
 	Queuer     queueing.Queuer
-	Logger     logging.Logger
 	Serializer serialization.Serializer
 	File       file.File
 }
@@ -79,7 +75,6 @@ type QueueParam struct {
 func NewQueue(p QueueParam) *queue {
 	return &queue{
 		queuer:     p.Queuer,
-		logger:     p.Logger,
 		serializer: p.Serializer,
 		fileClient: p.File,
 	}
