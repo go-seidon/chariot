@@ -8,7 +8,6 @@ import (
 	"github.com/go-seidon/chariot/internal/file"
 	mock_file "github.com/go-seidon/chariot/internal/file/mock"
 	"github.com/go-seidon/chariot/internal/queuehandler"
-	mock_logging "github.com/go-seidon/provider/logging/mock"
 	"github.com/go-seidon/provider/queueing"
 	mock_queueing "github.com/go-seidon/provider/queueing/mock"
 	mock_serialization "github.com/go-seidon/provider/serialization/mock"
@@ -26,7 +25,6 @@ var _ = Describe("File Handler", func() {
 			ctx        context.Context
 			currentTs  time.Time
 			h          queueing.Listener
-			logger     *mock_logging.MockLogger
 			serializer *mock_serialization.MockSerializer
 			fileClient *mock_file.MockFile
 			message    *mock_queueing.MockMessage
@@ -38,12 +36,10 @@ var _ = Describe("File Handler", func() {
 			currentTs = time.Now().UTC()
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
-			logger = mock_logging.NewMockLogger(ctrl)
 			serializer = mock_serialization.NewMockSerializer(ctrl)
 			fileClient = mock_file.NewMockFile(ctrl)
 			message = mock_queueing.NewMockMessage(ctrl)
 			fileHandler := queuehandler.NewFile(queuehandler.FileParam{
-				Logger:     logger,
 				Serializer: serializer,
 				File:       fileClient,
 			})
@@ -53,12 +49,10 @@ var _ = Describe("File Handler", func() {
 					Code:    1000,
 					Message: "success replicate file",
 				},
-				StartedAt:   currentTs,
-				ProceededAt: currentTs,
-				LocationId:  typeconv.String("lid"),
-				BarrelId:    typeconv.String("bid"),
-				ExternalId:  typeconv.String("eid"),
-				UploadedAt:  typeconv.Time(currentTs),
+				LocationId: typeconv.String("lid"),
+				BarrelId:   typeconv.String("bid"),
+				ExternalId: typeconv.String("eid"),
+				UploadedAt: typeconv.Time(currentTs),
 			}
 		})
 
@@ -278,17 +272,6 @@ var _ = Describe("File Handler", func() {
 					EXPECT().
 					Ack().
 					Return(nil).
-					Times(1)
-
-				logger.
-					EXPECT().
-					WithFields(gomock.Any()).
-					Return(logger).
-					Times(1)
-
-				logger.
-					EXPECT().
-					Infof("success replicate file").
 					Times(1)
 
 				err := h(ctx, message)
