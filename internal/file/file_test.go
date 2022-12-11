@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/go-seidon/chariot/internal/file"
-	"github.com/go-seidon/chariot/internal/queueing"
-	mock_queueing "github.com/go-seidon/chariot/internal/queueing/mock"
 	"github.com/go-seidon/chariot/internal/repository"
 	mock_repository "github.com/go-seidon/chariot/internal/repository/mock"
 	"github.com/go-seidon/chariot/internal/session"
@@ -19,6 +17,8 @@ import (
 	mock_datetime "github.com/go-seidon/provider/datetime/mock"
 	mock_identifier "github.com/go-seidon/provider/identifier/mock"
 	mock_io "github.com/go-seidon/provider/io/mock"
+	"github.com/go-seidon/provider/queueing"
+	mock_queueing "github.com/go-seidon/provider/queueing/mock"
 	mock_serialization "github.com/go-seidon/provider/serialization/mock"
 	mock_slug "github.com/go-seidon/provider/slug/mock"
 	"github.com/go-seidon/provider/system"

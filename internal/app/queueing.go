@@ -3,9 +3,9 @@ package app
 import (
 	"fmt"
 
-	"github.com/go-seidon/chariot/internal/queueing"
-	"github.com/go-seidon/chariot/internal/queueing/rabbitmq"
-	conn "github.com/go-seidon/chariot/internal/rabbitmq"
+	"github.com/go-seidon/provider/queueing"
+	"github.com/go-seidon/provider/queueing/rabbitmq"
+	conn "github.com/go-seidon/provider/rabbitmq"
 )
 
 func NewDefaultQueueing(config *Config) (queueing.Queueing, error) {
