@@ -11,3 +11,9 @@ message ScheduleReplicationMessage {
   int32 priority = 4;
   string status = 5;
 }
+
+message DeleteFileMessage {
+  string file_id = 1;
+  string status = 2;
+  int64 requested_at = 3;
+}
