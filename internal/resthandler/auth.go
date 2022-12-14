@@ -3,7 +3,7 @@ package resthandler
 import (
 	"net/http"
 
-	"github.com/go-seidon/chariot/generated/restapp"
+	"github.com/go-seidon/chariot/api/restapp"
 	"github.com/go-seidon/chariot/internal/auth"
 	"github.com/go-seidon/provider/status"
 	"github.com/go-seidon/provider/typeconv"

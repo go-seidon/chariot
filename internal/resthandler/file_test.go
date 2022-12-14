@@ -10,7 +10,7 @@ import (
 	"net/http/httptest"
 	"time"
 
-	"github.com/go-seidon/chariot/generated/restapp"
+	"github.com/go-seidon/chariot/api/restapp"
 	"github.com/go-seidon/chariot/internal/file"
 	mock_file "github.com/go-seidon/chariot/internal/file/mock"
 	"github.com/go-seidon/chariot/internal/resthandler"

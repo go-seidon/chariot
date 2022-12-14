@@ -1,17 +1,17 @@
-## sonar 
-.scannerwork
-*.out
-
 ## golang
 vendor/*
 *.test
 
+## sonar 
+.scannerwork
+*.out
+
 ## app
-*.env
+cmd/*test
 temp/*
 storage/*
-cmd/*test
+*.env
 
 # open api
-generated/restapp/main.all.yml
-generated/restapp/main.all.json
+api/restapp/main.all.yml
+api/restapp/main.all.json

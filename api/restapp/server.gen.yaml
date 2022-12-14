@@ -1,4 +1,4 @@
 package: restapp
 generate:
   - server
-output: generated/restapp/server.gen.go
+output: api/restapp/server.gen.go
