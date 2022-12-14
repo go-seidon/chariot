@@ -1058,6 +1058,141 @@ var _ = Describe("File Handler", func() {
 		})
 	})
 
+	Context("DeleteFileById function", Label("unit"), func() {
+		var (
+			currentTs   time.Time
+			ctx         echo.Context
+			h           func(ctx echo.Context) error
+			rec         *httptest.ResponseRecorder
+			fileClient  *mock_file.MockFile
+			deleteParam file.DeleteFileByIdParam
+			deleteRes   *file.DeleteFileByIdResult
+		)
+
+		BeforeEach(func() {
+			currentTs = time.Now().UTC()
+
+			req := httptest.NewRequest(http.MethodPost, "/", nil)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec = httptest.NewRecorder()
+
+			e := echo.New()
+			ctx = e.NewContext(req, rec)
+			ctx.SetParamNames("id")
+			ctx.SetParamValues("id")
+
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			fileClient = mock_file.NewMockFile(ctrl)
+			fileHandler := resthandler.NewFile(resthandler.FileParam{
+				File: fileClient,
+			})
+			h = fileHandler.DeleteFileById
+			deleteParam = file.DeleteFileByIdParam{
+				Id: "id",
+			}
+			deleteRes = &file.DeleteFileByIdResult{
+				Success: system.SystemSuccess{
+					Code:    1000,
+					Message: "success delete file",
+				},
+				RequestedAt: currentTs,
+			}
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				fileClient.
+					EXPECT().
+					DeleteFileById(gomock.Eq(ctx.Request().Context()), gomock.Eq(deleteParam)).
+					Return(nil, &system.SystemError{
+						Code:    1002,
+						Message: "invalid data",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 400,
+					Message: &restapp.ResponseBodyInfo{
+						Code:    1002,
+						Message: "invalid data",
+					},
+				}))
+			})
+		})
+
+		When("file is not available", func() {
+			It("should return error", func() {
+				fileClient.
+					EXPECT().
+					DeleteFileById(gomock.Eq(ctx.Request().Context()), gomock.Eq(deleteParam)).
+					Return(nil, &system.SystemError{
+						Code:    1004,
+						Message: "file is not available",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 404,
+					Message: &restapp.ResponseBodyInfo{
+						Code:    1004,
+						Message: "file is not available",
+					},
+				}))
+			})
+		})
+
+		When("failed delete file", func() {
+			It("should return error", func() {
+				fileClient.
+					EXPECT().
+					DeleteFileById(gomock.Eq(ctx.Request().Context()), gomock.Eq(deleteParam)).
+					Return(nil, &system.SystemError{
+						Code:    1001,
+						Message: "network error",
+					}).
+					Times(1)
+
+				err := h(ctx)
+
+				Expect(err).To(Equal(&echo.HTTPError{
+					Code: 500,
+					Message: &restapp.ResponseBodyInfo{
+						Code:    1001,
+						Message: "network error",
+					},
+				}))
+			})
+		})
+
+		When("success delete file", func() {
+			It("should return error", func() {
+				fileClient.
+					EXPECT().
+					DeleteFileById(gomock.Eq(ctx.Request().Context()), gomock.Eq(deleteParam)).
+					Return(deleteRes, nil).
+					Times(1)
+
+				err := h(ctx)
+
+				res := &restapp.DeleteFileByIdResponse{}
+				encoding_json.Unmarshal(rec.Body.Bytes(), res)
+
+				Expect(err).To(BeNil())
+				Expect(rec.Code).To(Equal(http.StatusOK))
+				Expect(res.Code).To(Equal(int32(1000)))
+				Expect(res.Message).To(Equal("success delete file"))
+				Expect(res.Data).To(Equal(restapp.DeleteFileByIdData{
+					RequestedAt: currentTs.UnixMilli(),
+				}))
+			})
+		})
+	})
+
 	Context("ScheduleReplication function", Label("unit"), func() {
 		var (
 			currentTs     time.Time

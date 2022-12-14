@@ -306,6 +306,33 @@ func (h *fileHandler) SearchFile(ctx echo.Context) error {
 	})
 }
 
+func (h *fileHandler) DeleteFileById(ctx echo.Context) error {
+	deleteFile, err := h.fileClient.DeleteFileById(ctx.Request().Context(), file.DeleteFileByIdParam{
+		Id: ctx.Param("id"),
+	})
+	if err != nil {
+		httpCode := http.StatusInternalServerError
+		switch err.Code {
+		case status.INVALID_PARAM:
+			httpCode = http.StatusBadRequest
+		case status.RESOURCE_NOTFOUND:
+			httpCode = http.StatusNotFound
+		}
+		return echo.NewHTTPError(httpCode, &restapp.ResponseBodyInfo{
+			Code:    err.Code,
+			Message: err.Message,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, &restapp.DeleteFileByIdResponse{
+		Code:    deleteFile.Success.Code,
+		Message: deleteFile.Success.Message,
+		Data: restapp.DeleteFileByIdData{
+			RequestedAt: deleteFile.RequestedAt.UnixMilli(),
+		},
+	})
+}
+
 func (h *fileHandler) ScheduleReplication(ctx echo.Context) error {
 	req := &restapp.ScheduleReplicationRequest{}
 	if err := ctx.Bind(req); err != nil {
