@@ -156,9 +156,11 @@ type SearchLocationItem struct {
 }
 
 type UpdateLocationByIdsParam struct {
-	Ids       []string
-	Status    string
-	UpdatedAt time.Time
+	Ids        []string
+	Status     *string
+	ExternalId *string
+	UploadedAt *time.Time
+	UpdatedAt  time.Time
 }
 
 type UpdateLocationByIdsResult struct {

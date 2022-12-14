@@ -1816,7 +1816,7 @@ var _ = Describe("File Repository", func() {
 
 			p = repository.UpdateLocationByIdsParam{
 				Ids:       []string{"i1", "i2", "i3"},
-				Status:    "uploading",
+				Status:    typeconv.String("uploading"),
 				UpdatedAt: currentTs,
 			}
 			r = &repository.UpdateLocationByIdsResult{
@@ -1950,5 +1950,43 @@ var _ = Describe("File Repository", func() {
 				Expect(err).To(BeNil())
 			})
 		})
+
+		When("success update all location data", func() {
+			It("should return result", func() {
+				p := repository.UpdateLocationByIdsParam{
+					Ids:        []string{"i1", "i2", "i3"},
+					Status:     typeconv.String("uploading"),
+					ExternalId: typeconv.String("id"),
+					UploadedAt: typeconv.Time(currentTs),
+					UpdatedAt:  currentTs,
+				}
+
+				dbClient.
+					ExpectBegin()
+
+				updateStmt := regexp.QuoteMeta("UPDATE `file_location` SET `external_id`=?,`status`=?,`updated_at`=?,`uploaded_at`=? WHERE id IN (?,?,?)")
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.ExternalId,
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.UploadedAt.UnixMilli(),
+						p.Ids[0],
+						p.Ids[1],
+						p.Ids[2],
+					).
+					WillReturnResult(sqlmock.NewResult(3, 3))
+
+				dbClient.
+					ExpectCommit()
+
+				res, err := fileRepo.UpdateLocationByIds(ctx, p)
+
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+
 	})
 })

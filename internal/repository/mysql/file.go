@@ -475,13 +475,23 @@ func (r *file) UpdateLocationByIds(ctx context.Context, p repository.UpdateLocat
 		return nil, tx.Error
 	}
 
+	data := map[string]interface{}{
+		"updated_at": p.UpdatedAt.UnixMilli(),
+	}
+	if p.Status != nil {
+		data["status"] = p.Status
+	}
+	if p.ExternalId != nil {
+		data["external_id"] = p.ExternalId
+	}
+	if p.UploadedAt != nil {
+		data["uploaded_at"] = p.UploadedAt.UnixMilli()
+	}
+
 	updateRes := tx.
 		Model(&FileLocation{}).
 		Where("id IN ?", p.Ids).
-		Updates(map[string]interface{}{
-			"status":     p.Status,
-			"updated_at": p.UpdatedAt.UnixMilli(),
-		})
+		Updates(data)
 	if updateRes.Error != nil {
 		txRes := tx.Rollback()
 		if txRes.Error != nil {
