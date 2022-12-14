@@ -930,6 +930,7 @@ var _ = Describe("File Package", func() {
 			}
 			findFileRes = &repository.FindFileResult{
 				Id:         "id",
+				Status:     "available",
 				Visibility: "public",
 				Locations: []repository.FindFileLocation{
 					{
@@ -970,6 +971,7 @@ var _ = Describe("File Package", func() {
 				Data:       fileData,
 				Id:         findFileRes.Id,
 				Visibility: findFileRes.Visibility,
+				Status:     findFileRes.Status,
 			}
 			verifyParam = session.VerifySessionParam{
 				Token:   p.Token,
@@ -1049,6 +1051,7 @@ var _ = Describe("File Package", func() {
 				findFileRes := &repository.FindFileResult{
 					Id:         "id",
 					Visibility: "protected",
+					Status:     "available",
 					Locations: []repository.FindFileLocation{
 						{
 							Barrel: repository.FindFileBarrel{
@@ -1112,6 +1115,7 @@ var _ = Describe("File Package", func() {
 					Times(1)
 
 				findFileRes = &repository.FindFileResult{
+					Status: "available",
 					Locations: []repository.FindFileLocation{
 						{
 							Barrel: repository.FindFileBarrel{
@@ -1143,6 +1147,7 @@ var _ = Describe("File Package", func() {
 					Times(1)
 
 				findFileRes = &repository.FindFileResult{
+					Status:    "available",
 					Locations: []repository.FindFileLocation{},
 				}
 				fileRepo.
@@ -1231,6 +1236,7 @@ var _ = Describe("File Package", func() {
 				findFileRes := &repository.FindFileResult{
 					Id:         "id",
 					Visibility: "public",
+					Status:     "available",
 					Locations: []repository.FindFileLocation{
 						{
 							Barrel: repository.FindFileBarrel{
@@ -1322,6 +1328,7 @@ var _ = Describe("File Package", func() {
 				findFileRes := &repository.FindFileResult{
 					Id:         "id",
 					Visibility: "public",
+					Status:     "available",
 					Locations: []repository.FindFileLocation{
 						{
 							Barrel: repository.FindFileBarrel{
@@ -1414,6 +1421,7 @@ var _ = Describe("File Package", func() {
 				findFileRes := &repository.FindFileResult{
 					Id:         "id",
 					Visibility: "protected",
+					Status:     "available",
 					Locations: []repository.FindFileLocation{
 						{
 							Barrel: repository.FindFileBarrel{
@@ -1479,6 +1487,7 @@ var _ = Describe("File Package", func() {
 					Data:       fileData,
 					Id:         findFileRes.Id,
 					Visibility: findFileRes.Visibility,
+					Status:     findFileRes.Status,
 				}
 				Expect(res).To(Equal(r))
 				Expect(err).To(BeNil())

@@ -428,6 +428,13 @@ func (f *file) RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam
 		}
 	}
 
+	if findFile.Status != STATUS_AVAILABLE {
+		return nil, &system.SystemError{
+			Code:    status.RESOURCE_NOTFOUND,
+			Message: "file is not available",
+		}
+	}
+
 	if findFile.Visibility == VISIBILITY_PROTECTED {
 		_, err := f.sessionClient.VerifySession(ctx, session.VerifySessionParam{
 			Token:   p.Token,
