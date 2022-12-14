@@ -77,16 +77,13 @@ TBA
 ```
 
 ## Todo
-1. Admin: DeleteFileById
-- proceed pending delete
-- choose when to permanently delete the file
-2. Daemonapp: Proceed Delete File
-- delete pending file concurrently
-3. Devs: Enhancement
+1. Queue: Proceed Delete File
+- delete file location (replica) concurrently
+2. Devs: Enhancement
 - Override default error handler (echo router)
 - Unit test: app NewDefaultConfig
 - Unit test: storage multipart test
-4. Admin: dashboard monitoring
+3. Admin: dashboard monitoring
 - data exporter: CollectMetris
 - prometheus (rest exporter)
 - grafana
