@@ -1227,6 +1227,40 @@ var _ = Describe("File Package", func() {
 					Return(nil).
 					Times(1)
 
+				findFileRes := &repository.FindFileResult{
+					Id:         "id",
+					Visibility: "public",
+					Locations: []repository.FindFileLocation{
+						{
+							Barrel: repository.FindFileBarrel{
+								Id:       "b1",
+								Code:     "b1",
+								Provider: "goseidon_hippo",
+								Status:   "active",
+							},
+							ExternalId: typeconv.String("e1"),
+							Priority:   1,
+							Status:     "available",
+							CreatedAt:  currentTs,
+							UpdatedAt:  typeconv.Time(currentTs),
+							UploadedAt: typeconv.Time(currentTs),
+						},
+						{
+							Barrel: repository.FindFileBarrel{
+								Id:       "b2",
+								Code:     "b2",
+								Provider: "goseidon_hippo",
+								Status:   "active",
+							},
+							ExternalId: typeconv.String("e2"),
+							Priority:   2,
+							Status:     "available",
+							CreatedAt:  currentTs,
+							UpdatedAt:  typeconv.Time(currentTs),
+							UploadedAt: typeconv.Time(currentTs),
+						},
+					},
+				}
 				fileRepo.
 					EXPECT().
 					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
@@ -1284,6 +1318,40 @@ var _ = Describe("File Package", func() {
 					Return(nil).
 					Times(1)
 
+				findFileRes := &repository.FindFileResult{
+					Id:         "id",
+					Visibility: "public",
+					Locations: []repository.FindFileLocation{
+						{
+							Barrel: repository.FindFileBarrel{
+								Id:       "b1",
+								Code:     "b1",
+								Provider: "goseidon_hippo",
+								Status:   "active",
+							},
+							ExternalId: typeconv.String("e1"),
+							Priority:   1,
+							Status:     "available",
+							CreatedAt:  currentTs,
+							UpdatedAt:  typeconv.Time(currentTs),
+							UploadedAt: typeconv.Time(currentTs),
+						},
+						{
+							Barrel: repository.FindFileBarrel{
+								Id:       "b2",
+								Code:     "b2",
+								Provider: "goseidon_hippo",
+								Status:   "active",
+							},
+							ExternalId: typeconv.String("e2"),
+							Priority:   2,
+							Status:     "available",
+							CreatedAt:  currentTs,
+							UpdatedAt:  typeconv.Time(currentTs),
+							UploadedAt: typeconv.Time(currentTs),
+						},
+					},
+				}
 				fileRepo.
 					EXPECT().
 					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
@@ -1413,6 +1481,46 @@ var _ = Describe("File Package", func() {
 				}
 				Expect(res).To(Equal(r))
 				Expect(err).To(BeNil())
+			})
+		})
+
+		When("replicas are unavailable", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				createStgParam := router.CreateStorageParam{
+					BarrelCode: "b1",
+				}
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(storagePrimary, nil).
+					Times(1)
+
+				retrieveParam := storage.RetrieveObjectParam{
+					ObjectId: "e1",
+				}
+				storagePrimary.
+					EXPECT().
+					RetrieveObject(gomock.Eq(ctx), gomock.Eq(retrieveParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := fileClient.RetrieveFileBySlug(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("file replicas are not available"))
 			})
 		})
 	})

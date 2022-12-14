@@ -441,6 +441,13 @@ func (f *file) RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam
 			continue
 		}
 
+		if location.Status != STATUS_AVAILABLE {
+			if i+1 == len(findFile.Locations) {
+				ferr = fmt.Errorf("file replicas are not available")
+			}
+			continue
+		}
+
 		st, err := f.router.CreateStorage(ctx, router.CreateStorageParam{
 			BarrelCode: location.Barrel.Code,
 		})
