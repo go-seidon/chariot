@@ -25,11 +25,12 @@ import (
 )
 
 const (
-	STATUS_PENDING   = "pending"
-	STATUS_UPLOADING = "uploading"
-	STATUS_AVAILABLE = "available"
-	STATUS_DELETING  = "deleting"
-	STATUS_DELETED   = "deleted"
+	STATUS_PENDING     = "pending"
+	STATUS_REPLICATING = "replicating"
+	STATUS_UPLOADING   = "uploading"
+	STATUS_AVAILABLE   = "available"
+	STATUS_DELETING    = "deleting"
+	STATUS_DELETED     = "deleted"
 
 	VISIBILITY_PUBLIC    = "public"
 	VISIBILITY_PROTECTED = "protected"
@@ -197,13 +198,11 @@ type ProceedReplicationParam struct {
 }
 
 type ProceedReplicationResult struct {
-	Success     system.SystemSuccess
-	StartedAt   time.Time
-	ProceededAt time.Time
-	LocationId  *string
-	BarrelId    *string
-	ExternalId  *string
-	UploadedAt  *time.Time
+	Success    system.SystemSuccess
+	LocationId *string
+	BarrelId   *string
+	ExternalId *string
+	UploadedAt *time.Time
 }
 
 type file struct {
@@ -684,7 +683,7 @@ func (f *file) ScheduleReplication(ctx context.Context, p ScheduleReplicationPar
 	currentTs := f.clock.Now().UTC()
 	_, err = f.fileRepo.UpdateLocationByIds(ctx, repository.UpdateLocationByIdsParam{
 		Ids:       ids,
-		Status:    STATUS_UPLOADING,
+		Status:    typeconv.String(STATUS_REPLICATING),
 		UpdatedAt: currentTs,
 	})
 	if err != nil {
@@ -719,8 +718,6 @@ func (f *file) ScheduleReplication(ctx context.Context, p ScheduleReplicationPar
 }
 
 func (f *file) ProceedReplication(ctx context.Context, p ProceedReplicationParam) (*ProceedReplicationResult, *system.SystemError) {
-	startedAt := f.clock.Now().UTC()
-
 	err := f.validator.Validate(p)
 	if err != nil {
 		return nil, &system.SystemError{
@@ -757,17 +754,27 @@ func (f *file) ProceedReplication(ctx context.Context, p ProceedReplicationParam
 		}
 	}
 
-	if replicaLocation.Status != STATUS_UPLOADING {
-		currentTs := f.clock.Now().UTC()
+	if replicaLocation.Status != STATUS_REPLICATING {
 		res := &ProceedReplicationResult{
 			Success: system.SystemSuccess{
 				Code:    status.ACTION_SUCCESS,
 				Message: "replication is already proceeded",
 			},
-			StartedAt:   startedAt,
-			ProceededAt: currentTs,
 		}
 		return res, nil
+	}
+
+	currentTs := f.clock.Now().UTC()
+	_, err = f.fileRepo.UpdateLocationByIds(ctx, repository.UpdateLocationByIdsParam{
+		Ids:       []string{replicaLocation.Id},
+		Status:    typeconv.String(STATUS_UPLOADING),
+		UpdatedAt: currentTs,
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
 	}
 
 	primaryStorage, err := f.router.CreateStorage(ctx, router.CreateStorageParam{
@@ -813,11 +820,13 @@ func (f *file) ProceedReplication(ctx context.Context, p ProceedReplicationParam
 		}
 	}
 
-	currentTs := f.clock.Now().UTC()
+	currentTs = f.clock.Now().UTC()
 	_, err = f.fileRepo.UpdateLocationByIds(ctx, repository.UpdateLocationByIdsParam{
-		Ids:       []string{replicaLocation.Id},
-		Status:    STATUS_AVAILABLE,
-		UpdatedAt: currentTs,
+		Ids:        []string{replicaLocation.Id},
+		Status:     typeconv.String(STATUS_AVAILABLE),
+		ExternalId: typeconv.String(uploaded.ObjectId),
+		UploadedAt: typeconv.Time(uploaded.UploadedAt),
+		UpdatedAt:  currentTs,
 	})
 	if err != nil {
 		return nil, &system.SystemError{
@@ -831,12 +840,10 @@ func (f *file) ProceedReplication(ctx context.Context, p ProceedReplicationParam
 			Code:    status.ACTION_SUCCESS,
 			Message: "success replicate file",
 		},
-		StartedAt:   startedAt,
-		ProceededAt: currentTs,
-		ExternalId:  typeconv.String(uploaded.ObjectId),
-		LocationId:  typeconv.String(replicaLocation.Id),
-		BarrelId:    typeconv.String(replicaLocation.Barrel.Id),
-		UploadedAt:  typeconv.Time(uploaded.UploadedAt),
+		ExternalId: typeconv.String(uploaded.ObjectId),
+		LocationId: typeconv.String(replicaLocation.Id),
+		BarrelId:   typeconv.String(replicaLocation.Barrel.Id),
+		UploadedAt: typeconv.Time(uploaded.UploadedAt),
 	}
 	return res, nil
 }

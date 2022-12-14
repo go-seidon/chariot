@@ -1930,7 +1930,7 @@ var _ = Describe("File Package", func() {
 			}
 			updateParam = repository.UpdateLocationByIdsParam{
 				Ids:       []string{"i1", "i2", "i3"},
-				Status:    "uploading",
+				Status:    typeconv.String("replicating"),
 				UpdatedAt: currentTs,
 			}
 			publishParam = queueing.PublishParam{
@@ -2182,31 +2182,33 @@ var _ = Describe("File Package", func() {
 	Context("ProceedReplication function", Label("unit"), func() {
 
 		var (
-			ctx            context.Context
-			currentTs      time.Time
-			fileClient     file.File
-			validator      *mock_validation.MockValidator
-			identifier     *mock_identifier.MockIdentifier
-			clock          *mock_datetime.MockClock
-			slugger        *mock_slug.MockSlugger
-			barrelRepo     *mock_repository.MockBarrel
-			fileRepo       *mock_repository.MockFile
-			storageRouter  *mock_storage.MockRouter
-			primaryStorage *mock_storage.MockStorage
-			replicaStorage *mock_storage.MockStorage
-			serializer     *mock_serialization.MockSerializer
-			pubsub         *mock_queueing.MockPubsub
-			p              file.ProceedReplicationParam
-			findParam      repository.FindFileParam
-			findRes        *repository.FindFileResult
-			primParam      router.CreateStorageParam
-			replParam      router.CreateStorageParam
-			retrParam      storage.RetrieveObjectParam
-			retrRes        *storage.RetrieveObjectResult
-			uploadRes      *storage.UploadObjectResult
-			updateParam    repository.UpdateLocationByIdsParam
-			updateRes      *repository.UpdateLocationByIdsResult
-			r              *file.ProceedReplicationResult
+			ctx               context.Context
+			currentTs         time.Time
+			fileClient        file.File
+			validator         *mock_validation.MockValidator
+			identifier        *mock_identifier.MockIdentifier
+			clock             *mock_datetime.MockClock
+			slugger           *mock_slug.MockSlugger
+			barrelRepo        *mock_repository.MockBarrel
+			fileRepo          *mock_repository.MockFile
+			storageRouter     *mock_storage.MockRouter
+			primaryStorage    *mock_storage.MockStorage
+			replicaStorage    *mock_storage.MockStorage
+			serializer        *mock_serialization.MockSerializer
+			pubsub            *mock_queueing.MockPubsub
+			p                 file.ProceedReplicationParam
+			findParam         repository.FindFileParam
+			findRes           *repository.FindFileResult
+			primParam         router.CreateStorageParam
+			replParam         router.CreateStorageParam
+			retrParam         storage.RetrieveObjectParam
+			retrRes           *storage.RetrieveObjectResult
+			uploadRes         *storage.UploadObjectResult
+			updateUploadParam repository.UpdateLocationByIdsParam
+			updateUploadRes   *repository.UpdateLocationByIdsResult
+			updateParam       repository.UpdateLocationByIdsParam
+			updateRes         *repository.UpdateLocationByIdsResult
+			r                 *file.ProceedReplicationResult
 		)
 
 		BeforeEach(func() {
@@ -2253,7 +2255,7 @@ var _ = Describe("File Package", func() {
 					{
 						Id:       "loc2",
 						Priority: 2,
-						Status:   "uploading",
+						Status:   "replicating",
 						Barrel: repository.FindFileBarrel{
 							Id:   "b2",
 							Code: "b2",
@@ -2288,10 +2290,20 @@ var _ = Describe("File Package", func() {
 				ObjectId:   "e2",
 				UploadedAt: currentTs,
 			}
-			updateParam = repository.UpdateLocationByIdsParam{
+			updateUploadParam = repository.UpdateLocationByIdsParam{
 				Ids:       []string{"loc2"},
-				Status:    "available",
+				Status:    typeconv.String("uploading"),
 				UpdatedAt: currentTs,
+			}
+			updateUploadRes = &repository.UpdateLocationByIdsResult{
+				TotalUpdated: 1,
+			}
+			updateParam = repository.UpdateLocationByIdsParam{
+				Ids:        []string{"loc2"},
+				Status:     typeconv.String("available"),
+				ExternalId: typeconv.String("e2"),
+				UploadedAt: typeconv.Time(currentTs),
+				UpdatedAt:  currentTs,
 			}
 			updateRes = &repository.UpdateLocationByIdsResult{
 				TotalUpdated: 1,
@@ -2301,23 +2313,15 @@ var _ = Describe("File Package", func() {
 					Code:    1000,
 					Message: "success replicate file",
 				},
-				StartedAt:   currentTs,
-				ProceededAt: currentTs,
-				LocationId:  typeconv.String("loc2"),
-				BarrelId:    typeconv.String("b2"),
-				ExternalId:  typeconv.String("e2"),
-				UploadedAt:  typeconv.Time(currentTs),
+				LocationId: typeconv.String("loc2"),
+				BarrelId:   typeconv.String("b2"),
+				ExternalId: typeconv.String("e2"),
+				UploadedAt: typeconv.Time(currentTs),
 			}
 		})
 
 		When("there is invalid data", func() {
 			It("should return error", func() {
-				clock.
-					EXPECT().
-					Now().
-					Return(currentTs).
-					Times(1)
-
 				validator.
 					EXPECT().
 					Validate(gomock.Eq(p)).
@@ -2334,12 +2338,6 @@ var _ = Describe("File Package", func() {
 
 		When("failed find file", func() {
 			It("should return error", func() {
-				clock.
-					EXPECT().
-					Now().
-					Return(currentTs).
-					Times(1)
-
 				validator.
 					EXPECT().
 					Validate(gomock.Eq(p)).
@@ -2362,12 +2360,6 @@ var _ = Describe("File Package", func() {
 
 		When("file is not available", func() {
 			It("should return error", func() {
-				clock.
-					EXPECT().
-					Now().
-					Return(currentTs).
-					Times(1)
-
 				validator.
 					EXPECT().
 					Validate(gomock.Eq(p)).
@@ -2388,14 +2380,8 @@ var _ = Describe("File Package", func() {
 			})
 		})
 
-		When("status is not uploading", func() {
+		When("status is not replicating", func() {
 			It("should return error", func() {
-				clock.
-					EXPECT().
-					Now().
-					Return(currentTs).
-					Times(2)
-
 				validator.
 					EXPECT().
 					Validate(gomock.Eq(p)).
@@ -2428,22 +2414,14 @@ var _ = Describe("File Package", func() {
 						Code:    1000,
 						Message: "replication is already proceeded",
 					},
-					StartedAt:   currentTs,
-					ProceededAt: currentTs,
 				}
 				Expect(err).To(BeNil())
 				Expect(res).To(Equal(r))
 			})
 		})
 
-		When("failed create primary storage", func() {
+		When("failed update status uploading", func() {
 			It("should return error", func() {
-				clock.
-					EXPECT().
-					Now().
-					Return(currentTs).
-					Times(1)
-
 				validator.
 					EXPECT().
 					Validate(gomock.Eq(p)).
@@ -2454,6 +2432,52 @@ var _ = Describe("File Package", func() {
 					EXPECT().
 					FindFile(gomock.Eq(ctx), gomock.Eq(findParam)).
 					Return(findRes, nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					UpdateLocationByIds(gomock.Eq(ctx), gomock.Eq(updateUploadParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := fileClient.ProceedReplication(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("network error"))
+			})
+		})
+
+		When("failed create primary storage", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findParam)).
+					Return(findRes, nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					UpdateLocationByIds(gomock.Eq(ctx), gomock.Eq(updateUploadParam)).
+					Return(updateUploadRes, nil).
 					Times(1)
 
 				storageRouter.
@@ -2472,12 +2496,6 @@ var _ = Describe("File Package", func() {
 
 		When("failed create replica storage", func() {
 			It("should return error", func() {
-				clock.
-					EXPECT().
-					Now().
-					Return(currentTs).
-					Times(1)
-
 				validator.
 					EXPECT().
 					Validate(gomock.Eq(p)).
@@ -2488,6 +2506,18 @@ var _ = Describe("File Package", func() {
 					EXPECT().
 					FindFile(gomock.Eq(ctx), gomock.Eq(findParam)).
 					Return(findRes, nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					UpdateLocationByIds(gomock.Eq(ctx), gomock.Eq(updateUploadParam)).
+					Return(updateUploadRes, nil).
 					Times(1)
 
 				storageRouter.
@@ -2512,12 +2542,6 @@ var _ = Describe("File Package", func() {
 
 		When("failed retrieve object from primary storage", func() {
 			It("should return error", func() {
-				clock.
-					EXPECT().
-					Now().
-					Return(currentTs).
-					Times(1)
-
 				validator.
 					EXPECT().
 					Validate(gomock.Eq(p)).
@@ -2528,6 +2552,18 @@ var _ = Describe("File Package", func() {
 					EXPECT().
 					FindFile(gomock.Eq(ctx), gomock.Eq(findParam)).
 					Return(findRes, nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					UpdateLocationByIds(gomock.Eq(ctx), gomock.Eq(updateUploadParam)).
+					Return(updateUploadRes, nil).
 					Times(1)
 
 				storageRouter.
@@ -2558,12 +2594,6 @@ var _ = Describe("File Package", func() {
 
 		When("failed upload object to replica storage", func() {
 			It("should return error", func() {
-				clock.
-					EXPECT().
-					Now().
-					Return(currentTs).
-					Times(1)
-
 				validator.
 					EXPECT().
 					Validate(gomock.Eq(p)).
@@ -2574,6 +2604,18 @@ var _ = Describe("File Package", func() {
 					EXPECT().
 					FindFile(gomock.Eq(ctx), gomock.Eq(findParam)).
 					Return(findRes, nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					UpdateLocationByIds(gomock.Eq(ctx), gomock.Eq(updateUploadParam)).
+					Return(updateUploadRes, nil).
 					Times(1)
 
 				storageRouter.
@@ -2614,7 +2656,7 @@ var _ = Describe("File Package", func() {
 					EXPECT().
 					Now().
 					Return(currentTs).
-					Times(2)
+					Times(1)
 
 				validator.
 					EXPECT().
@@ -2626,6 +2668,18 @@ var _ = Describe("File Package", func() {
 					EXPECT().
 					FindFile(gomock.Eq(ctx), gomock.Eq(findParam)).
 					Return(findRes, nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					UpdateLocationByIds(gomock.Eq(ctx), gomock.Eq(updateUploadParam)).
+					Return(updateUploadRes, nil).
 					Times(1)
 
 				storageRouter.
@@ -2672,7 +2726,7 @@ var _ = Describe("File Package", func() {
 					EXPECT().
 					Now().
 					Return(currentTs).
-					Times(2)
+					Times(1)
 
 				validator.
 					EXPECT().
@@ -2684,6 +2738,18 @@ var _ = Describe("File Package", func() {
 					EXPECT().
 					FindFile(gomock.Eq(ctx), gomock.Eq(findParam)).
 					Return(findRes, nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					UpdateLocationByIds(gomock.Eq(ctx), gomock.Eq(updateUploadParam)).
+					Return(updateUploadRes, nil).
 					Times(1)
 
 				storageRouter.
