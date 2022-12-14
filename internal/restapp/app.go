@@ -46,17 +46,24 @@ func (a *restApp) Run(ctx context.Context) error {
 		return err
 	}
 
-	a.logger.Infof("Initializing queue")
-	err = a.queue.Init(ctx)
-	if err != nil {
-		return err
+	listeners := make(chan error, 2)
+	go func() {
+		a.logger.Infof("Listening on queue")
+		listeners <- a.queue.Start(ctx)
+	}()
+
+	go func() {
+		a.logger.Infof("Listening on: %s", a.config.GetAddress())
+		listeners <- a.server.Start(a.config.GetAddress())
+	}()
+
+	for i := 0; i < 2; i++ {
+		err := <-listeners
+		if err != nil {
+			return err
+		}
 	}
 
-	a.logger.Infof("Listening on: %s", a.config.GetAddress())
-	err = a.server.Start(a.config.GetAddress())
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -105,9 +112,9 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		}
 	}
 
-	queueing := p.Queuer
-	if queueing == nil {
-		queueing, err = app.NewDefaultQueueing(p.Config)
+	queuer := p.Queuer
+	if queuer == nil {
+		queuer, err = app.NewDefaultQueueing(p.Config)
 		if err != nil {
 			return nil, err
 		}
@@ -204,7 +211,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			Router:        storageRouter,
 			BarrelRepo:    repo.GetBarrel(),
 			FileRepo:      repo.GetFile(),
-			Pubsub:        queueing,
+			Pubsub:        queuer,
 		})
 		fileHandler := resthandler.NewFile(resthandler.FileParam{
 			File:       fileClient,
@@ -248,8 +255,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 	que := p.Queue
 	if que == nil {
 		que = queue.NewQueue(queue.QueueParam{
-			Queuer:     queueing,
-			Logger:     logger,
+			Queuer:     queuer,
 			File:       fileClient,
 			Serializer: protobufSerializer,
 		})

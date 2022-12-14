@@ -3,6 +3,7 @@ package restapp_test
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/go-seidon/chariot/internal/app"
@@ -131,6 +132,7 @@ var _ = Describe("App Package", func() {
 			logger *mock_logging.MockLogger
 			repo   *mock_repository.MockProvider
 			queue  *mock_queue.MockQueue
+			wg     *sync.WaitGroup
 		)
 
 		BeforeEach(func() {
@@ -140,7 +142,7 @@ var _ = Describe("App Package", func() {
 			server = mock_restapp.NewMockServer(ctrl)
 			logger = mock_logging.NewMockLogger(ctrl)
 			repo = mock_repository.NewMockProvider(ctrl)
-			queuer := mock_queueing.NewMockQueueing(ctrl)
+			queuer := mock_queueing.NewMockQueuer(ctrl)
 			queue = mock_queue.NewMockQueue(ctrl)
 			config := &app.Config{
 				AppName:     "name",
@@ -156,6 +158,7 @@ var _ = Describe("App Package", func() {
 				restapp.WithQueue(queue),
 				restapp.WithQueuer(queuer),
 			)
+			wg = &sync.WaitGroup{}
 		})
 
 		When("failed init repo", func() {
@@ -186,7 +189,7 @@ var _ = Describe("App Package", func() {
 			})
 		})
 
-		When("failed init queue", func() {
+		When("failed start queue", func() {
 			It("should return error", func() {
 				logger.
 					EXPECT().
@@ -204,7 +207,12 @@ var _ = Describe("App Package", func() {
 
 				logger.
 					EXPECT().
-					Infof(gomock.Eq("Initializing queue")).
+					Infof(gomock.Eq("Listening on queue")).
+					Times(1)
+
+				logger.
+					EXPECT().
+					Infof(gomock.Eq("Listening on: %s"), gomock.Eq("host:1")).
 					Times(1)
 
 				repo.
@@ -213,13 +221,28 @@ var _ = Describe("App Package", func() {
 					Return(nil).
 					Times(1)
 
+				wg.Add(2)
+
 				queue.
 					EXPECT().
-					Init(gomock.Eq(ctx)).
-					Return(fmt.Errorf("network error")).
+					Start(gomock.Eq(ctx)).
+					DoAndReturn(func(_ context.Context) error {
+						wg.Done()
+						return fmt.Errorf("network error")
+					}).
+					Times(1)
+
+				server.
+					EXPECT().
+					Start(gomock.Eq("host:1")).
+					DoAndReturn(func(_ string) error {
+						wg.Done()
+						return nil
+					}).
 					Times(1)
 
 				err := rApp.Run(ctx)
+				wg.Wait()
 
 				Expect(err).To(Equal(fmt.Errorf("network error")))
 			})
@@ -243,7 +266,7 @@ var _ = Describe("App Package", func() {
 
 				logger.
 					EXPECT().
-					Infof(gomock.Eq("Initializing queue")).
+					Infof(gomock.Eq("Listening on queue")).
 					Times(1)
 
 				logger.
@@ -257,25 +280,34 @@ var _ = Describe("App Package", func() {
 					Return(nil).
 					Times(1)
 
+				wg.Add(2)
+
 				queue.
 					EXPECT().
-					Init(gomock.Eq(ctx)).
-					Return(nil).
+					Start(gomock.Eq(ctx)).
+					DoAndReturn(func(_ context.Context) error {
+						wg.Done()
+						return nil
+					}).
 					Times(1)
 
 				server.
 					EXPECT().
 					Start(gomock.Eq("host:1")).
-					Return(fmt.Errorf("network error")).
+					DoAndReturn(func(_ string) error {
+						wg.Done()
+						return fmt.Errorf("network error")
+					}).
 					Times(1)
 
 				err := rApp.Run(ctx)
+				wg.Wait()
 
 				Expect(err).To(Equal(fmt.Errorf("network error")))
 			})
 		})
 
-		When("success start server", func() {
+		When("success start server and queue", func() {
 			It("should return result", func() {
 				logger.
 					EXPECT().
@@ -293,7 +325,7 @@ var _ = Describe("App Package", func() {
 
 				logger.
 					EXPECT().
-					Infof(gomock.Eq("Initializing queue")).
+					Infof(gomock.Eq("Listening on queue")).
 					Times(1)
 
 				logger.
@@ -307,19 +339,28 @@ var _ = Describe("App Package", func() {
 					Return(nil).
 					Times(1)
 
+				wg.Add(2)
+
 				queue.
 					EXPECT().
-					Init(gomock.Eq(ctx)).
-					Return(nil).
+					Start(gomock.Eq(ctx)).
+					DoAndReturn(func(_ context.Context) error {
+						wg.Done()
+						return nil
+					}).
 					Times(1)
 
 				server.
 					EXPECT().
 					Start(gomock.Eq("host:1")).
-					Return(nil).
+					DoAndReturn(func(_ string) error {
+						wg.Done()
+						return nil
+					}).
 					Times(1)
 
 				err := rApp.Run(ctx)
+				wg.Wait()
 
 				Expect(err).To(BeNil())
 			})
@@ -343,7 +384,7 @@ var _ = Describe("App Package", func() {
 			server = mock_restapp.NewMockServer(ctrl)
 			logger = mock_logging.NewMockLogger(ctrl)
 			repo = mock_repository.NewMockProvider(ctrl)
-			queuer := mock_queueing.NewMockQueueing(ctrl)
+			queuer := mock_queueing.NewMockQueuer(ctrl)
 			queue = mock_queue.NewMockQueue(ctrl)
 			config := &app.Config{
 				AppName:     "name",

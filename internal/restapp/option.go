@@ -13,7 +13,7 @@ type RestAppParam struct {
 	Logger     logging.Logger
 	Repository repository.Provider
 	Server     Server
-	Queuer     queueing.Queueing
+	Queuer     queueing.Queuer
 	Queue      queue.Queue
 }
 
@@ -43,7 +43,7 @@ func WithServer(s Server) RestAppOption {
 	}
 }
 
-func WithQueuer(queuer queueing.Queueing) RestAppOption {
+func WithQueuer(queuer queueing.Queuer) RestAppOption {
 	return func(p *RestAppParam) {
 		p.Queuer = queuer
 	}
