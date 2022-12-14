@@ -98,7 +98,7 @@ func (r *file) CreateFile(ctx context.Context, p repository.CreateFileParam) (*r
 				ExternalId: externalId,
 				Priority:   location.Priority,
 				CreatedAt:  location.CreatedAt.UnixMilli(),
-				UpdatedAt:  location.CreatedAt.UnixMicro(),
+				UpdatedAt:  location.CreatedAt.UnixMilli(),
 				UploadedAt: uploadedAt,
 			})
 		}
