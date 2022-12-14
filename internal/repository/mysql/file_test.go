@@ -735,9 +735,9 @@ var _ = Describe("File Repository", func() {
 					},
 				},
 			}
-			findStmt = regexp.QuoteMeta("SELECT id, slug, name, mimetype, extension, size, visibility, status, created_at, updated_at, deleted_at, uploaded_at FROM `file` WHERE id = ? ORDER BY `file`.`id` LIMIT 1")
+			findStmt = regexp.QuoteMeta("SELECT file.id, file.slug, file.name, file.mimetype, file.extension, file.size, file.visibility, file.status, file.created_at, file.updated_at, file.deleted_at, file.uploaded_at FROM `file` WHERE file.id = ? ORDER BY `file`.`id` LIMIT 1")
 			findMetaStmt = regexp.QuoteMeta("SELECT file_id, `key`, value FROM `file_meta` WHERE `file_meta`.`file_id` = ?")
-			findLocationStmt = regexp.QuoteMeta("SELECT file_id, barrel_id, external_id, priority, status, created_at, updated_at, uploaded_at FROM `file_location` WHERE `file_location`.`file_id` = ?")
+			findLocationStmt = regexp.QuoteMeta("SELECT id, file_id, barrel_id, external_id, priority, status, created_at, updated_at, uploaded_at FROM `file_location` WHERE `file_location`.`file_id` = ?")
 			findBarrelStmt = regexp.QuoteMeta("SELECT id, code, provider, status FROM `barrel` WHERE `barrel`.`id` IN (?,?)")
 
 			findRows = sqlmock.NewRows([]string{
@@ -924,10 +924,75 @@ var _ = Describe("File Repository", func() {
 						currentTs.UnixMilli(), currentTs.UnixMilli(),
 						currentTs.UnixMilli(), currentTs.UnixMilli(),
 					)
-				findStmt := regexp.QuoteMeta("SELECT id, slug, name, mimetype, extension, size, visibility, status, created_at, updated_at, deleted_at, uploaded_at FROM `file` WHERE slug = ? ORDER BY `file`.`id` LIMIT 1")
+				findStmt := regexp.QuoteMeta("SELECT file.id, file.slug, file.name, file.mimetype, file.extension, file.size, file.visibility, file.status, file.created_at, file.updated_at, file.deleted_at, file.uploaded_at FROM `file` WHERE file.slug = ? ORDER BY `file`.`id` LIMIT 1")
 				dbClient.
 					ExpectQuery(findStmt).
 					WithArgs(p.Slug).
+					WillReturnRows(findRows)
+
+				findLocationRows := sqlmock.NewRows([]string{
+					"file_id", "barrel_id", "external_id",
+					"priority", "status",
+					"created_at", "updated_at", "uploaded_at",
+				})
+				dbClient.
+					ExpectQuery(findLocationStmt).
+					WithArgs("id").
+					WillReturnRows(findLocationRows)
+
+				findMetaRows := sqlmock.NewRows([]string{
+					"file_id", "key", "value",
+				})
+				dbClient.
+					ExpectQuery(findMetaStmt).
+					WithArgs("id").
+					WillReturnRows(findMetaRows)
+
+				res, err := fileRepo.FindFile(ctx, p)
+
+				r := &repository.FindFileResult{
+					Id:         "id",
+					Slug:       "dolphin-22.jpg",
+					Name:       "Dolhpin 22",
+					Mimetype:   "image/jpeg",
+					Extension:  "jpg",
+					Size:       23343,
+					Visibility: "public",
+					Status:     "available",
+					CreatedAt:  time.UnixMilli(currentTs.UnixMilli()).UTC(),
+					UpdatedAt:  typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+					UploadedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
+					DeletedAt:  typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+					Meta:       map[string]string{},
+					Locations:  []repository.FindFileLocation{},
+				}
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("success find using location id", func() {
+			It("should return result", func() {
+				p := repository.FindFileParam{
+					LocationId: "loc-id",
+				}
+
+				findRows := sqlmock.
+					NewRows([]string{
+						"id", "slug", "name", "mimetype",
+						"extension", "size", "visibility", "status",
+						"created_at", "updated_at", "deleted_at", "uploaded_at",
+					}).
+					AddRow(
+						r.Id, r.Slug, r.Name, r.Mimetype,
+						r.Extension, r.Size, r.Visibility, r.Status,
+						currentTs.UnixMilli(), currentTs.UnixMilli(),
+						currentTs.UnixMilli(), currentTs.UnixMilli(),
+					)
+				findStmt := regexp.QuoteMeta("SELECT file.id, file.slug, file.name, file.mimetype, file.extension, file.size, file.visibility, file.status, file.created_at, file.updated_at, file.deleted_at, file.uploaded_at FROM `file` LEFT JOIN file_location AS fl ON fl.file_id = file.id WHERE fl.id = ? ORDER BY `file`.`id` LIMIT 1")
+				dbClient.
+					ExpectQuery(findStmt).
+					WithArgs(p.LocationId).
 					WillReturnRows(findRows)
 
 				findLocationRows := sqlmock.NewRows([]string{
@@ -1751,7 +1816,7 @@ var _ = Describe("File Repository", func() {
 
 			p = repository.UpdateLocationByIdsParam{
 				Ids:       []string{"i1", "i2", "i3"},
-				Status:    "uploading",
+				Status:    typeconv.String("uploading"),
 				UpdatedAt: currentTs,
 			}
 			r = &repository.UpdateLocationByIdsResult{
@@ -1885,5 +1950,43 @@ var _ = Describe("File Repository", func() {
 				Expect(err).To(BeNil())
 			})
 		})
+
+		When("success update all location data", func() {
+			It("should return result", func() {
+				p := repository.UpdateLocationByIdsParam{
+					Ids:        []string{"i1", "i2", "i3"},
+					Status:     typeconv.String("uploading"),
+					ExternalId: typeconv.String("id"),
+					UploadedAt: typeconv.Time(currentTs),
+					UpdatedAt:  currentTs,
+				}
+
+				dbClient.
+					ExpectBegin()
+
+				updateStmt := regexp.QuoteMeta("UPDATE `file_location` SET `external_id`=?,`status`=?,`updated_at`=?,`uploaded_at`=? WHERE id IN (?,?,?)")
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.ExternalId,
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.UploadedAt.UnixMilli(),
+						p.Ids[0],
+						p.Ids[1],
+						p.Ids[2],
+					).
+					WillReturnResult(sqlmock.NewResult(3, 3))
+
+				dbClient.
+					ExpectCommit()
+
+				res, err := fileRepo.UpdateLocationByIds(ctx, p)
+
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+
 	})
 })

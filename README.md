@@ -77,22 +77,16 @@ TBA
 ```
 
 ## Todo
-1. Daemonapp: Proceed Replication
-- upload pending file concurrently
-
-2. Admin: DeleteFileById
+1. Admin: DeleteFileById
 - proceed pending delete
 - choose when to permanently delete the file
-- update retrieve file should check file status
-3. Daemonapp: Proceed File Deletion
+2. Daemonapp: Proceed Delete File
 - delete pending file concurrently
-
-4. Devs: Enhancement
+3. Devs: Enhancement
 - Override default error handler (echo router)
-- Add request logging
 - Unit test: app NewDefaultConfig
 - Unit test: storage multipart test
-5. Admin: dashboard monitoring
+4. Admin: dashboard monitoring
 - data exporter: CollectMetris
 - prometheus (rest exporter)
 - grafana

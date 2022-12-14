@@ -9,13 +9,13 @@ import (
 
 	"github.com/go-seidon/chariot/api/queue"
 	"github.com/go-seidon/chariot/internal/barrel"
-	"github.com/go-seidon/chariot/internal/queueing"
 	"github.com/go-seidon/chariot/internal/repository"
 	"github.com/go-seidon/chariot/internal/session"
 	"github.com/go-seidon/chariot/internal/storage"
 	"github.com/go-seidon/chariot/internal/storage/router"
 	"github.com/go-seidon/provider/datetime"
 	"github.com/go-seidon/provider/identifier"
+	"github.com/go-seidon/provider/queueing"
 	"github.com/go-seidon/provider/serialization"
 	"github.com/go-seidon/provider/slug"
 	"github.com/go-seidon/provider/status"
@@ -25,11 +25,12 @@ import (
 )
 
 const (
-	STATUS_PENDING   = "pending"
-	STATUS_UPLOADING = "uploading"
-	STATUS_AVAILABLE = "available"
-	STATUS_DELETING  = "deleting"
-	STATUS_DELETED   = "deleted"
+	STATUS_PENDING     = "pending"
+	STATUS_REPLICATING = "replicating"
+	STATUS_UPLOADING   = "uploading"
+	STATUS_AVAILABLE   = "available"
+	STATUS_DELETING    = "deleting"
+	STATUS_DELETED     = "deleted"
 
 	VISIBILITY_PUBLIC    = "public"
 	VISIBILITY_PROTECTED = "protected"
@@ -41,6 +42,7 @@ type File interface {
 	GetFileById(ctx context.Context, p GetFileByIdParam) (*GetFileByIdResult, *system.SystemError)
 	SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileResult, *system.SystemError)
 	ScheduleReplication(ctx context.Context, p ScheduleReplicationParam) (*ScheduleReplicationResult, *system.SystemError)
+	ProceedReplication(ctx context.Context, p ProceedReplicationParam) (*ProceedReplicationResult, *system.SystemError)
 }
 
 type FileConfig struct {
@@ -189,6 +191,18 @@ type ScheduleReplicationResult struct {
 	Success     system.SystemSuccess
 	TotalItems  int32
 	ScheduledAt *time.Time
+}
+
+type ProceedReplicationParam struct {
+	LocationId string `validate:"required,min=5,max=64" label:"location_id"`
+}
+
+type ProceedReplicationResult struct {
+	Success    system.SystemSuccess
+	LocationId *string
+	BarrelId   *string
+	ExternalId *string
+	UploadedAt *time.Time
 }
 
 type file struct {
@@ -423,6 +437,13 @@ func (f *file) RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam
 		if location.Barrel.Status != barrel.STATUS_ACTIVE {
 			if i+1 == len(findFile.Locations) {
 				ferr = fmt.Errorf("barrels are not active")
+			}
+			continue
+		}
+
+		if location.Status != STATUS_AVAILABLE {
+			if i+1 == len(findFile.Locations) {
+				ferr = fmt.Errorf("file replicas are not available")
 			}
 			continue
 		}
@@ -669,7 +690,7 @@ func (f *file) ScheduleReplication(ctx context.Context, p ScheduleReplicationPar
 	currentTs := f.clock.Now().UTC()
 	_, err = f.fileRepo.UpdateLocationByIds(ctx, repository.UpdateLocationByIdsParam{
 		Ids:       ids,
-		Status:    STATUS_UPLOADING,
+		Status:    typeconv.String(STATUS_REPLICATING),
 		UpdatedAt: currentTs,
 	})
 	if err != nil {
@@ -699,6 +720,137 @@ func (f *file) ScheduleReplication(ctx context.Context, p ScheduleReplicationPar
 		},
 		TotalItems:  int32(len(searchres.Items)),
 		ScheduledAt: typeconv.Time(currentTs),
+	}
+	return res, nil
+}
+
+func (f *file) ProceedReplication(ctx context.Context, p ProceedReplicationParam) (*ProceedReplicationResult, *system.SystemError) {
+	err := f.validator.Validate(p)
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.INVALID_PARAM,
+			Message: err.Error(),
+		}
+	}
+
+	findFile, err := f.fileRepo.FindFile(ctx, repository.FindFileParam{
+		LocationId: p.LocationId,
+	})
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, &system.SystemError{
+				Code:    status.RESOURCE_NOTFOUND,
+				Message: "file is not available",
+			}
+		}
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	var primaryLocation repository.FindFileLocation
+	var replicaLocation repository.FindFileLocation
+	for _, lc := range findFile.Locations {
+		if lc.Priority == 1 {
+			primaryLocation = lc
+		}
+
+		if lc.Id == p.LocationId {
+			replicaLocation = lc
+		}
+	}
+
+	if replicaLocation.Status != STATUS_REPLICATING {
+		res := &ProceedReplicationResult{
+			Success: system.SystemSuccess{
+				Code:    status.ACTION_SUCCESS,
+				Message: "replication is already proceeded",
+			},
+		}
+		return res, nil
+	}
+
+	currentTs := f.clock.Now().UTC()
+	_, err = f.fileRepo.UpdateLocationByIds(ctx, repository.UpdateLocationByIdsParam{
+		Ids:       []string{replicaLocation.Id},
+		Status:    typeconv.String(STATUS_UPLOADING),
+		UpdatedAt: currentTs,
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	primaryStorage, err := f.router.CreateStorage(ctx, router.CreateStorageParam{
+		BarrelCode: primaryLocation.Barrel.Code,
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	replicaStorage, err := f.router.CreateStorage(ctx, router.CreateStorageParam{
+		BarrelCode: replicaLocation.Barrel.Code,
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	retrieval, err := primaryStorage.RetrieveObject(ctx, storage.RetrieveObjectParam{
+		ObjectId: typeconv.StringVal(primaryLocation.ExternalId),
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	uploaded, err := replicaStorage.UploadObject(ctx, storage.UploadObjectParam{
+		Data:      retrieval.Data,
+		Name:      typeconv.String(findFile.Name),
+		Mimetype:  typeconv.String(findFile.Mimetype),
+		Extension: typeconv.String(findFile.Extension),
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	currentTs = f.clock.Now().UTC()
+	_, err = f.fileRepo.UpdateLocationByIds(ctx, repository.UpdateLocationByIdsParam{
+		Ids:        []string{replicaLocation.Id},
+		Status:     typeconv.String(STATUS_AVAILABLE),
+		ExternalId: typeconv.String(uploaded.ObjectId),
+		UploadedAt: typeconv.Time(uploaded.UploadedAt),
+		UpdatedAt:  currentTs,
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	res := &ProceedReplicationResult{
+		Success: system.SystemSuccess{
+			Code:    status.ACTION_SUCCESS,
+			Message: "success replicate file",
+		},
+		ExternalId: typeconv.String(uploaded.ObjectId),
+		LocationId: typeconv.String(replicaLocation.Id),
+		BarrelId:   typeconv.String(replicaLocation.Barrel.Id),
+		UploadedAt: typeconv.Time(uploaded.UploadedAt),
 	}
 	return res, nil
 }

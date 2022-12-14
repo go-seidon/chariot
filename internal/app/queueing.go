@@ -3,12 +3,12 @@ package app
 import (
 	"fmt"
 
-	"github.com/go-seidon/chariot/internal/queueing"
-	"github.com/go-seidon/chariot/internal/queueing/rabbitmq"
-	conn "github.com/go-seidon/chariot/internal/rabbitmq"
+	"github.com/go-seidon/provider/queueing"
+	"github.com/go-seidon/provider/queueing/rabbitmq"
+	conn "github.com/go-seidon/provider/rabbitmq"
 )
 
-func NewDefaultQueueing(config *Config) (queueing.Queueing, error) {
+func NewDefaultQueueing(config *Config) (queueing.Queuer, error) {
 	if config == nil {
 		return nil, fmt.Errorf("invalid config")
 	}
@@ -17,7 +17,7 @@ func NewDefaultQueueing(config *Config) (queueing.Queueing, error) {
 		return nil, fmt.Errorf("invalid queue provider")
 	}
 
-	var que queueing.Queueing
+	var que queueing.Queuer
 	if config.QueueProvider == queueing.PROVIDER_RABBITMQ {
 		addr := fmt.Sprintf(
 			"%s://%s:%s@%s:%d/",
