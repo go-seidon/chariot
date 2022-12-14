@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/go-seidon/chariot/generated/restapp"
+	"github.com/go-seidon/chariot/api/restapp"
 	"github.com/go-seidon/chariot/internal/resthandler"
 	"github.com/labstack/echo/v4"
 	. "github.com/onsi/ginkgo/v2"

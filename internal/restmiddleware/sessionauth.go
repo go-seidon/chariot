@@ -3,7 +3,7 @@ package restmiddleware
 import (
 	"net/http"
 
-	"github.com/go-seidon/chariot/generated/restapp"
+	"github.com/go-seidon/chariot/api/restapp"
 	"github.com/go-seidon/chariot/internal/session"
 	"github.com/go-seidon/provider/serialization"
 	"github.com/go-seidon/provider/status"

@@ -75,12 +75,12 @@ generate-proto:
 
 .PHONY: verify-swagger
 verify-swagger:
-	swagger-cli bundle api/restapp/main.yml --type json > generated/restapp/main.all.json
-	swagger-cli validate generated/restapp/main.all.json 
+	swagger-cli bundle api/restapp/main.yml --type json > api/restapp/main.all.json
+	swagger-cli validate api/restapp/main.all.json 
 
 .PHONY: generate-swagger
 generate-swagger:
-	swagger-cli bundle api/restapp/main.yml --type yaml > generated/restapp/main.all.yml
+	swagger-cli bundle api/restapp/main.yml --type yaml > api/restapp/main.all.yml
 
 .PHONY: generate-oapi
 generate-oapi:
@@ -90,11 +90,11 @@ generate-oapi:
 
 .PHONY: generate-oapi-type
 generate-oapi-type:
-	oapi-codegen -old-config-style -config api/restapp/type.gen.yaml generated/restapp/main.all.yml
+	oapi-codegen -old-config-style -config api/restapp/type.gen.yaml api/restapp/main.all.yml
 
 .PHONY: generate-oapi-server
 generate-oapi-server:
-	oapi-codegen -old-config-style -config api/restapp/server.gen.yaml generated/restapp/main.all.yml
+	oapi-codegen -old-config-style -config api/restapp/server.gen.yaml api/restapp/main.all.yml
 
 .PHONY: run-restapp
 run-restapp:

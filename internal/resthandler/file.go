@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-seidon/chariot/generated/restapp"
+	"github.com/go-seidon/chariot/api/restapp"
 	"github.com/go-seidon/chariot/internal/file"
 	"github.com/go-seidon/chariot/internal/storage/multipart"
 	"github.com/go-seidon/provider/serialization"
