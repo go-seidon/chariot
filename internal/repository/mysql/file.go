@@ -413,6 +413,73 @@ func (r *file) SearchFile(ctx context.Context, p repository.SearchFileParam) (*r
 	return res, nil
 }
 
+func (r *file) UpdateFile(ctx context.Context, p repository.UpdateFileParam) (*repository.UpdateFileResult, error) {
+	tx := r.gormClient.
+		WithContext(ctx).
+		Clauses(dbresolver.Write).
+		Begin()
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	data := map[string]interface{}{
+		"updated_at": p.UpdatedAt.UnixMilli(),
+	}
+	if p.Status != nil {
+		data["status"] = p.Status
+	}
+
+	updateRes := tx.
+		Model(&File{}).
+		Where("id = ?", p.Id).
+		Updates(data)
+	if updateRes.Error != nil {
+		txRes := tx.Rollback()
+		if txRes.Error != nil {
+			return nil, txRes.Error
+		}
+		return nil, updateRes.Error
+	}
+
+	file := &File{}
+	checkRes := tx.
+		Select(`id, slug, name, mimetype, extension, size, visibility, status, created_at, updated_at, uploaded_at, deleted_at`).
+		First(file, "id = ?", p.Id)
+	if checkRes.Error != nil {
+		txRes := tx.Rollback()
+		if txRes.Error != nil {
+			return nil, txRes.Error
+		}
+		return nil, checkRes.Error
+	}
+
+	txRes := tx.Commit()
+	if txRes.Error != nil {
+		return nil, txRes.Error
+	}
+
+	var deletedAt *time.Time
+	if file.DeletedAt.Valid {
+		deletedAt = typeconv.Time(time.UnixMilli(file.DeletedAt.Int64).UTC())
+	}
+
+	res := &repository.UpdateFileResult{
+		Id:         file.Id,
+		Slug:       file.Slug,
+		Name:       file.Name,
+		Mimetype:   file.Mimetype,
+		Extension:  file.Extension,
+		Size:       file.Size,
+		Visibility: file.Visibility,
+		Status:     file.Status,
+		CreatedAt:  time.UnixMilli(file.CreatedAt).UTC(),
+		UpdatedAt:  time.UnixMilli(file.UpdatedAt).UTC(),
+		UploadedAt: time.UnixMilli(file.UploadedAt).UTC(),
+		DeletedAt:  deletedAt,
+	}
+	return res, nil
+}
+
 func (r *file) SearchLocation(ctx context.Context, p repository.SearchLocationParam) (*repository.SearchLocationResult, error) {
 	query := r.gormClient.
 		WithContext(ctx).
