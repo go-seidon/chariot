@@ -41,6 +41,7 @@ type File interface {
 	RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam) (*RetrieveFileBySlugResult, *system.SystemError)
 	GetFileById(ctx context.Context, p GetFileByIdParam) (*GetFileByIdResult, *system.SystemError)
 	SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileResult, *system.SystemError)
+	DeleteFileById(ctx context.Context, p DeleteFileByIdParam) (*DeleteFileByIdResult, *system.SystemError)
 	ScheduleReplication(ctx context.Context, p ScheduleReplicationParam) (*ScheduleReplicationResult, *system.SystemError)
 	ProceedReplication(ctx context.Context, p ProceedReplicationParam) (*ProceedReplicationResult, *system.SystemError)
 }
@@ -160,6 +161,15 @@ type SearchFileResult struct {
 	Success system.SystemSuccess
 	Items   []SearchFileItem
 	Summary SearchFileSummary
+}
+
+type DeleteFileByIdParam struct {
+	Id string `validate:"required,min=5,max=64" label:"id"`
+}
+
+type DeleteFileByIdResult struct {
+	Success     system.SystemSuccess
+	RequestedAt time.Time
 }
 
 type SearchFileItem struct {
@@ -632,6 +642,84 @@ func (f *file) SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileRe
 			TotalItems: searchRes.Summary.TotalItems,
 			Page:       p.Page,
 		},
+	}
+	return res, nil
+}
+
+func (f *file) DeleteFileById(ctx context.Context, p DeleteFileByIdParam) (*DeleteFileByIdResult, *system.SystemError) {
+	err := f.validator.Validate(p)
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.INVALID_PARAM,
+			Message: err.Error(),
+		}
+	}
+
+	findFile, err := f.fileRepo.FindFile(ctx, repository.FindFileParam{
+		Id: p.Id,
+	})
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, &system.SystemError{
+				Code:    status.RESOURCE_NOTFOUND,
+				Message: "file is not available",
+			}
+		}
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	if findFile.Status != STATUS_AVAILABLE {
+		return nil, &system.SystemError{
+			Code:    status.RESOURCE_NOTFOUND,
+			Message: "file is not available",
+		}
+	}
+
+	currentTs := f.clock.Now().UTC()
+	updated, err := f.fileRepo.UpdateFile(ctx, repository.UpdateFileParam{
+		Id:        findFile.Id,
+		UpdatedAt: currentTs,
+		Status:    typeconv.String(STATUS_DELETING),
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	msg, err := f.serializer.Marshal(&queue.DeleteFileMessage{
+		FileId:      updated.Id,
+		Status:      updated.Status,
+		RequestedAt: updated.UpdatedAt.UnixMilli(),
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	err = f.pubsub.Publish(ctx, queueing.PublishParam{
+		ExchangeName: "file_deletion",
+		MessageBody:  msg,
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	res := &DeleteFileByIdResult{
+		Success: system.SystemSuccess{
+			Code:    status.ACTION_SUCCESS,
+			Message: "success delete file",
+		},
+		RequestedAt: updated.UpdatedAt,
 	}
 	return res, nil
 }

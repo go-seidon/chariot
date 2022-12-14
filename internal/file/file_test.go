@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-seidon/chariot/api/queue"
 	"github.com/go-seidon/chariot/internal/file"
 	"github.com/go-seidon/chariot/internal/repository"
 	mock_repository "github.com/go-seidon/chariot/internal/repository/mock"
@@ -1947,6 +1948,345 @@ var _ = Describe("File Package", func() {
 				Expect(res.Summary.Page).To(Equal(p.Page))
 				Expect(res.Summary.TotalItems).To(Equal(int64(2)))
 				Expect(len(res.Items)).To(Equal(2))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
+
+	Context("DeleteFileById function", Label("unit"), func() {
+
+		var (
+			ctx           context.Context
+			currentTs     time.Time
+			fileClient    file.File
+			validator     *mock_validation.MockValidator
+			identifier    *mock_identifier.MockIdentifier
+			clock         *mock_datetime.MockClock
+			slugger       *mock_slug.MockSlugger
+			barrelRepo    *mock_repository.MockBarrel
+			fileRepo      *mock_repository.MockFile
+			storageRouter *mock_storage.MockRouter
+			serializer    *mock_serialization.MockSerializer
+			queuer        *mock_queueing.MockQueuer
+			p             file.DeleteFileByIdParam
+			r             *file.DeleteFileByIdResult
+			findFileParam repository.FindFileParam
+			findFileRes   *repository.FindFileResult
+			updateParam   repository.UpdateFileParam
+			updateRes     *repository.UpdateFileResult
+			msgParam      *queue.DeleteFileMessage
+			publishParam  queueing.PublishParam
+		)
+
+		BeforeEach(func() {
+			ctx = context.Background()
+			currentTs = time.Now().UTC()
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			validator = mock_validation.NewMockValidator(ctrl)
+			identifier = mock_identifier.NewMockIdentifier(ctrl)
+			clock = mock_datetime.NewMockClock(ctrl)
+			slugger = mock_slug.NewMockSlugger(ctrl)
+			barrelRepo = mock_repository.NewMockBarrel(ctrl)
+			fileRepo = mock_repository.NewMockFile(ctrl)
+			storageRouter = mock_storage.NewMockRouter(ctrl)
+			serializer = mock_serialization.NewMockSerializer(ctrl)
+			queuer = mock_queueing.NewMockQueuer(ctrl)
+			fileClient = file.NewFile(file.FileParam{
+				Validator:  validator,
+				Identifier: identifier,
+				Clock:      clock,
+				Slugger:    slugger,
+				BarrelRepo: barrelRepo,
+				FileRepo:   fileRepo,
+				Router:     storageRouter,
+				Serializer: serializer,
+				Pubsub:     queuer,
+			})
+			p = file.DeleteFileByIdParam{
+				Id: "id",
+			}
+			findFileParam = repository.FindFileParam{
+				Id: p.Id,
+			}
+			findFileRes = &repository.FindFileResult{
+				Id:     findFileParam.Id,
+				Status: "available",
+			}
+			updateParam = repository.UpdateFileParam{
+				Id:        findFileRes.Id,
+				UpdatedAt: currentTs,
+				Status:    typeconv.String("deleting"),
+			}
+			updateRes = &repository.UpdateFileResult{
+				Id:        updateParam.Id,
+				Status:    "deleting",
+				UpdatedAt: currentTs,
+			}
+			msgParam = &queue.DeleteFileMessage{
+				FileId:      updateRes.Id,
+				Status:      updateRes.Status,
+				RequestedAt: updateRes.UpdatedAt.UnixMilli(),
+			}
+			publishParam = queueing.PublishParam{
+				ExchangeName: "file_deletion",
+				MessageBody:  []byte{},
+			}
+			r = &file.DeleteFileByIdResult{
+				Success: system.SystemSuccess{
+					Code:    1000,
+					Message: "success delete file",
+				},
+				RequestedAt: updateRes.UpdatedAt,
+			}
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(fmt.Errorf("invalid data")).
+					Times(1)
+
+				res, err := fileClient.DeleteFileById(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1002)))
+				Expect(err.Message).To(Equal("invalid data"))
+			})
+		})
+
+		When("failed find file", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := fileClient.DeleteFileById(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("network error"))
+			})
+		})
+
+		When("file is not available", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(nil, repository.ErrNotFound).
+					Times(1)
+
+				res, err := fileClient.DeleteFileById(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1004)))
+				Expect(err.Message).To(Equal("file is not available"))
+			})
+		})
+
+		When("file is not delete able", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				findFileRes := &repository.FindFileResult{
+					Status: "deleting",
+				}
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				res, err := fileClient.DeleteFileById(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1004)))
+				Expect(err.Message).To(Equal("file is not available"))
+			})
+		})
+
+		When("failed update file", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					UpdateFile(gomock.Eq(ctx), gomock.Eq(updateParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := fileClient.DeleteFileById(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("network error"))
+			})
+		})
+
+		When("failed marshal message", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					UpdateFile(gomock.Eq(ctx), gomock.Eq(updateParam)).
+					Return(updateRes, nil).
+					Times(1)
+
+				serializer.
+					EXPECT().
+					Marshal(gomock.Eq(msgParam)).
+					Return(nil, fmt.Errorf("i/o error")).
+					Times(1)
+
+				res, err := fileClient.DeleteFileById(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("i/o error"))
+			})
+		})
+
+		When("failed publish message", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					UpdateFile(gomock.Eq(ctx), gomock.Eq(updateParam)).
+					Return(updateRes, nil).
+					Times(1)
+
+				serializer.
+					EXPECT().
+					Marshal(gomock.Eq(msgParam)).
+					Return([]byte{}, nil).
+					Times(1)
+
+				queuer.
+					EXPECT().
+					Publish(gomock.Eq(ctx), gomock.Eq(publishParam)).
+					Return(fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := fileClient.DeleteFileById(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("network error"))
+			})
+		})
+
+		When("success delete file", func() {
+			It("should return result", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					UpdateFile(gomock.Eq(ctx), gomock.Eq(updateParam)).
+					Return(updateRes, nil).
+					Times(1)
+
+				serializer.
+					EXPECT().
+					Marshal(gomock.Eq(msgParam)).
+					Return([]byte{}, nil).
+					Times(1)
+
+				queuer.
+					EXPECT().
+					Publish(gomock.Eq(ctx), gomock.Eq(publishParam)).
+					Return(nil).
+					Times(1)
+
+				res, err := fileClient.DeleteFileById(ctx, p)
+
+				Expect(res).To(Equal(r))
 				Expect(err).To(BeNil())
 			})
 		})
