@@ -53,6 +53,45 @@ func (h *fileHandler) ProceedReplication(ctx context.Context, message queueing.M
 	return nil
 }
 
+func (h *fileHandler) ProceedDeletion(ctx context.Context, message queueing.Message) error {
+	var data queue.DeleteFileMessage
+	err := h.serializer.Unmarshal(message.GetBody(), &data)
+	if err != nil {
+		ackErr := message.Drop()
+		if ackErr != nil {
+			return ackErr
+		}
+		return err
+	}
+
+	_, delErr := h.fileClient.ProceedDeletion(ctx, file.ProceedDeletionParam{
+		LocationId: data.LocationId,
+	})
+	if delErr != nil {
+		var ackErr error
+
+		switch delErr.Code {
+		case status.RESOURCE_NOTFOUND,
+			status.ACTION_FORBIDDEN:
+			ackErr = message.Ack()
+		default:
+			ackErr = message.Nack()
+		}
+
+		if ackErr != nil {
+			return ackErr
+		}
+		return delErr
+	}
+
+	ackErr := message.Ack()
+	if ackErr != nil {
+		return ackErr
+	}
+
+	return nil
+}
+
 type FileParam struct {
 	Serializer serialization.Serializer
 	File       file.File
