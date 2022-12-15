@@ -1797,6 +1797,44 @@ var _ = Describe("File Repository", func() {
 				Expect(err).To(BeNil())
 			})
 		})
+
+		When("success update all parameters", func() {
+			It("should return result", func() {
+				p := repository.UpdateFileParam{
+					Id:        "id",
+					Status:    typeconv.String("deleting"),
+					UpdatedAt: currentTs,
+					DeletedAt: typeconv.Time(currentTs),
+				}
+
+				dbClient.
+					ExpectBegin()
+
+				updateStmt := regexp.QuoteMeta("UPDATE `file` SET `deleted_at`=?,`status`=?,`updated_at`=? WHERE id = ?")
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.DeletedAt.UnixMilli(),
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.Id).
+					WillReturnRows(checkRows)
+
+				dbClient.
+					ExpectCommit()
+
+				res, err := fileRepo.UpdateFile(ctx, p)
+
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
 	})
 
 	Context("SearchLocation function", Label("unit"), func() {
@@ -2220,16 +2258,18 @@ var _ = Describe("File Repository", func() {
 					Status:     typeconv.String("uploading"),
 					ExternalId: typeconv.String("id"),
 					UploadedAt: typeconv.Time(currentTs),
+					DeletedAt:  typeconv.Time(currentTs),
 					UpdatedAt:  currentTs,
 				}
 
 				dbClient.
 					ExpectBegin()
 
-				updateStmt := regexp.QuoteMeta("UPDATE `file_location` SET `external_id`=?,`status`=?,`updated_at`=?,`uploaded_at`=? WHERE id IN (?,?,?)")
+				updateStmt := regexp.QuoteMeta("UPDATE `file_location` SET `deleted_at`=?,`external_id`=?,`status`=?,`updated_at`=?,`uploaded_at`=? WHERE id IN (?,?,?)")
 				dbClient.
 					ExpectExec(updateStmt).
 					WithArgs(
+						p.DeletedAt.UnixMilli(),
 						p.ExternalId,
 						p.Status,
 						p.UpdatedAt.UnixMilli(),
