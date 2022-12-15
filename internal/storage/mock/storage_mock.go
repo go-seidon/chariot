@@ -35,6 +35,21 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
 }
 
+// DeleteObject mocks base method.
+func (m *MockStorage) DeleteObject(ctx context.Context, p storage.DeleteObjectParam) (*storage.DeleteObjectResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteObject", ctx, p)
+	ret0, _ := ret[0].(*storage.DeleteObjectResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteObject indicates an expected call of DeleteObject.
+func (mr *MockStorageMockRecorder) DeleteObject(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteObject", reflect.TypeOf((*MockStorage)(nil).DeleteObject), ctx, p)
+}
+
 // RetrieveObject mocks base method.
 func (m *MockStorage) RetrieveObject(ctx context.Context, p storage.RetrieveObjectParam) (*storage.RetrieveObjectResult, error) {
 	m.ctrl.T.Helper()

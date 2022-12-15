@@ -16,6 +16,7 @@ const (
 type Storage interface {
 	UploadObject(ctx context.Context, p UploadObjectParam) (*UploadObjectResult, error)
 	RetrieveObject(ctx context.Context, p RetrieveObjectParam) (*RetrieveObjectResult, error)
+	DeleteObject(ctx context.Context, p DeleteObjectParam) (*DeleteObjectResult, error)
 }
 
 type UploadObjectParam struct {
@@ -38,4 +39,12 @@ type RetrieveObjectParam struct {
 type RetrieveObjectResult struct {
 	Data        io.ReadCloser
 	RetrievedAt time.Time
+}
+
+type DeleteObjectParam struct {
+	ObjectId string
+}
+
+type DeleteObjectResult struct {
+	DeletedAt time.Time
 }
