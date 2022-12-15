@@ -245,6 +245,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		basicAuthGroup.PUT("/barrel/:id", barrelHandler.UpdateBarrelById)
 		basicAuthGroup.POST("/session", sessionHandler.CreateSession)
 		basicAuthGroup.GET("/file/:id", fileHandler.GetFileById)
+		basicAuthGroup.DELETE("/file/:id", fileHandler.DeleteFileById)
 		basicAuthGroup.POST("/file/search", fileHandler.SearchFile)
 		basicAuthGroup.POST("/file/replication", fileHandler.ScheduleReplication)
 
