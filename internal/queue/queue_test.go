@@ -164,44 +164,6 @@ var _ = Describe("Queue Package", func() {
 			})
 		})
 
-		When("failed subscribe proceed_file_replication", func() {
-			It("should return error", func() {
-				queuer.
-					EXPECT().
-					Open(gomock.Eq(ctx)).
-					Return(nil).
-					Times(1)
-
-				queuer.
-					EXPECT().
-					DeclareExchange(gomock.Eq(ctx), gomock.Eq(decExc1Param)).
-					Return(nil).
-					Times(1)
-
-				queuer.
-					EXPECT().
-					DeclareQueue(gomock.Eq(ctx), gomock.Eq(decQue1Param)).
-					Return(decQue1Res, nil).
-					Times(1)
-
-				queuer.
-					EXPECT().
-					BindQueue(gomock.Eq(ctx), gomock.Eq(bindQue1Param)).
-					Return(nil).
-					Times(1)
-
-				queuer.
-					EXPECT().
-					Subscribe(gomock.Eq(ctx), gomock.Any()).
-					Return(fmt.Errorf("network error")).
-					Times(1)
-
-				err := que.Start(ctx)
-
-				Expect(err).To(Equal(fmt.Errorf("network error")))
-			})
-		})
-
 		When("failed declare exchange file_deletion", func() {
 			It("should return error", func() {
 				queuer.
@@ -225,12 +187,6 @@ var _ = Describe("Queue Package", func() {
 				queuer.
 					EXPECT().
 					BindQueue(gomock.Eq(ctx), gomock.Eq(bindQue1Param)).
-					Return(nil).
-					Times(1)
-
-				queuer.
-					EXPECT().
-					Subscribe(gomock.Eq(ctx), gomock.Any()).
 					Return(nil).
 					Times(1)
 
@@ -269,12 +225,6 @@ var _ = Describe("Queue Package", func() {
 				queuer.
 					EXPECT().
 					BindQueue(gomock.Eq(ctx), gomock.Eq(bindQue1Param)).
-					Return(nil).
-					Times(1)
-
-				queuer.
-					EXPECT().
-					Subscribe(gomock.Eq(ctx), gomock.Any()).
 					Return(nil).
 					Times(1)
 
@@ -324,7 +274,51 @@ var _ = Describe("Queue Package", func() {
 
 				queuer.
 					EXPECT().
-					Subscribe(gomock.Eq(ctx), gomock.Any()).
+					DeclareExchange(gomock.Eq(ctx), gomock.Eq(decExc2Param)).
+					Return(nil).
+					Times(1)
+
+				queuer.
+					EXPECT().
+					DeclareQueue(gomock.Eq(ctx), gomock.Eq(decQue2Param)).
+					Return(decQue2Res, nil).
+					Times(1)
+
+				queuer.
+					EXPECT().
+					BindQueue(gomock.Eq(ctx), gomock.Eq(bindQue2Param)).
+					Return(fmt.Errorf("network error")).
+					Times(1)
+
+				err := que.Start(ctx)
+
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("failed subscribe proceed_file_replication", func() {
+			It("should return error", func() {
+				queuer.
+					EXPECT().
+					Open(gomock.Eq(ctx)).
+					Return(nil).
+					Times(1)
+
+				queuer.
+					EXPECT().
+					DeclareExchange(gomock.Eq(ctx), gomock.Eq(decExc1Param)).
+					Return(nil).
+					Times(1)
+
+				queuer.
+					EXPECT().
+					DeclareQueue(gomock.Eq(ctx), gomock.Eq(decQue1Param)).
+					Return(decQue1Res, nil).
+					Times(1)
+
+				queuer.
+					EXPECT().
+					BindQueue(gomock.Eq(ctx), gomock.Eq(bindQue1Param)).
 					Return(nil).
 					Times(1)
 
@@ -343,6 +337,12 @@ var _ = Describe("Queue Package", func() {
 				queuer.
 					EXPECT().
 					BindQueue(gomock.Eq(ctx), gomock.Eq(bindQue2Param)).
+					Return(nil).
+					Times(1)
+
+				queuer.
+					EXPECT().
+					Subscribe(gomock.Eq(ctx), gomock.Any()).
 					Return(fmt.Errorf("network error")).
 					Times(1)
 
@@ -380,12 +380,6 @@ var _ = Describe("Queue Package", func() {
 
 				queuer.
 					EXPECT().
-					Subscribe(gomock.Eq(ctx), gomock.Any()).
-					Return(nil).
-					Times(1)
-
-				queuer.
-					EXPECT().
 					DeclareExchange(gomock.Eq(ctx), gomock.Eq(decExc2Param)).
 					Return(nil).
 					Times(1)
@@ -399,6 +393,12 @@ var _ = Describe("Queue Package", func() {
 				queuer.
 					EXPECT().
 					BindQueue(gomock.Eq(ctx), gomock.Eq(bindQue2Param)).
+					Return(nil).
+					Times(1)
+
+				queuer.
+					EXPECT().
+					Subscribe(gomock.Eq(ctx), gomock.Any()).
 					Return(nil).
 					Times(1)
 

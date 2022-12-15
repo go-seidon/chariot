@@ -56,14 +56,6 @@ func (q *queue) Start(ctx context.Context) error {
 		return err
 	}
 
-	err = q.queuer.Subscribe(ctx, queueing.SubscribeParam{
-		QueueName: que1.Name,
-		Listener:  fileHandler.ProceedReplication,
-	})
-	if err != nil {
-		return err
-	}
-
 	err = q.queuer.DeclareExchange(ctx, queueing.DeclareExchangeParam{
 		ExchangeName: "file_deletion",
 		ExchangeType: queueing.EXCHANGE_FANOUT,
@@ -82,6 +74,14 @@ func (q *queue) Start(ctx context.Context) error {
 	err = q.queuer.BindQueue(ctx, queueing.BindQueueParam{
 		ExchangeName: "file_deletion",
 		QueueName:    que2.Name,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = q.queuer.Subscribe(ctx, queueing.SubscribeParam{
+		QueueName: que1.Name,
+		Listener:  fileHandler.ProceedReplication,
 	})
 	if err != nil {
 		return err
