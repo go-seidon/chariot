@@ -1183,7 +1183,7 @@ var _ = Describe("File Handler", func() {
 				encoding_json.Unmarshal(rec.Body.Bytes(), res)
 
 				Expect(err).To(BeNil())
-				Expect(rec.Code).To(Equal(http.StatusOK))
+				Expect(rec.Code).To(Equal(http.StatusAccepted))
 				Expect(res.Code).To(Equal(int32(1000)))
 				Expect(res.Message).To(Equal("success delete file"))
 				Expect(res.Data).To(Equal(restapp.DeleteFileByIdData{

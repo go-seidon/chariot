@@ -324,7 +324,7 @@ func (h *fileHandler) DeleteFileById(ctx echo.Context) error {
 		})
 	}
 
-	return ctx.JSON(http.StatusOK, &restapp.DeleteFileByIdResponse{
+	return ctx.JSON(http.StatusAccepted, &restapp.DeleteFileByIdResponse{
 		Code:    deleteFile.Success.Code,
 		Message: deleteFile.Success.Message,
 		Data: restapp.DeleteFileByIdData{
