@@ -1040,6 +1040,31 @@ var _ = Describe("File Package", func() {
 			})
 		})
 
+		When("file status is not available", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				findFileRes = &repository.FindFileResult{
+					Status: "deleting",
+				}
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				res, err := fileClient.RetrieveFileBySlug(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1004)))
+				Expect(err.Message).To(Equal("file is not available"))
+			})
+		})
+
 		When("failed verify session", func() {
 			It("should return error", func() {
 				validator.
