@@ -653,6 +653,7 @@ func (f *file) SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileRe
 	return res, nil
 }
 
+// @note for refactoring: use go-routine
 func (f *file) DeleteFileById(ctx context.Context, p DeleteFileByIdParam) (*DeleteFileByIdResult, *system.SystemError) {
 	err := f.validator.Validate(p)
 	if err != nil {
@@ -698,26 +699,34 @@ func (f *file) DeleteFileById(ctx context.Context, p DeleteFileByIdParam) (*Dele
 		}
 	}
 
-	msg, err := f.serializer.Marshal(&queue.DeleteFileMessage{
-		FileId:      updated.Id,
-		Status:      updated.Status,
-		RequestedAt: updated.UpdatedAt.UnixMilli(),
-	})
-	if err != nil {
-		return nil, &system.SystemError{
-			Code:    status.ACTION_FAILED,
-			Message: err.Error(),
+	msgs := [][]byte{}
+	for _, location := range findFile.Locations {
+		msg, err := f.serializer.Marshal(&queue.DeleteFileMessage{
+			LocationId:  location.Id,
+			BarrelId:    location.Barrel.Id,
+			FileId:      updated.Id,
+			Status:      updated.Status,
+			RequestedAt: updated.UpdatedAt.UnixMilli(),
+		})
+		if err != nil {
+			return nil, &system.SystemError{
+				Code:    status.ACTION_FAILED,
+				Message: err.Error(),
+			}
 		}
+		msgs = append(msgs, msg)
 	}
 
-	err = f.pubsub.Publish(ctx, queueing.PublishParam{
-		ExchangeName: "file_deletion",
-		MessageBody:  msg,
-	})
-	if err != nil {
-		return nil, &system.SystemError{
-			Code:    status.ACTION_FAILED,
-			Message: err.Error(),
+	for _, msg := range msgs {
+		err = f.pubsub.Publish(ctx, queueing.PublishParam{
+			ExchangeName: "file_deletion",
+			MessageBody:  msg,
+		})
+		if err != nil {
+			return nil, &system.SystemError{
+				Code:    status.ACTION_FAILED,
+				Message: err.Error(),
+			}
 		}
 	}
 
@@ -731,6 +740,7 @@ func (f *file) DeleteFileById(ctx context.Context, p DeleteFileByIdParam) (*Dele
 	return res, nil
 }
 
+// @note for refactoring: use go-routine
 func (f *file) ScheduleReplication(ctx context.Context, p ScheduleReplicationParam) (*ScheduleReplicationResult, *system.SystemError) {
 	err := f.validator.Validate(p)
 	if err != nil {
@@ -767,11 +777,11 @@ func (f *file) ScheduleReplication(ctx context.Context, p ScheduleReplicationPar
 	for _, location := range searchres.Items {
 		ids = append(ids, location.Id)
 		msg, err := f.serializer.Marshal(&queue.ScheduleReplicationMessage{
-			Id:       location.Id,
-			FileId:   location.FileId,
-			BarrelId: location.BarrelId,
-			Priority: location.Priority,
-			Status:   location.Status,
+			LocationId: location.Id,
+			FileId:     location.FileId,
+			BarrelId:   location.BarrelId,
+			Priority:   location.Priority,
+			Status:     location.Status,
 		})
 		if err != nil {
 			return nil, &system.SystemError{

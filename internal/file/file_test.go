@@ -2046,6 +2046,14 @@ var _ = Describe("File Package", func() {
 			findFileRes = &repository.FindFileResult{
 				Id:     findFileParam.Id,
 				Status: "available",
+				Locations: []repository.FindFileLocation{
+					{
+						Id: "l1",
+						Barrel: repository.FindFileBarrel{
+							Id: "b1",
+						},
+					},
+				},
 			}
 			updateParam = repository.UpdateFileParam{
 				Id:        findFileRes.Id,
@@ -2058,6 +2066,8 @@ var _ = Describe("File Package", func() {
 				UpdatedAt: currentTs,
 			}
 			msgParam = &queue.DeleteFileMessage{
+				LocationId:  "l1",
+				BarrelId:    "b1",
 				FileId:      updateRes.Id,
 				Status:      updateRes.Status,
 				RequestedAt: updateRes.UpdatedAt.UnixMilli(),

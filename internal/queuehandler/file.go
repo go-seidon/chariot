@@ -27,7 +27,7 @@ func (h *fileHandler) ProceedReplication(ctx context.Context, message queueing.M
 	}
 
 	_, repErr := h.fileClient.ProceedReplication(ctx, file.ProceedReplicationParam{
-		LocationId: data.Id,
+		LocationId: data.LocationId,
 	})
 	if repErr != nil {
 		var ackErr error

@@ -5,7 +5,7 @@ package queue;
 option go_package = "./queue";
 
 message ScheduleReplicationMessage {
-  string id = 1;
+  string location_id = 1;
   string file_id = 2;
   string barrel_id = 3;
   int32 priority = 4;
@@ -13,7 +13,9 @@ message ScheduleReplicationMessage {
 }
 
 message DeleteFileMessage {
-  string file_id = 1;
-  string status = 2;
-  int64 requested_at = 3;
+  string location_id = 1;
+  string file_id = 2;
+  string barrel_id = 3;
+  string status = 4;
+  int64 requested_at = 5;
 }
