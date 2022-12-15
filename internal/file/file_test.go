@@ -2058,12 +2058,14 @@ var _ = Describe("File Package", func() {
 			updateParam = repository.UpdateFileParam{
 				Id:        findFileRes.Id,
 				UpdatedAt: currentTs,
-				Status:    typeconv.String("deleting"),
+				Status:    typeconv.String("deleted"),
+				DeletedAt: typeconv.Time(currentTs),
 			}
 			updateRes = &repository.UpdateFileResult{
 				Id:        updateParam.Id,
-				Status:    "deleting",
+				Status:    "deleted",
 				UpdatedAt: currentTs,
+				DeletedAt: typeconv.Time(currentTs),
 			}
 			msgParam = &queue.DeleteFileMessage{
 				LocationId:  "l1",
@@ -2332,6 +2334,444 @@ var _ = Describe("File Package", func() {
 
 				Expect(res).To(Equal(r))
 				Expect(err).To(BeNil())
+			})
+		})
+	})
+
+	Context("ProceedDeletion function", Label("unit"), func() {
+
+		var (
+			ctx            context.Context
+			currentTs      time.Time
+			fileClient     file.File
+			validator      *mock_validation.MockValidator
+			identifier     *mock_identifier.MockIdentifier
+			clock          *mock_datetime.MockClock
+			slugger        *mock_slug.MockSlugger
+			barrelRepo     *mock_repository.MockBarrel
+			fileRepo       *mock_repository.MockFile
+			storageRouter  *mock_storage.MockRouter
+			serializer     *mock_serialization.MockSerializer
+			queuer         *mock_queueing.MockQueuer
+			deleteStorage  *mock_storage.MockStorage
+			p              file.ProceedDeletionParam
+			r              *file.ProceedDeletionResult
+			findFileParam  repository.FindFileParam
+			findFileRes    *repository.FindFileResult
+			deletingParam  repository.UpdateLocationByIdsParam
+			createStgParam router.CreateStorageParam
+			deleteObjParam storage.DeleteObjectParam
+			deleteObjRes   *storage.DeleteObjectResult
+			deletedParam   repository.UpdateLocationByIdsParam
+		)
+
+		BeforeEach(func() {
+			ctx = context.Background()
+			currentTs = time.Now().UTC()
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			validator = mock_validation.NewMockValidator(ctrl)
+			identifier = mock_identifier.NewMockIdentifier(ctrl)
+			clock = mock_datetime.NewMockClock(ctrl)
+			slugger = mock_slug.NewMockSlugger(ctrl)
+			barrelRepo = mock_repository.NewMockBarrel(ctrl)
+			fileRepo = mock_repository.NewMockFile(ctrl)
+			storageRouter = mock_storage.NewMockRouter(ctrl)
+			serializer = mock_serialization.NewMockSerializer(ctrl)
+			queuer = mock_queueing.NewMockQueuer(ctrl)
+			deleteStorage = mock_storage.NewMockStorage(ctrl)
+			fileClient = file.NewFile(file.FileParam{
+				Validator:  validator,
+				Identifier: identifier,
+				Clock:      clock,
+				Slugger:    slugger,
+				BarrelRepo: barrelRepo,
+				FileRepo:   fileRepo,
+				Router:     storageRouter,
+				Serializer: serializer,
+				Pubsub:     queuer,
+			})
+			p = file.ProceedDeletionParam{
+				LocationId: "l1",
+			}
+			r = &file.ProceedDeletionResult{
+				Success: system.SystemSuccess{
+					Code:    1000,
+					Message: "success delete file",
+				},
+				DeletedAt: currentTs,
+			}
+			findFileParam = repository.FindFileParam{
+				LocationId: p.LocationId,
+			}
+			findFileRes = &repository.FindFileResult{
+				Id:        findFileParam.Id,
+				Status:    "deleted",
+				DeletedAt: typeconv.Time(currentTs),
+				Locations: []repository.FindFileLocation{
+					{
+						Id:     "l2",
+						Status: "deleted",
+						Barrel: repository.FindFileBarrel{
+							Id:   "b2",
+							Code: "b2",
+						},
+					},
+					{
+						Id:         "l1",
+						Status:     "available",
+						ExternalId: typeconv.String("e1"),
+						Barrel: repository.FindFileBarrel{
+							Id:   "b1",
+							Code: "b1",
+						},
+					},
+				},
+			}
+			deletingParam = repository.UpdateLocationByIdsParam{
+				Ids:       []string{p.LocationId},
+				UpdatedAt: currentTs,
+				Status:    typeconv.String("deleting"),
+			}
+			createStgParam = router.CreateStorageParam{
+				BarrelCode: "b1",
+			}
+			deleteObjParam = storage.DeleteObjectParam{
+				ObjectId: "e1",
+			}
+			deleteObjRes = &storage.DeleteObjectResult{
+				DeletedAt: currentTs,
+			}
+			deletedParam = repository.UpdateLocationByIdsParam{
+				Ids:       []string{p.LocationId},
+				UpdatedAt: currentTs,
+				Status:    typeconv.String("deleted"),
+				DeletedAt: typeconv.Time(currentTs),
+			}
+		})
+
+		When("there is invalid data", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(fmt.Errorf("invalid data")).
+					Times(1)
+
+				res, err := fileClient.ProceedDeletion(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1002)))
+				Expect(err.Message).To(Equal("invalid data"))
+			})
+		})
+
+		When("failed find file", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := fileClient.ProceedDeletion(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("network error"))
+			})
+		})
+
+		When("file is not available", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(nil, repository.ErrNotFound).
+					Times(1)
+
+				res, err := fileClient.ProceedDeletion(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1004)))
+				Expect(err.Message).To(Equal("file is not available"))
+			})
+		})
+
+		When("status is deleting", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				findFileRes := &repository.FindFileResult{
+					Id:        findFileParam.Id,
+					Status:    "deleted",
+					DeletedAt: typeconv.Time(currentTs),
+					Locations: []repository.FindFileLocation{
+						{
+							Id:     "l1",
+							Status: "deleting",
+							Barrel: repository.FindFileBarrel{
+								Id: "b1",
+							},
+						},
+					},
+				}
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				res, err := fileClient.ProceedDeletion(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1003)))
+				Expect(err.Message).To(Equal("deletion is already proceeded"))
+			})
+		})
+
+		When("failed create storage", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(nil, fmt.Errorf("config error")).
+					Times(1)
+
+				res, err := fileClient.ProceedDeletion(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("config error"))
+			})
+		})
+
+		When("failed set deleting status", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(deleteStorage, nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					UpdateLocationByIds(gomock.Eq(ctx), gomock.Eq(deletingParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := fileClient.ProceedDeletion(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("network error"))
+			})
+		})
+
+		When("failed delete object", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(deleteStorage, nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					UpdateLocationByIds(gomock.Eq(ctx), gomock.Eq(deletingParam)).
+					Return(nil, nil).
+					Times(1)
+
+				deleteStorage.
+					EXPECT().
+					DeleteObject(gomock.Eq(ctx), gomock.Eq(deleteObjParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := fileClient.ProceedDeletion(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("network error"))
+			})
+		})
+
+		When("failed set deleted status", func() {
+			It("should return error", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(deleteStorage, nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					UpdateLocationByIds(gomock.Eq(ctx), gomock.Eq(deletingParam)).
+					Return(nil, nil).
+					Times(1)
+
+				deleteStorage.
+					EXPECT().
+					DeleteObject(gomock.Eq(ctx), gomock.Eq(deleteObjParam)).
+					Return(deleteObjRes, nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					UpdateLocationByIds(gomock.Eq(ctx), gomock.Eq(deletedParam)).
+					Return(nil, fmt.Errorf("network error")).
+					Times(1)
+
+				res, err := fileClient.ProceedDeletion(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1001)))
+				Expect(err.Message).To(Equal("network error"))
+			})
+		})
+
+		When("success proceed file deletion", func() {
+			It("should return result", func() {
+				validator.
+					EXPECT().
+					Validate(gomock.Eq(p)).
+					Return(nil).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					FindFile(gomock.Eq(ctx), gomock.Eq(findFileParam)).
+					Return(findFileRes, nil).
+					Times(1)
+
+				storageRouter.
+					EXPECT().
+					CreateStorage(gomock.Eq(ctx), gomock.Eq(createStgParam)).
+					Return(deleteStorage, nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					UpdateLocationByIds(gomock.Eq(ctx), gomock.Eq(deletingParam)).
+					Return(nil, nil).
+					Times(1)
+
+				deleteStorage.
+					EXPECT().
+					DeleteObject(gomock.Eq(ctx), gomock.Eq(deleteObjParam)).
+					Return(deleteObjRes, nil).
+					Times(1)
+
+				clock.
+					EXPECT().
+					Now().
+					Return(currentTs).
+					Times(1)
+
+				fileRepo.
+					EXPECT().
+					UpdateLocationByIds(gomock.Eq(ctx), gomock.Eq(deletedParam)).
+					Return(nil, nil).
+					Times(1)
+
+				res, err := fileClient.ProceedDeletion(ctx, p)
+
+				Expect(err).To(BeNil())
+				Expect(res).To(Equal(r))
 			})
 		})
 	})

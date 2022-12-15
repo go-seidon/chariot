@@ -42,6 +42,7 @@ type File interface {
 	GetFileById(ctx context.Context, p GetFileByIdParam) (*GetFileByIdResult, *system.SystemError)
 	SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileResult, *system.SystemError)
 	DeleteFileById(ctx context.Context, p DeleteFileByIdParam) (*DeleteFileByIdResult, *system.SystemError)
+	ProceedDeletion(ctx context.Context, p ProceedDeletionParam) (*ProceedDeletionResult, *system.SystemError)
 	ScheduleReplication(ctx context.Context, p ScheduleReplicationParam) (*ScheduleReplicationResult, *system.SystemError)
 	ProceedReplication(ctx context.Context, p ProceedReplicationParam) (*ProceedReplicationResult, *system.SystemError)
 }
@@ -170,6 +171,15 @@ type DeleteFileByIdParam struct {
 type DeleteFileByIdResult struct {
 	Success     system.SystemSuccess
 	RequestedAt time.Time
+}
+
+type ProceedDeletionParam struct {
+	LocationId string `validate:"required,min=5,max=64" label:"location_id"`
+}
+
+type ProceedDeletionResult struct {
+	Success   system.SystemSuccess
+	DeletedAt time.Time
 }
 
 type SearchFileItem struct {
@@ -690,7 +700,8 @@ func (f *file) DeleteFileById(ctx context.Context, p DeleteFileByIdParam) (*Dele
 	updated, err := f.fileRepo.UpdateFile(ctx, repository.UpdateFileParam{
 		Id:        findFile.Id,
 		UpdatedAt: currentTs,
-		Status:    typeconv.String(STATUS_DELETING),
+		DeletedAt: typeconv.Time(currentTs),
+		Status:    typeconv.String(STATUS_DELETED),
 	})
 	if err != nil {
 		return nil, &system.SystemError{
@@ -736,6 +747,104 @@ func (f *file) DeleteFileById(ctx context.Context, p DeleteFileByIdParam) (*Dele
 			Message: "success delete file",
 		},
 		RequestedAt: updated.UpdatedAt,
+	}
+	return res, nil
+}
+
+func (f *file) ProceedDeletion(ctx context.Context, p ProceedDeletionParam) (*ProceedDeletionResult, *system.SystemError) {
+	err := f.validator.Validate(p)
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.INVALID_PARAM,
+			Message: err.Error(),
+		}
+	}
+
+	findFile, err := f.fileRepo.FindFile(ctx, repository.FindFileParam{
+		LocationId: p.LocationId,
+	})
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, &system.SystemError{
+				Code:    status.RESOURCE_NOTFOUND,
+				Message: "file is not available",
+			}
+		}
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	var deleteLocation repository.FindFileLocation
+	for _, lc := range findFile.Locations {
+		if lc.Id == p.LocationId {
+			deleteLocation = lc
+		}
+	}
+
+	if deleteLocation.Status == STATUS_DELETING {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FORBIDDEN,
+			Message: "deletion is already proceeded",
+		}
+	}
+
+	deleteStorage, err := f.router.CreateStorage(ctx, router.CreateStorageParam{
+		BarrelCode: deleteLocation.Barrel.Code,
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	currentTs := f.clock.Now().UTC()
+	_, err = f.fileRepo.UpdateLocationByIds(ctx, repository.UpdateLocationByIdsParam{
+		Ids:       []string{deleteLocation.Id},
+		Status:    typeconv.String(STATUS_DELETING),
+		UpdatedAt: currentTs,
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	if deleteLocation.Status == STATUS_AVAILABLE {
+		_, err := deleteStorage.DeleteObject(ctx, storage.DeleteObjectParam{
+			ObjectId: typeconv.StringVal(deleteLocation.ExternalId),
+		})
+		if err != nil {
+			return nil, &system.SystemError{
+				Code:    status.ACTION_FAILED,
+				Message: err.Error(),
+			}
+		}
+	}
+
+	currentTs = f.clock.Now().UTC()
+	_, err = f.fileRepo.UpdateLocationByIds(ctx, repository.UpdateLocationByIdsParam{
+		Ids:       []string{deleteLocation.Id},
+		UpdatedAt: currentTs,
+		Status:    typeconv.String(STATUS_DELETED),
+		DeletedAt: typeconv.Time(currentTs),
+	})
+	if err != nil {
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FAILED,
+			Message: err.Error(),
+		}
+	}
+
+	res := &ProceedDeletionResult{
+		Success: system.SystemSuccess{
+			Code:    status.ACTION_SUCCESS,
+			Message: "success delete file",
+		},
+		DeletedAt: currentTs,
 	}
 	return res, nil
 }
