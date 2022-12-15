@@ -1537,6 +1537,268 @@ var _ = Describe("File Repository", func() {
 		)
 	})
 
+	Context("UpdateFile function", Label("unit"), func() {
+
+		var (
+			ctx        context.Context
+			currentTs  time.Time
+			dbClient   sqlmock.Sqlmock
+			fileRepo   repository.File
+			p          repository.UpdateFileParam
+			r          *repository.UpdateFileResult
+			updateStmt string
+			checkStmt  string
+			checkRows  *sqlmock.Rows
+		)
+
+		BeforeEach(func() {
+			var (
+				db  *sql.DB
+				err error
+			)
+
+			ctx = context.Background()
+			currentTs = time.Now()
+			db, dbClient, err = sqlmock.New()
+			if err != nil {
+				AbortSuite("failed create db mock: " + err.Error())
+			}
+
+			gormClient, err := gorm.Open(gorm_mysql.New(gorm_mysql.Config{
+				Conn:                      db,
+				SkipInitializeWithVersion: true,
+			}), &gorm.Config{
+				DisableAutomaticPing: true,
+			})
+			if err != nil {
+				AbortSuite("failed create gorm client: " + err.Error())
+			}
+			fileRepo = mysql.NewFile(mysql.FileParam{
+				GormClient: gormClient,
+			})
+
+			p = repository.UpdateFileParam{
+				Id:        "id",
+				Status:    typeconv.String("deleting"),
+				UpdatedAt: currentTs,
+			}
+			r = &repository.UpdateFileResult{
+				Id:         "id",
+				Slug:       "slug",
+				Name:       "name",
+				Mimetype:   "mimetype",
+				Extension:  "extension",
+				Size:       123,
+				Visibility: "public",
+				Status:     "deleting",
+				CreatedAt:  time.UnixMilli(currentTs.UnixMilli()).UTC(),
+				UpdatedAt:  time.UnixMilli(currentTs.UnixMilli()).UTC(),
+				UploadedAt: time.UnixMilli(currentTs.UnixMilli()).UTC(),
+				DeletedAt:  typeconv.Time(time.UnixMilli(currentTs.UnixMilli()).UTC()),
+			}
+			updateStmt = regexp.QuoteMeta("UPDATE `file` SET `status`=?,`updated_at`=? WHERE id = ?")
+			checkStmt = regexp.QuoteMeta("SELECT id, slug, name, mimetype, extension, size, visibility, status, created_at, updated_at, uploaded_at, deleted_at FROM `file` WHERE id = ? ORDER BY `file`.`id` LIMIT 1")
+			checkRows = sqlmock.NewRows([]string{
+				"id", "slug", "name", "mimetype",
+				"extension", "size", "visibility", "status",
+				"created_at", "updated_at",
+				"uploaded_at", "deleted_at",
+			}).AddRow(
+				"id", "slug", "name", "mimetype",
+				"extension", 123, "public", "deleting",
+				currentTs.UnixMilli(), currentTs.UnixMilli(),
+				currentTs.UnixMilli(), currentTs.UnixMilli(),
+			)
+		})
+
+		AfterEach(func() {
+			err := dbClient.ExpectationsWereMet()
+			if err != nil {
+				AbortSuite("some expectations were not met " + err.Error())
+			}
+		})
+
+		When("failed begin trx", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin().
+					WillReturnError(fmt.Errorf("begin error"))
+
+				res, err := fileRepo.UpdateFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("begin error")))
+			})
+		})
+
+		When("failed rollback during update file", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback().
+					WillReturnError(fmt.Errorf("rollback error"))
+
+				res, err := fileRepo.UpdateFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("rollback error")))
+			})
+		})
+
+		When("failed update file", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback()
+
+				res, err := fileRepo.UpdateFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("failed rollback during check update result", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.Id).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback().
+					WillReturnError(fmt.Errorf("rollback error"))
+
+				res, err := fileRepo.UpdateFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("rollback error")))
+			})
+		})
+
+		When("failed check update result", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.Id).
+					WillReturnError(fmt.Errorf("network error"))
+
+				dbClient.
+					ExpectRollback()
+
+				res, err := fileRepo.UpdateFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("failed commit trx", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.Id).
+					WillReturnRows(checkRows)
+
+				dbClient.
+					ExpectCommit().
+					WillReturnError(fmt.Errorf("commit error"))
+
+				res, err := fileRepo.UpdateFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("commit error")))
+			})
+		})
+
+		When("success update file", func() {
+			It("should return result", func() {
+				dbClient.
+					ExpectBegin()
+
+				dbClient.
+					ExpectExec(updateStmt).
+					WithArgs(
+						p.Status,
+						p.UpdatedAt.UnixMilli(),
+						p.Id,
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+
+				dbClient.
+					ExpectQuery(checkStmt).
+					WithArgs(p.Id).
+					WillReturnRows(checkRows)
+
+				dbClient.
+					ExpectCommit()
+
+				res, err := fileRepo.UpdateFile(ctx, p)
+
+				Expect(res).To(Equal(r))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
+
 	Context("SearchLocation function", Label("unit"), func() {
 
 		var (

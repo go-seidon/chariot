@@ -36,6 +36,21 @@ func (m *MockFile) EXPECT() *MockFileMockRecorder {
 	return m.recorder
 }
 
+// DeleteFileById mocks base method.
+func (m *MockFile) DeleteFileById(ctx context.Context, p file.DeleteFileByIdParam) (*file.DeleteFileByIdResult, *system.SystemError) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteFileById", ctx, p)
+	ret0, _ := ret[0].(*file.DeleteFileByIdResult)
+	ret1, _ := ret[1].(*system.SystemError)
+	return ret0, ret1
+}
+
+// DeleteFileById indicates an expected call of DeleteFileById.
+func (mr *MockFileMockRecorder) DeleteFileById(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteFileById", reflect.TypeOf((*MockFile)(nil).DeleteFileById), ctx, p)
+}
+
 // GetFileById mocks base method.
 func (m *MockFile) GetFileById(ctx context.Context, p file.GetFileByIdParam) (*file.GetFileByIdResult, *system.SystemError) {
 	m.ctrl.T.Helper()

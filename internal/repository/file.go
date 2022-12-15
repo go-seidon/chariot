@@ -9,6 +9,7 @@ type File interface {
 	CreateFile(ctx context.Context, p CreateFileParam) (*CreateFileResult, error)
 	FindFile(ctx context.Context, p FindFileParam) (*FindFileResult, error)
 	SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileResult, error)
+	UpdateFile(ctx context.Context, p UpdateFileParam) (*UpdateFileResult, error)
 	SearchLocation(ctx context.Context, p SearchLocationParam) (*SearchLocationResult, error)
 	UpdateLocationByIds(ctx context.Context, p UpdateLocationByIdsParam) (*UpdateLocationByIdsResult, error)
 }
@@ -131,6 +132,27 @@ type SearchFileItem struct {
 	UploadedAt time.Time
 	DeletedAt  *time.Time
 	Meta       map[string]string
+}
+
+type UpdateFileParam struct {
+	Id        string
+	UpdatedAt time.Time
+	Status    *string
+}
+
+type UpdateFileResult struct {
+	Id         string
+	Slug       string
+	Name       string
+	Mimetype   string
+	Extension  string
+	Size       int64
+	Visibility string
+	Status     string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	UploadedAt time.Time
+	DeletedAt  *time.Time
 }
 
 type SearchLocationParam struct {
