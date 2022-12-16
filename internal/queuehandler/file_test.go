@@ -143,7 +143,7 @@ var _ = Describe("File Handler", func() {
 			})
 		})
 
-		When("failed ack message during failure processing", func() {
+		When("failed ack message during not found", func() {
 			It("should return error", func() {
 				message.
 					EXPECT().
@@ -163,6 +163,41 @@ var _ = Describe("File Handler", func() {
 					Return(nil, &system.SystemError{
 						Code:    1004,
 						Message: "file is not found",
+					}).
+					Times(1)
+
+				message.
+					EXPECT().
+					Ack().
+					Return(fmt.Errorf("ack error")).
+					Times(1)
+
+				err := h(ctx, message)
+
+				Expect(err).To(Equal(fmt.Errorf("ack error")))
+			})
+		})
+
+		When("failed ack message during forbidden", func() {
+			It("should return error", func() {
+				message.
+					EXPECT().
+					GetBody().
+					Return([]byte{}).
+					Times(1)
+
+				serializer.
+					EXPECT().
+					Unmarshal(gomock.Eq([]byte{}), gomock.Any()).
+					Return(nil).
+					Times(1)
+
+				fileClient.
+					EXPECT().
+					ProceedReplication(gomock.Eq(ctx), gomock.Any()).
+					Return(nil, &system.SystemError{
+						Code:    1003,
+						Message: "replication is already proceeded",
 					}).
 					Times(1)
 
@@ -266,6 +301,289 @@ var _ = Describe("File Handler", func() {
 					EXPECT().
 					ProceedReplication(gomock.Eq(ctx), gomock.Any()).
 					Return(replRes, nil).
+					Times(1)
+
+				message.
+					EXPECT().
+					Ack().
+					Return(nil).
+					Times(1)
+
+				err := h(ctx, message)
+
+				Expect(err).To(BeNil())
+			})
+		})
+	})
+
+	Context("ProceedDeletion function", Label("unit"), func() {
+		var (
+			ctx        context.Context
+			h          queueing.Listener
+			serializer *mock_serialization.MockSerializer
+			fileClient *mock_file.MockFile
+			message    *mock_queueing.MockMessage
+		)
+
+		BeforeEach(func() {
+			ctx = context.Background()
+			t := GinkgoT()
+			ctrl := gomock.NewController(t)
+			serializer = mock_serialization.NewMockSerializer(ctrl)
+			fileClient = mock_file.NewMockFile(ctrl)
+			message = mock_queueing.NewMockMessage(ctrl)
+			fileHandler := queuehandler.NewFile(queuehandler.FileParam{
+				Serializer: serializer,
+				File:       fileClient,
+			})
+			h = fileHandler.ProceedDeletion
+		})
+
+		When("failed drop message during unmarshal failure", func() {
+			It("should return error", func() {
+				message.
+					EXPECT().
+					GetBody().
+					Return([]byte{}).
+					Times(1)
+
+				serializer.
+					EXPECT().
+					Unmarshal(gomock.Eq([]byte{}), gomock.Any()).
+					Return(fmt.Errorf("invalid body")).
+					Times(1)
+
+				message.
+					EXPECT().
+					Drop().
+					Return(fmt.Errorf("drop error")).
+					Times(1)
+
+				err := h(ctx, message)
+
+				Expect(err).To(Equal(fmt.Errorf("drop error")))
+			})
+		})
+
+		When("failed unmarshal message", func() {
+			It("should return error", func() {
+				message.
+					EXPECT().
+					GetBody().
+					Return([]byte{}).
+					Times(1)
+
+				serializer.
+					EXPECT().
+					Unmarshal(gomock.Eq([]byte{}), gomock.Any()).
+					Return(fmt.Errorf("invalid body")).
+					Times(1)
+
+				message.
+					EXPECT().
+					Drop().
+					Return(nil).
+					Times(1)
+
+				err := h(ctx, message)
+
+				Expect(err).To(Equal(fmt.Errorf("invalid body")))
+			})
+		})
+
+		When("failed nack message during failure processing", func() {
+			It("should return error", func() {
+				message.
+					EXPECT().
+					GetBody().
+					Return([]byte{}).
+					Times(1)
+
+				serializer.
+					EXPECT().
+					Unmarshal(gomock.Eq([]byte{}), gomock.Any()).
+					Return(nil).
+					Times(1)
+
+				fileClient.
+					EXPECT().
+					ProceedDeletion(gomock.Eq(ctx), gomock.Any()).
+					Return(nil, &system.SystemError{
+						Code:    1001,
+						Message: "network error",
+					}).
+					Times(1)
+
+				message.
+					EXPECT().
+					Nack().
+					Return(fmt.Errorf("nack error")).
+					Times(1)
+
+				err := h(ctx, message)
+
+				Expect(err).To(Equal(fmt.Errorf("nack error")))
+			})
+		})
+
+		When("failed ack message during not found", func() {
+			It("should return error", func() {
+				message.
+					EXPECT().
+					GetBody().
+					Return([]byte{}).
+					Times(1)
+
+				serializer.
+					EXPECT().
+					Unmarshal(gomock.Eq([]byte{}), gomock.Any()).
+					Return(nil).
+					Times(1)
+
+				fileClient.
+					EXPECT().
+					ProceedDeletion(gomock.Eq(ctx), gomock.Any()).
+					Return(nil, &system.SystemError{
+						Code:    1004,
+						Message: "file is not available",
+					}).
+					Times(1)
+
+				message.
+					EXPECT().
+					Ack().
+					Return(fmt.Errorf("ack error")).
+					Times(1)
+
+				err := h(ctx, message)
+
+				Expect(err).To(Equal(fmt.Errorf("ack error")))
+			})
+		})
+
+		When("failed ack message during forbidden", func() {
+			It("should return error", func() {
+				message.
+					EXPECT().
+					GetBody().
+					Return([]byte{}).
+					Times(1)
+
+				serializer.
+					EXPECT().
+					Unmarshal(gomock.Eq([]byte{}), gomock.Any()).
+					Return(nil).
+					Times(1)
+
+				fileClient.
+					EXPECT().
+					ProceedDeletion(gomock.Eq(ctx), gomock.Any()).
+					Return(nil, &system.SystemError{
+						Code:    1003,
+						Message: "deletion is already proceeded",
+					}).
+					Times(1)
+
+				message.
+					EXPECT().
+					Ack().
+					Return(fmt.Errorf("ack error")).
+					Times(1)
+
+				err := h(ctx, message)
+
+				Expect(err).To(Equal(fmt.Errorf("ack error")))
+			})
+		})
+
+		When("success nack message during failure processing", func() {
+			It("should return error", func() {
+				message.
+					EXPECT().
+					GetBody().
+					Return([]byte{}).
+					Times(1)
+
+				serializer.
+					EXPECT().
+					Unmarshal(gomock.Eq([]byte{}), gomock.Any()).
+					Return(nil).
+					Times(1)
+
+				fileClient.
+					EXPECT().
+					ProceedDeletion(gomock.Eq(ctx), gomock.Any()).
+					Return(nil, &system.SystemError{
+						Code:    1001,
+						Message: "network error",
+					}).
+					Times(1)
+
+				message.
+					EXPECT().
+					Nack().
+					Return(nil).
+					Times(1)
+
+				err := h(ctx, message)
+
+				Expect(err).To(Equal(&system.SystemError{
+					Code:    1001,
+					Message: "network error",
+				}))
+			})
+		})
+
+		When("failed ack message during success deletion", func() {
+			It("should return error", func() {
+				message.
+					EXPECT().
+					GetBody().
+					Return([]byte{}).
+					Times(1)
+
+				serializer.
+					EXPECT().
+					Unmarshal(gomock.Eq([]byte{}), gomock.Any()).
+					Return(nil).
+					Times(1)
+
+				fileClient.
+					EXPECT().
+					ProceedDeletion(gomock.Eq(ctx), gomock.Any()).
+					Return(nil, nil).
+					Times(1)
+
+				message.
+					EXPECT().
+					Ack().
+					Return(fmt.Errorf("network error")).
+					Times(1)
+
+				err := h(ctx, message)
+
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("success ack message during success deletion", func() {
+			It("should return result", func() {
+				message.
+					EXPECT().
+					GetBody().
+					Return([]byte{}).
+					Times(1)
+
+				serializer.
+					EXPECT().
+					Unmarshal(gomock.Eq([]byte{}), gomock.Any()).
+					Return(nil).
+					Times(1)
+
+				fileClient.
+					EXPECT().
+					ProceedDeletion(gomock.Eq(ctx), gomock.Any()).
+					Return(nil, nil).
 					Times(1)
 
 				message.

@@ -132,6 +132,50 @@ func (s *hippoStorage) RetrieveObject(ctx context.Context, p storage.RetrieveObj
 	return res, nil
 }
 
+func (s *hippoStorage) DeleteObject(ctx context.Context, p storage.DeleteObjectParam) (*storage.DeleteObjectResult, error) {
+	basicAuth, err := s.encoder.Encode([]byte(s.auth.ClientId + ":" + s.auth.ClientSecret))
+	if err != nil {
+		return nil, err
+	}
+
+	deleteObject, err := s.httpClient.Delete(ctx, http.RequestParam{
+		Url: fmt.Sprintf("%s/%s/%s", s.config.Host, "v1/file", p.ObjectId),
+		Header: map[string][]string{
+			"Authorization": {fmt.Sprintf("%s %s", "Basic", basicAuth)},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	deleteData, err := io.ReadAll(deleteObject.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	deleteBody := &DeleteObjectResponseBody{}
+	err = s.serializer.Unmarshal(deleteData, deleteBody)
+	if err != nil {
+		return nil, err
+	}
+
+	if deleteObject.StatusCode != net_http.StatusOK {
+		err = fmt.Errorf(deleteBody.Message)
+		switch deleteBody.Code {
+		case status.ACTION_FORBIDDEN:
+			err = storage.ErrUnauthenticated
+		case status.RESOURCE_NOTFOUND:
+			err = storage.ErrNotFound
+		}
+		return nil, err
+	}
+
+	res := &storage.DeleteObjectResult{
+		DeletedAt: time.UnixMilli(deleteBody.Data.DeletedAt).UTC(),
+	}
+	return res, nil
+}
+
 func NewStorage(opts ...StorageOption) *hippoStorage {
 	p := StorageParam{}
 	for _, opt := range opts {

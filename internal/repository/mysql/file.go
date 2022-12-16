@@ -428,6 +428,9 @@ func (r *file) UpdateFile(ctx context.Context, p repository.UpdateFileParam) (*r
 	if p.Status != nil {
 		data["status"] = p.Status
 	}
+	if p.DeletedAt != nil {
+		data["deleted_at"] = p.DeletedAt.UnixMilli()
+	}
 
 	updateRes := tx.
 		Model(&File{}).
@@ -553,6 +556,9 @@ func (r *file) UpdateLocationByIds(ctx context.Context, p repository.UpdateLocat
 	}
 	if p.UploadedAt != nil {
 		data["uploaded_at"] = p.UploadedAt.UnixMilli()
+	}
+	if p.DeletedAt != nil {
+		data["deleted_at"] = p.DeletedAt.UnixMilli()
 	}
 
 	updateRes := tx.

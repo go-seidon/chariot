@@ -138,6 +138,7 @@ type UpdateFileParam struct {
 	Id        string
 	UpdatedAt time.Time
 	Status    *string
+	DeletedAt *time.Time
 }
 
 type UpdateFileResult struct {
@@ -179,10 +180,11 @@ type SearchLocationItem struct {
 
 type UpdateLocationByIdsParam struct {
 	Ids        []string
+	UpdatedAt  time.Time
 	Status     *string
 	ExternalId *string
 	UploadedAt *time.Time
-	UpdatedAt  time.Time
+	DeletedAt  *time.Time
 }
 
 type UpdateLocationByIdsResult struct {

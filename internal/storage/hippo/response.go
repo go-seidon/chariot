@@ -19,3 +19,13 @@ type UploadObjectResponseData struct {
 	Size       int64  `json:"size"`
 	UploadedAt int64  `json:"uploaded_at"`
 }
+
+type DeleteObjectResponseBody struct {
+	Code    int32                    `json:"code"`
+	Message string                   `json:"message"`
+	Data    DeleteObjectResponseData `json:"data"`
+}
+
+type DeleteObjectResponseData struct {
+	DeletedAt int64 `json:"uploaded_at"`
+}
