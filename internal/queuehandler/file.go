@@ -33,7 +33,8 @@ func (h *fileHandler) ProceedReplication(ctx context.Context, message queueing.M
 		var ackErr error
 
 		switch repErr.Code {
-		case status.RESOURCE_NOTFOUND:
+		case status.RESOURCE_NOTFOUND,
+			status.ACTION_FORBIDDEN:
 			ackErr = message.Ack()
 		default:
 			ackErr = message.Nack()

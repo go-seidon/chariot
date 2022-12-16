@@ -976,13 +976,10 @@ func (f *file) ProceedReplication(ctx context.Context, p ProceedReplicationParam
 	}
 
 	if replicaLocation.Status != STATUS_REPLICATING {
-		res := &ProceedReplicationResult{
-			Success: system.SystemSuccess{
-				Code:    status.ACTION_SUCCESS,
-				Message: "replication is already proceeded",
-			},
+		return nil, &system.SystemError{
+			Code:    status.ACTION_FORBIDDEN,
+			Message: "replication is already proceeded",
 		}
-		return res, nil
 	}
 
 	currentTs := f.clock.Now().UTC()

@@ -143,7 +143,7 @@ var _ = Describe("File Handler", func() {
 			})
 		})
 
-		When("failed ack message during failure processing", func() {
+		When("failed ack message during not found", func() {
 			It("should return error", func() {
 				message.
 					EXPECT().
@@ -163,6 +163,41 @@ var _ = Describe("File Handler", func() {
 					Return(nil, &system.SystemError{
 						Code:    1004,
 						Message: "file is not found",
+					}).
+					Times(1)
+
+				message.
+					EXPECT().
+					Ack().
+					Return(fmt.Errorf("ack error")).
+					Times(1)
+
+				err := h(ctx, message)
+
+				Expect(err).To(Equal(fmt.Errorf("ack error")))
+			})
+		})
+
+		When("failed ack message during forbidden", func() {
+			It("should return error", func() {
+				message.
+					EXPECT().
+					GetBody().
+					Return([]byte{}).
+					Times(1)
+
+				serializer.
+					EXPECT().
+					Unmarshal(gomock.Eq([]byte{}), gomock.Any()).
+					Return(nil).
+					Times(1)
+
+				fileClient.
+					EXPECT().
+					ProceedReplication(gomock.Eq(ctx), gomock.Any()).
+					Return(nil, &system.SystemError{
+						Code:    1003,
+						Message: "replication is already proceeded",
 					}).
 					Times(1)
 
@@ -283,18 +318,15 @@ var _ = Describe("File Handler", func() {
 
 	Context("ProceedDeletion function", Label("unit"), func() {
 		var (
-			ctx context.Context
-			// currentTs  time.Time
+			ctx        context.Context
 			h          queueing.Listener
 			serializer *mock_serialization.MockSerializer
 			fileClient *mock_file.MockFile
 			message    *mock_queueing.MockMessage
-			// delRes    *file.ProceedDeletionResult
 		)
 
 		BeforeEach(func() {
 			ctx = context.Background()
-			// currentTs = time.Now().UTC()
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
 			serializer = mock_serialization.NewMockSerializer(ctrl)
@@ -305,16 +337,6 @@ var _ = Describe("File Handler", func() {
 				File:       fileClient,
 			})
 			h = fileHandler.ProceedDeletion
-			// delRes = &file.ProceedDeletionResult{
-			// 	Success: system.SystemSuccess{
-			// 		Code:    1000,
-			// 		Message: "success replicate file",
-			// 	},
-			// 	LocationId: typeconv.String("lid"),
-			// 	BarrelId:   typeconv.String("bid"),
-			// 	ExternalId: typeconv.String("eid"),
-			// 	UploadedAt: typeconv.Time(currentTs),
-			// }
 		})
 
 		When("failed drop message during unmarshal failure", func() {

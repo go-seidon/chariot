@@ -3341,14 +3341,9 @@ var _ = Describe("File Package", func() {
 
 				res, err := fileClient.ProceedReplication(ctx, p)
 
-				r := &file.ProceedReplicationResult{
-					Success: system.SystemSuccess{
-						Code:    1000,
-						Message: "replication is already proceeded",
-					},
-				}
-				Expect(err).To(BeNil())
-				Expect(res).To(Equal(r))
+				Expect(res).To(BeNil())
+				Expect(err.Code).To(Equal(int32(1003)))
+				Expect(err.Message).To(Equal("replication is already proceeded"))
 			})
 		})
 
