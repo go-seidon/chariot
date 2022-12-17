@@ -16,7 +16,7 @@ import (
 	mock_storage "github.com/go-seidon/chariot/internal/storage/mock"
 	"github.com/go-seidon/chariot/internal/storage/router"
 	mock_datetime "github.com/go-seidon/provider/datetime/mock"
-	mock_identifier "github.com/go-seidon/provider/identifier/mock"
+	mock_identifier "github.com/go-seidon/provider/identity/mock"
 	mock_io "github.com/go-seidon/provider/io/mock"
 	"github.com/go-seidon/provider/queueing"
 	mock_queueing "github.com/go-seidon/provider/queueing/mock"
@@ -116,7 +116,7 @@ var _ = Describe("File Package", func() {
 				Features: []string{"retrieve_file"},
 			}
 			createSessRes = &session.CreateSessionResult{
-				Success:   system.SystemSuccess{},
+				Success:   system.Success{},
 				CreatedAt: currentTs.UTC(),
 				ExpiresAt: currentTs.Add(1800 * time.Second).UTC(),
 				Token:     "secret-token",
@@ -201,7 +201,7 @@ var _ = Describe("File Package", func() {
 				UploadedAt: createFileParam.UploadedAt,
 			}
 			r = &file.UploadFileResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success upload file",
 				},
@@ -275,7 +275,7 @@ var _ = Describe("File Package", func() {
 				sessionClient.
 					EXPECT().
 					CreateSession(gomock.Eq(ctx), gomock.Eq(createSessParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "disk error",
 					}).
@@ -693,7 +693,7 @@ var _ = Describe("File Package", func() {
 				res, err := fileClient.UploadFile(ctx, p)
 
 				r := &file.UploadFileResult{
-					Success: system.SystemSuccess{
+					Success: system.Success{
 						Code:    1000,
 						Message: "success upload file",
 					},
@@ -836,7 +836,7 @@ var _ = Describe("File Package", func() {
 				res, err := fileClient.UploadFile(ctx, p)
 
 				r := &file.UploadFileResult{
-					Success: system.SystemSuccess{
+					Success: system.Success{
 						Code:    1000,
 						Message: "success upload file",
 					},
@@ -964,7 +964,7 @@ var _ = Describe("File Package", func() {
 				},
 			}
 			r = &file.RetrieveFileBySlugResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success retrieve file",
 				},
@@ -1117,7 +1117,7 @@ var _ = Describe("File Package", func() {
 				sessionClient.
 					EXPECT().
 					VerifySession(gomock.Eq(ctx), gomock.Eq(verifyParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "i/o error",
 					}).
@@ -1505,7 +1505,7 @@ var _ = Describe("File Package", func() {
 				res, err := fileClient.RetrieveFileBySlug(ctx, p)
 
 				r := &file.RetrieveFileBySlugResult{
-					Success: system.SystemSuccess{
+					Success: system.Success{
 						Code:    1000,
 						Message: "success retrieve file",
 					},
@@ -1673,7 +1673,7 @@ var _ = Describe("File Package", func() {
 				})
 			}
 			r = &file.GetFileByIdResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success get file",
 				},
@@ -2079,7 +2079,7 @@ var _ = Describe("File Package", func() {
 				MessageBody:  []byte{},
 			}
 			r = &file.DeleteFileByIdResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success delete file",
 				},
@@ -2395,7 +2395,7 @@ var _ = Describe("File Package", func() {
 				LocationId: "l1",
 			}
 			r = &file.ProceedDeletionResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success delete file",
 				},
@@ -2870,7 +2870,7 @@ var _ = Describe("File Package", func() {
 				MessageBody:  []byte{},
 			}
 			r = &file.ScheduleReplicationResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success schedule replication",
 				},
@@ -2940,7 +2940,7 @@ var _ = Describe("File Package", func() {
 				res, err := fileClient.ScheduleReplication(ctx, p)
 
 				r := &file.ScheduleReplicationResult{
-					Success: system.SystemSuccess{
+					Success: system.Success{
 						Code:    1000,
 						Message: "there is no pending replication",
 					},
@@ -3241,7 +3241,7 @@ var _ = Describe("File Package", func() {
 				TotalUpdated: 1,
 			}
 			r = &file.ProceedReplicationResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success replicate file",
 				},

@@ -14,7 +14,7 @@ import (
 	"github.com/go-seidon/chariot/internal/storage"
 	"github.com/go-seidon/chariot/internal/storage/router"
 	"github.com/go-seidon/provider/datetime"
-	"github.com/go-seidon/provider/identifier"
+	"github.com/go-seidon/provider/identity"
 	"github.com/go-seidon/provider/queueing"
 	"github.com/go-seidon/provider/serialization"
 	"github.com/go-seidon/provider/slug"
@@ -37,14 +37,14 @@ const (
 )
 
 type File interface {
-	UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileResult, *system.SystemError)
-	RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam) (*RetrieveFileBySlugResult, *system.SystemError)
-	GetFileById(ctx context.Context, p GetFileByIdParam) (*GetFileByIdResult, *system.SystemError)
-	SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileResult, *system.SystemError)
-	DeleteFileById(ctx context.Context, p DeleteFileByIdParam) (*DeleteFileByIdResult, *system.SystemError)
-	ProceedDeletion(ctx context.Context, p ProceedDeletionParam) (*ProceedDeletionResult, *system.SystemError)
-	ScheduleReplication(ctx context.Context, p ScheduleReplicationParam) (*ScheduleReplicationResult, *system.SystemError)
-	ProceedReplication(ctx context.Context, p ProceedReplicationParam) (*ProceedReplicationResult, *system.SystemError)
+	UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileResult, *system.Error)
+	RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam) (*RetrieveFileBySlugResult, *system.Error)
+	GetFileById(ctx context.Context, p GetFileByIdParam) (*GetFileByIdResult, *system.Error)
+	SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileResult, *system.Error)
+	DeleteFileById(ctx context.Context, p DeleteFileByIdParam) (*DeleteFileByIdResult, *system.Error)
+	ProceedDeletion(ctx context.Context, p ProceedDeletionParam) (*ProceedDeletionResult, *system.Error)
+	ScheduleReplication(ctx context.Context, p ScheduleReplicationParam) (*ScheduleReplicationResult, *system.Error)
+	ProceedReplication(ctx context.Context, p ProceedReplicationParam) (*ProceedReplicationResult, *system.Error)
 }
 
 type FileConfig struct {
@@ -71,7 +71,7 @@ type UploadFileParam struct {
 }
 
 type UploadFileResult struct {
-	Success    system.SystemSuccess
+	Success    system.Success
 	Id         string
 	Slug       string
 	Name       string
@@ -92,7 +92,7 @@ type RetrieveFileBySlugParam struct {
 
 type RetrieveFileBySlugResult struct {
 	Data       io.ReadCloser
-	Success    system.SystemSuccess
+	Success    system.Success
 	Id         string
 	Slug       string
 	Name       string
@@ -110,7 +110,7 @@ type GetFileByIdParam struct {
 }
 
 type GetFileByIdResult struct {
-	Success    system.SystemSuccess
+	Success    system.Success
 	Id         string
 	Slug       string
 	Name       string
@@ -159,7 +159,7 @@ type SearchFileParam struct {
 }
 
 type SearchFileResult struct {
-	Success system.SystemSuccess
+	Success system.Success
 	Items   []SearchFileItem
 	Summary SearchFileSummary
 }
@@ -169,7 +169,7 @@ type DeleteFileByIdParam struct {
 }
 
 type DeleteFileByIdResult struct {
-	Success     system.SystemSuccess
+	Success     system.Success
 	RequestedAt time.Time
 }
 
@@ -178,7 +178,7 @@ type ProceedDeletionParam struct {
 }
 
 type ProceedDeletionResult struct {
-	Success   system.SystemSuccess
+	Success   system.Success
 	DeletedAt time.Time
 }
 
@@ -208,7 +208,7 @@ type ScheduleReplicationParam struct {
 }
 
 type ScheduleReplicationResult struct {
-	Success     system.SystemSuccess
+	Success     system.Success
 	TotalItems  int32
 	ScheduledAt *time.Time
 }
@@ -218,7 +218,7 @@ type ProceedReplicationParam struct {
 }
 
 type ProceedReplicationResult struct {
-	Success    system.SystemSuccess
+	Success    system.Success
 	LocationId *string
 	BarrelId   *string
 	ExternalId *string
@@ -228,7 +228,7 @@ type ProceedReplicationResult struct {
 type file struct {
 	config        *FileConfig
 	validator     validation.Validator
-	identifier    identifier.Identifier
+	identifier    identity.Identifier
 	sessionClient session.Session
 	slugger       slug.Slugger
 	clock         datetime.Clock
@@ -239,9 +239,9 @@ type file struct {
 	fileRepo      repository.File
 }
 
-func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileResult, *system.SystemError) {
+func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileResult, *system.Error) {
 	if p.Data == nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: "file is not specified",
 		}
@@ -249,7 +249,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 
 	err := f.validator.Validate(p)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
@@ -262,7 +262,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 			Features: []string{"retrieve_file"},
 		})
 		if err != nil {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.ACTION_FAILED,
 				Message: err.Error(),
 			}
@@ -275,14 +275,14 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 		Statuses: []string{barrel.STATUS_ACTIVE},
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
 	}
 
 	if len(searchBarrels.Items) != len(p.Setting.Barrels) {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: "there is invalid barrel",
 		}
@@ -297,7 +297,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 	for _, searchItem := range searchItems {
 		id, err := f.identifier.GenerateId()
 		if err != nil {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.ACTION_FAILED,
 				Message: err.Error(),
 			}
@@ -319,7 +319,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 		BarrelCode: primaryBarrel.BarrelCode,
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -333,7 +333,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 		Extension: typeconv.String(p.Info.Extension),
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -382,7 +382,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 		Locations:  locations,
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -394,7 +394,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 	}
 
 	res := &UploadFileResult{
-		Success: system.SystemSuccess{
+		Success: system.Success{
 			Code:    status.ACTION_SUCCESS,
 			Message: "success upload file",
 		},
@@ -413,10 +413,10 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 	return res, nil
 }
 
-func (f *file) RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam) (*RetrieveFileBySlugResult, *system.SystemError) {
+func (f *file) RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam) (*RetrieveFileBySlugResult, *system.Error) {
 	err := f.validator.Validate(p)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
@@ -427,19 +427,19 @@ func (f *file) RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam
 	})
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.RESOURCE_NOTFOUND,
 				Message: "file is not available",
 			}
 		}
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
 	}
 
 	if findFile.Status != STATUS_AVAILABLE {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.RESOURCE_NOTFOUND,
 			Message: "file is not available",
 		}
@@ -451,7 +451,7 @@ func (f *file) RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam
 			Feature: "retrieve_file",
 		})
 		if err != nil {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.ACTION_FORBIDDEN,
 				Message: err.Error(),
 			}
@@ -497,21 +497,21 @@ func (f *file) RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam
 	}
 
 	if ferr != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: ferr.Error(),
 		}
 	}
 
 	if data == nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: "file data is invalid",
 		}
 	}
 
 	res := &RetrieveFileBySlugResult{
-		Success: system.SystemSuccess{
+		Success: system.Success{
 			Code:    status.ACTION_SUCCESS,
 			Message: "success retrieve file",
 		},
@@ -530,10 +530,10 @@ func (f *file) RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySlugParam
 	return res, nil
 }
 
-func (f *file) GetFileById(ctx context.Context, p GetFileByIdParam) (*GetFileByIdResult, *system.SystemError) {
+func (f *file) GetFileById(ctx context.Context, p GetFileByIdParam) (*GetFileByIdResult, *system.Error) {
 	err := f.validator.Validate(p)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
@@ -544,12 +544,12 @@ func (f *file) GetFileById(ctx context.Context, p GetFileByIdParam) (*GetFileByI
 	})
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.RESOURCE_NOTFOUND,
 				Message: "file is not available",
 			}
 		}
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -574,7 +574,7 @@ func (f *file) GetFileById(ctx context.Context, p GetFileByIdParam) (*GetFileByI
 	}
 
 	res := &GetFileByIdResult{
-		Success: system.SystemSuccess{
+		Success: system.Success{
 			Code:    status.ACTION_SUCCESS,
 			Message: "success get file",
 		},
@@ -596,10 +596,10 @@ func (f *file) GetFileById(ctx context.Context, p GetFileByIdParam) (*GetFileByI
 	return res, nil
 }
 
-func (f *file) SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileResult, *system.SystemError) {
+func (f *file) SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileResult, *system.Error) {
 	err := f.validator.Validate(p)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
@@ -624,7 +624,7 @@ func (f *file) SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileRe
 		UploadDateLte: p.UploadDateLte,
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -650,7 +650,7 @@ func (f *file) SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileRe
 	}
 
 	res := &SearchFileResult{
-		Success: system.SystemSuccess{
+		Success: system.Success{
 			Code:    status.ACTION_SUCCESS,
 			Message: "success search file",
 		},
@@ -664,10 +664,10 @@ func (f *file) SearchFile(ctx context.Context, p SearchFileParam) (*SearchFileRe
 }
 
 // @note for refactoring: use go-routine
-func (f *file) DeleteFileById(ctx context.Context, p DeleteFileByIdParam) (*DeleteFileByIdResult, *system.SystemError) {
+func (f *file) DeleteFileById(ctx context.Context, p DeleteFileByIdParam) (*DeleteFileByIdResult, *system.Error) {
 	err := f.validator.Validate(p)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
@@ -678,19 +678,19 @@ func (f *file) DeleteFileById(ctx context.Context, p DeleteFileByIdParam) (*Dele
 	})
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.RESOURCE_NOTFOUND,
 				Message: "file is not available",
 			}
 		}
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
 	}
 
 	if findFile.Status != STATUS_AVAILABLE {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.RESOURCE_NOTFOUND,
 			Message: "file is not available",
 		}
@@ -704,7 +704,7 @@ func (f *file) DeleteFileById(ctx context.Context, p DeleteFileByIdParam) (*Dele
 		Status:    typeconv.String(STATUS_DELETED),
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -720,7 +720,7 @@ func (f *file) DeleteFileById(ctx context.Context, p DeleteFileByIdParam) (*Dele
 			RequestedAt: updated.UpdatedAt.UnixMilli(),
 		})
 		if err != nil {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.ACTION_FAILED,
 				Message: err.Error(),
 			}
@@ -734,7 +734,7 @@ func (f *file) DeleteFileById(ctx context.Context, p DeleteFileByIdParam) (*Dele
 			MessageBody:  msg,
 		})
 		if err != nil {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.ACTION_FAILED,
 				Message: err.Error(),
 			}
@@ -742,7 +742,7 @@ func (f *file) DeleteFileById(ctx context.Context, p DeleteFileByIdParam) (*Dele
 	}
 
 	res := &DeleteFileByIdResult{
-		Success: system.SystemSuccess{
+		Success: system.Success{
 			Code:    status.ACTION_SUCCESS,
 			Message: "success delete file",
 		},
@@ -751,10 +751,10 @@ func (f *file) DeleteFileById(ctx context.Context, p DeleteFileByIdParam) (*Dele
 	return res, nil
 }
 
-func (f *file) ProceedDeletion(ctx context.Context, p ProceedDeletionParam) (*ProceedDeletionResult, *system.SystemError) {
+func (f *file) ProceedDeletion(ctx context.Context, p ProceedDeletionParam) (*ProceedDeletionResult, *system.Error) {
 	err := f.validator.Validate(p)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
@@ -765,12 +765,12 @@ func (f *file) ProceedDeletion(ctx context.Context, p ProceedDeletionParam) (*Pr
 	})
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.RESOURCE_NOTFOUND,
 				Message: "file is not available",
 			}
 		}
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -784,7 +784,7 @@ func (f *file) ProceedDeletion(ctx context.Context, p ProceedDeletionParam) (*Pr
 	}
 
 	if deleteLocation.Status == STATUS_DELETING {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FORBIDDEN,
 			Message: "deletion is already proceeded",
 		}
@@ -794,7 +794,7 @@ func (f *file) ProceedDeletion(ctx context.Context, p ProceedDeletionParam) (*Pr
 		BarrelCode: deleteLocation.Barrel.Code,
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -807,7 +807,7 @@ func (f *file) ProceedDeletion(ctx context.Context, p ProceedDeletionParam) (*Pr
 		UpdatedAt: currentTs,
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -818,7 +818,7 @@ func (f *file) ProceedDeletion(ctx context.Context, p ProceedDeletionParam) (*Pr
 			ObjectId: typeconv.StringVal(deleteLocation.ExternalId),
 		})
 		if err != nil {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.ACTION_FAILED,
 				Message: err.Error(),
 			}
@@ -833,14 +833,14 @@ func (f *file) ProceedDeletion(ctx context.Context, p ProceedDeletionParam) (*Pr
 		DeletedAt: typeconv.Time(currentTs),
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
 	}
 
 	res := &ProceedDeletionResult{
-		Success: system.SystemSuccess{
+		Success: system.Success{
 			Code:    status.ACTION_SUCCESS,
 			Message: "success delete file",
 		},
@@ -850,10 +850,10 @@ func (f *file) ProceedDeletion(ctx context.Context, p ProceedDeletionParam) (*Pr
 }
 
 // @note for refactoring: use go-routine
-func (f *file) ScheduleReplication(ctx context.Context, p ScheduleReplicationParam) (*ScheduleReplicationResult, *system.SystemError) {
+func (f *file) ScheduleReplication(ctx context.Context, p ScheduleReplicationParam) (*ScheduleReplicationResult, *system.Error) {
 	err := f.validator.Validate(p)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
@@ -864,7 +864,7 @@ func (f *file) ScheduleReplication(ctx context.Context, p ScheduleReplicationPar
 		Statuses: []string{STATUS_PENDING},
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -872,7 +872,7 @@ func (f *file) ScheduleReplication(ctx context.Context, p ScheduleReplicationPar
 
 	if len(searchres.Items) == 0 {
 		res := &ScheduleReplicationResult{
-			Success: system.SystemSuccess{
+			Success: system.Success{
 				Code:    status.ACTION_SUCCESS,
 				Message: "there is no pending replication",
 			},
@@ -893,7 +893,7 @@ func (f *file) ScheduleReplication(ctx context.Context, p ScheduleReplicationPar
 			Status:     location.Status,
 		})
 		if err != nil {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.ACTION_FAILED,
 				Message: err.Error(),
 			}
@@ -908,7 +908,7 @@ func (f *file) ScheduleReplication(ctx context.Context, p ScheduleReplicationPar
 		UpdatedAt: currentTs,
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -920,7 +920,7 @@ func (f *file) ScheduleReplication(ctx context.Context, p ScheduleReplicationPar
 			MessageBody:  msg,
 		})
 		if err != nil {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.ACTION_FAILED,
 				Message: err.Error(),
 			}
@@ -928,7 +928,7 @@ func (f *file) ScheduleReplication(ctx context.Context, p ScheduleReplicationPar
 	}
 
 	res := &ScheduleReplicationResult{
-		Success: system.SystemSuccess{
+		Success: system.Success{
 			Code:    status.ACTION_SUCCESS,
 			Message: "success schedule replication",
 		},
@@ -938,10 +938,10 @@ func (f *file) ScheduleReplication(ctx context.Context, p ScheduleReplicationPar
 	return res, nil
 }
 
-func (f *file) ProceedReplication(ctx context.Context, p ProceedReplicationParam) (*ProceedReplicationResult, *system.SystemError) {
+func (f *file) ProceedReplication(ctx context.Context, p ProceedReplicationParam) (*ProceedReplicationResult, *system.Error) {
 	err := f.validator.Validate(p)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
@@ -952,12 +952,12 @@ func (f *file) ProceedReplication(ctx context.Context, p ProceedReplicationParam
 	})
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.RESOURCE_NOTFOUND,
 				Message: "file is not available",
 			}
 		}
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -976,7 +976,7 @@ func (f *file) ProceedReplication(ctx context.Context, p ProceedReplicationParam
 	}
 
 	if replicaLocation.Status != STATUS_REPLICATING {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FORBIDDEN,
 			Message: "replication is already proceeded",
 		}
@@ -989,7 +989,7 @@ func (f *file) ProceedReplication(ctx context.Context, p ProceedReplicationParam
 		UpdatedAt: currentTs,
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -999,7 +999,7 @@ func (f *file) ProceedReplication(ctx context.Context, p ProceedReplicationParam
 		BarrelCode: primaryLocation.Barrel.Code,
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -1009,7 +1009,7 @@ func (f *file) ProceedReplication(ctx context.Context, p ProceedReplicationParam
 		BarrelCode: replicaLocation.Barrel.Code,
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -1019,7 +1019,7 @@ func (f *file) ProceedReplication(ctx context.Context, p ProceedReplicationParam
 		ObjectId: typeconv.StringVal(primaryLocation.ExternalId),
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -1032,7 +1032,7 @@ func (f *file) ProceedReplication(ctx context.Context, p ProceedReplicationParam
 		Extension: typeconv.String(findFile.Extension),
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -1047,14 +1047,14 @@ func (f *file) ProceedReplication(ctx context.Context, p ProceedReplicationParam
 		UpdatedAt:  currentTs,
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
 	}
 
 	res := &ProceedReplicationResult{
-		Success: system.SystemSuccess{
+		Success: system.Success{
 			Code:    status.ACTION_SUCCESS,
 			Message: "success replicate file",
 		},
@@ -1069,7 +1069,7 @@ func (f *file) ProceedReplication(ctx context.Context, p ProceedReplicationParam
 type FileParam struct {
 	Config        *FileConfig
 	Validator     validation.Validator
-	Identifier    identifier.Identifier
+	Identifier    identity.Identifier
 	SessionClient session.Session
 	Slugger       slug.Slugger
 	Clock         datetime.Clock

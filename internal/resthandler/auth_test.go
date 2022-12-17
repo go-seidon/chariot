@@ -63,7 +63,7 @@ var _ = Describe("Auth Handler", func() {
 				Status:       string(reqBody.Status),
 			}
 			createRes = &auth.CreateClientResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success create auth client",
 				},
@@ -109,7 +109,7 @@ var _ = Describe("Auth Handler", func() {
 				authClient.
 					EXPECT().
 					CreateClient(gomock.Eq(ctx.Request().Context()), gomock.Eq(createParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1002,
 						Message: "invalid data",
 					}).
@@ -132,7 +132,7 @@ var _ = Describe("Auth Handler", func() {
 				authClient.
 					EXPECT().
 					CreateClient(gomock.Eq(ctx.Request().Context()), gomock.Eq(createParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).
@@ -213,7 +213,7 @@ var _ = Describe("Auth Handler", func() {
 				Id: "mock-id",
 			}
 			findRes = &auth.FindClientByIdResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success find auth client",
 				},
@@ -232,7 +232,7 @@ var _ = Describe("Auth Handler", func() {
 				authClient.
 					EXPECT().
 					FindClientById(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1002,
 						Message: "invalid data",
 					}).
@@ -255,7 +255,7 @@ var _ = Describe("Auth Handler", func() {
 				authClient.
 					EXPECT().
 					FindClientById(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).
@@ -278,7 +278,7 @@ var _ = Describe("Auth Handler", func() {
 				authClient.
 					EXPECT().
 					FindClientById(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1004,
 						Message: "not found",
 					}).
@@ -373,7 +373,7 @@ var _ = Describe("Auth Handler", func() {
 				Status:   string(reqBody.Status),
 			}
 			updateRes = &auth.UpdateClientByIdResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success update auth client",
 				},
@@ -420,7 +420,7 @@ var _ = Describe("Auth Handler", func() {
 				authClient.
 					EXPECT().
 					UpdateClientById(gomock.Eq(ctx.Request().Context()), gomock.Eq(updateParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1002,
 						Message: "invalid data",
 					}).
@@ -443,7 +443,7 @@ var _ = Describe("Auth Handler", func() {
 				authClient.
 					EXPECT().
 					UpdateClientById(gomock.Eq(ctx.Request().Context()), gomock.Eq(updateParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1004,
 						Message: "auth client is not available",
 					}).
@@ -466,7 +466,7 @@ var _ = Describe("Auth Handler", func() {
 				authClient.
 					EXPECT().
 					UpdateClientById(gomock.Eq(ctx.Request().Context()), gomock.Eq(updateParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).
@@ -561,7 +561,7 @@ var _ = Describe("Auth Handler", func() {
 				Statuses:   []string{"active"},
 			}
 			searchRes = &auth.SearchClientResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success search auth client",
 				},
@@ -625,7 +625,7 @@ var _ = Describe("Auth Handler", func() {
 				authClient.
 					EXPECT().
 					SearchClient(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1002,
 						Message: "invalid data",
 					}).
@@ -648,7 +648,7 @@ var _ = Describe("Auth Handler", func() {
 				authClient.
 					EXPECT().
 					SearchClient(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).
@@ -669,7 +669,7 @@ var _ = Describe("Auth Handler", func() {
 		When("there is no client", func() {
 			It("should return empty result", func() {
 				searchRes := &auth.SearchClientResult{
-					Success: system.SystemSuccess{
+					Success: system.Success{
 						Code:    1000,
 						Message: "success search auth client",
 					},
@@ -705,7 +705,7 @@ var _ = Describe("Auth Handler", func() {
 		When("there is one client", func() {
 			It("should return result", func() {
 				searchRes := &auth.SearchClientResult{
-					Success: system.SystemSuccess{
+					Success: system.Success{
 						Code:    1000,
 						Message: "success search auth client",
 					},

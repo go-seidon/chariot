@@ -126,7 +126,7 @@ var _ = Describe("File Handler", func() {
 				},
 			}
 			uploadRes = &file.UploadFileResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success upload file",
 				},
@@ -227,7 +227,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					UploadFile(gomock.Eq(ctx.Request().Context()), gomock.Eq(uploadParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1002,
 						Message: "invalid param",
 					}).
@@ -250,7 +250,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					UploadFile(gomock.Eq(ctx.Request().Context()), gomock.Eq(uploadParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).
@@ -339,7 +339,7 @@ var _ = Describe("File Handler", func() {
 			}
 			fileData = mock_io.NewMockReadCloser(ctrl)
 			findRes = &file.RetrieveFileBySlugResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success retrieve file",
 				},
@@ -362,7 +362,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					RetrieveFileBySlug(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1002,
 						Message: "invalid data",
 					}).
@@ -385,7 +385,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					RetrieveFileBySlug(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1004,
 						Message: "file is not available",
 					}).
@@ -408,7 +408,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					RetrieveFileBySlug(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).
@@ -481,7 +481,7 @@ var _ = Describe("File Handler", func() {
 				Id: "id",
 			}
 			findRes = &file.GetFileByIdResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success get file",
 				},
@@ -533,7 +533,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					GetFileById(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1002,
 						Message: "invalid data",
 					}).
@@ -556,7 +556,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					GetFileById(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1004,
 						Message: "file is not available",
 					}).
@@ -579,7 +579,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					GetFileById(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).
@@ -657,7 +657,7 @@ var _ = Describe("File Handler", func() {
 		When("success get deleted file", func() {
 			It("should return result", func() {
 				findRes := &file.GetFileByIdResult{
-					Success: system.SystemSuccess{
+					Success: system.Success{
 						Code:    1000,
 						Message: "success get file",
 					},
@@ -818,7 +818,7 @@ var _ = Describe("File Handler", func() {
 				Sort:          "latest_upload",
 			}
 			searchRes = &file.SearchFileResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success search file",
 				},
@@ -882,7 +882,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					SearchFile(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1002,
 						Message: "invalid data",
 					}).
@@ -905,7 +905,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					SearchFile(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).
@@ -926,7 +926,7 @@ var _ = Describe("File Handler", func() {
 		When("there is no file", func() {
 			It("should return empty result", func() {
 				searchRes := &file.SearchFileResult{
-					Success: system.SystemSuccess{
+					Success: system.Success{
 						Code:    1000,
 						Message: "success search file",
 					},
@@ -962,7 +962,7 @@ var _ = Describe("File Handler", func() {
 		When("there is one file", func() {
 			It("should return result", func() {
 				searchRes := &file.SearchFileResult{
-					Success: system.SystemSuccess{
+					Success: system.Success{
 						Code:    1000,
 						Message: "success search file",
 					},
@@ -1092,7 +1092,7 @@ var _ = Describe("File Handler", func() {
 				Id: "id",
 			}
 			deleteRes = &file.DeleteFileByIdResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success delete file",
 				},
@@ -1105,7 +1105,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					DeleteFileById(gomock.Eq(ctx.Request().Context()), gomock.Eq(deleteParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1002,
 						Message: "invalid data",
 					}).
@@ -1128,7 +1128,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					DeleteFileById(gomock.Eq(ctx.Request().Context()), gomock.Eq(deleteParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1004,
 						Message: "file is not available",
 					}).
@@ -1151,7 +1151,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					DeleteFileById(gomock.Eq(ctx.Request().Context()), gomock.Eq(deleteParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).
@@ -1229,7 +1229,7 @@ var _ = Describe("File Handler", func() {
 				MaxItems: 5,
 			}
 			scheduleRes = &file.ScheduleReplicationResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success schedule replication",
 				},
@@ -1271,7 +1271,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					ScheduleReplication(gomock.Eq(ctx.Request().Context()), gomock.Eq(scheduleParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1002,
 						Message: "invalid data",
 					}).
@@ -1294,7 +1294,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					ScheduleReplication(gomock.Eq(ctx.Request().Context()), gomock.Eq(scheduleParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).
@@ -1339,7 +1339,7 @@ var _ = Describe("File Handler", func() {
 		When("skip schedule replication", func() {
 			It("should return result", func() {
 				scheduleRes := &file.ScheduleReplicationResult{
-					Success: system.SystemSuccess{
+					Success: system.Success{
 						Code:    1000,
 						Message: "skip schedule replication",
 					},

@@ -58,7 +58,7 @@ var _ = Describe("Session Handler", func() {
 				Features: []string{"upload_file", "retrieve_file"},
 			}
 			createRes = &session.CreateSessionResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success create session",
 				},
@@ -101,7 +101,7 @@ var _ = Describe("Session Handler", func() {
 				sessionClient.
 					EXPECT().
 					CreateSession(gomock.Eq(ctx.Request().Context()), gomock.Eq(createParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1002,
 						Message: "invalid data",
 					}).
@@ -124,7 +124,7 @@ var _ = Describe("Session Handler", func() {
 				sessionClient.
 					EXPECT().
 					CreateSession(gomock.Eq(ctx.Request().Context()), gomock.Eq(createParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).

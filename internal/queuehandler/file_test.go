@@ -45,7 +45,7 @@ var _ = Describe("File Handler", func() {
 			})
 			h = fileHandler.ProceedReplication
 			replRes = &file.ProceedReplicationResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success replicate file",
 				},
@@ -125,7 +125,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					ProceedReplication(gomock.Eq(ctx), gomock.Any()).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).
@@ -160,7 +160,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					ProceedReplication(gomock.Eq(ctx), gomock.Any()).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1004,
 						Message: "file is not found",
 					}).
@@ -195,7 +195,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					ProceedReplication(gomock.Eq(ctx), gomock.Any()).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1003,
 						Message: "replication is already proceeded",
 					}).
@@ -230,7 +230,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					ProceedReplication(gomock.Eq(ctx), gomock.Any()).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).
@@ -244,7 +244,7 @@ var _ = Describe("File Handler", func() {
 
 				err := h(ctx, message)
 
-				Expect(err).To(Equal(&system.SystemError{
+				Expect(err).To(Equal(&system.Error{
 					Code:    1001,
 					Message: "network error",
 				}))
@@ -408,7 +408,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					ProceedDeletion(gomock.Eq(ctx), gomock.Any()).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).
@@ -443,7 +443,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					ProceedDeletion(gomock.Eq(ctx), gomock.Any()).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1004,
 						Message: "file is not available",
 					}).
@@ -478,7 +478,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					ProceedDeletion(gomock.Eq(ctx), gomock.Any()).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1003,
 						Message: "deletion is already proceeded",
 					}).
@@ -513,7 +513,7 @@ var _ = Describe("File Handler", func() {
 				fileClient.
 					EXPECT().
 					ProceedDeletion(gomock.Eq(ctx), gomock.Any()).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).
@@ -527,7 +527,7 @@ var _ = Describe("File Handler", func() {
 
 				err := h(ctx, message)
 
-				Expect(err).To(Equal(&system.SystemError{
+				Expect(err).To(Equal(&system.Error{
 					Code:    1001,
 					Message: "network error",
 				}))

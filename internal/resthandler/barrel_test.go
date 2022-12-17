@@ -62,7 +62,7 @@ var _ = Describe("Barrel Handler", func() {
 				Status:   string(reqBody.Status),
 			}
 			createRes = &barrel.CreateBarrelResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success create barrel",
 				},
@@ -108,7 +108,7 @@ var _ = Describe("Barrel Handler", func() {
 				barrelClient.
 					EXPECT().
 					CreateBarrel(gomock.Eq(ctx.Request().Context()), gomock.Eq(createParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1002,
 						Message: "invalid data",
 					}).
@@ -131,7 +131,7 @@ var _ = Describe("Barrel Handler", func() {
 				barrelClient.
 					EXPECT().
 					CreateBarrel(gomock.Eq(ctx.Request().Context()), gomock.Eq(createParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).
@@ -212,7 +212,7 @@ var _ = Describe("Barrel Handler", func() {
 				Id: "mock-id",
 			}
 			findRes = &barrel.FindBarrelByIdResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success find barrel",
 				},
@@ -231,7 +231,7 @@ var _ = Describe("Barrel Handler", func() {
 				barrelClient.
 					EXPECT().
 					FindBarrelById(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1002,
 						Message: "invalid data",
 					}).
@@ -254,7 +254,7 @@ var _ = Describe("Barrel Handler", func() {
 				barrelClient.
 					EXPECT().
 					FindBarrelById(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).
@@ -277,7 +277,7 @@ var _ = Describe("Barrel Handler", func() {
 				barrelClient.
 					EXPECT().
 					FindBarrelById(gomock.Eq(ctx.Request().Context()), gomock.Eq(findParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1004,
 						Message: "not found",
 					}).
@@ -372,7 +372,7 @@ var _ = Describe("Barrel Handler", func() {
 				Status:   string(reqBody.Status),
 			}
 			updateRes = &barrel.UpdateBarrelByIdResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success update barrel",
 				},
@@ -419,7 +419,7 @@ var _ = Describe("Barrel Handler", func() {
 				barrelClient.
 					EXPECT().
 					UpdateBarrelById(gomock.Eq(ctx.Request().Context()), gomock.Eq(updateParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1002,
 						Message: "invalid data",
 					}).
@@ -442,7 +442,7 @@ var _ = Describe("Barrel Handler", func() {
 				barrelClient.
 					EXPECT().
 					UpdateBarrelById(gomock.Eq(ctx.Request().Context()), gomock.Eq(updateParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1004,
 						Message: "barrel is not available",
 					}).
@@ -465,7 +465,7 @@ var _ = Describe("Barrel Handler", func() {
 				barrelClient.
 					EXPECT().
 					UpdateBarrelById(gomock.Eq(ctx.Request().Context()), gomock.Eq(updateParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).
@@ -562,7 +562,7 @@ var _ = Describe("Barrel Handler", func() {
 				Providers:  []string{"goseidon_hippo"},
 			}
 			searchRes = &barrel.SearchBarrelResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success search barrel",
 				},
@@ -626,7 +626,7 @@ var _ = Describe("Barrel Handler", func() {
 				barrelClient.
 					EXPECT().
 					SearchBarrel(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1002,
 						Message: "invalid data",
 					}).
@@ -649,7 +649,7 @@ var _ = Describe("Barrel Handler", func() {
 				barrelClient.
 					EXPECT().
 					SearchBarrel(gomock.Eq(ctx.Request().Context()), gomock.Eq(searchParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "network error",
 					}).
@@ -670,7 +670,7 @@ var _ = Describe("Barrel Handler", func() {
 		When("there is no barrel", func() {
 			It("should return empty result", func() {
 				searchRes := &barrel.SearchBarrelResult{
-					Success: system.SystemSuccess{
+					Success: system.Success{
 						Code:    1000,
 						Message: "success search barrel",
 					},
@@ -706,7 +706,7 @@ var _ = Describe("Barrel Handler", func() {
 		When("there is one barrel", func() {
 			It("should return result", func() {
 				searchRes := &barrel.SearchBarrelResult{
-					Success: system.SystemSuccess{
+					Success: system.Success{
 						Code:    1000,
 						Message: "success search barrel",
 					},

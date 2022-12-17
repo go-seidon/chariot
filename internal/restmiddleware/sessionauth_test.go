@@ -99,7 +99,7 @@ var _ = Describe("Session Auth Middleware", func() {
 				sessionClient.
 					EXPECT().
 					VerifySession(gomock.Eq(req.Context()), gomock.Eq(verifyParam)).
-					Return(nil, &system.SystemError{
+					Return(nil, &system.Error{
 						Code:    1001,
 						Message: "disk error",
 					}).

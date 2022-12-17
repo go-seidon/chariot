@@ -37,11 +37,11 @@ func (m *MockSession) EXPECT() *MockSessionMockRecorder {
 }
 
 // CreateSession mocks base method.
-func (m *MockSession) CreateSession(ctx context.Context, p session.CreateSessionParam) (*session.CreateSessionResult, *system.SystemError) {
+func (m *MockSession) CreateSession(ctx context.Context, p session.CreateSessionParam) (*session.CreateSessionResult, *system.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSession", ctx, p)
 	ret0, _ := ret[0].(*session.CreateSessionResult)
-	ret1, _ := ret[1].(*system.SystemError)
+	ret1, _ := ret[1].(*system.Error)
 	return ret0, ret1
 }
 
@@ -52,11 +52,11 @@ func (mr *MockSessionMockRecorder) CreateSession(ctx, p interface{}) *gomock.Cal
 }
 
 // VerifySession mocks base method.
-func (m *MockSession) VerifySession(ctx context.Context, p session.VerifySessionParam) (*session.VerifySessionResult, *system.SystemError) {
+func (m *MockSession) VerifySession(ctx context.Context, p session.VerifySessionParam) (*session.VerifySessionResult, *system.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "VerifySession", ctx, p)
 	ret0, _ := ret[0].(*session.VerifySessionResult)
-	ret1, _ := ret[1].(*system.SystemError)
+	ret1, _ := ret[1].(*system.Error)
 	return ret0, ret1
 }
 

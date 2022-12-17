@@ -37,11 +37,11 @@ func (m *MockFile) EXPECT() *MockFileMockRecorder {
 }
 
 // DeleteFileById mocks base method.
-func (m *MockFile) DeleteFileById(ctx context.Context, p file.DeleteFileByIdParam) (*file.DeleteFileByIdResult, *system.SystemError) {
+func (m *MockFile) DeleteFileById(ctx context.Context, p file.DeleteFileByIdParam) (*file.DeleteFileByIdResult, *system.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteFileById", ctx, p)
 	ret0, _ := ret[0].(*file.DeleteFileByIdResult)
-	ret1, _ := ret[1].(*system.SystemError)
+	ret1, _ := ret[1].(*system.Error)
 	return ret0, ret1
 }
 
@@ -52,11 +52,11 @@ func (mr *MockFileMockRecorder) DeleteFileById(ctx, p interface{}) *gomock.Call 
 }
 
 // GetFileById mocks base method.
-func (m *MockFile) GetFileById(ctx context.Context, p file.GetFileByIdParam) (*file.GetFileByIdResult, *system.SystemError) {
+func (m *MockFile) GetFileById(ctx context.Context, p file.GetFileByIdParam) (*file.GetFileByIdResult, *system.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetFileById", ctx, p)
 	ret0, _ := ret[0].(*file.GetFileByIdResult)
-	ret1, _ := ret[1].(*system.SystemError)
+	ret1, _ := ret[1].(*system.Error)
 	return ret0, ret1
 }
 
@@ -67,11 +67,11 @@ func (mr *MockFileMockRecorder) GetFileById(ctx, p interface{}) *gomock.Call {
 }
 
 // ProceedDeletion mocks base method.
-func (m *MockFile) ProceedDeletion(ctx context.Context, p file.ProceedDeletionParam) (*file.ProceedDeletionResult, *system.SystemError) {
+func (m *MockFile) ProceedDeletion(ctx context.Context, p file.ProceedDeletionParam) (*file.ProceedDeletionResult, *system.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ProceedDeletion", ctx, p)
 	ret0, _ := ret[0].(*file.ProceedDeletionResult)
-	ret1, _ := ret[1].(*system.SystemError)
+	ret1, _ := ret[1].(*system.Error)
 	return ret0, ret1
 }
 
@@ -82,11 +82,11 @@ func (mr *MockFileMockRecorder) ProceedDeletion(ctx, p interface{}) *gomock.Call
 }
 
 // ProceedReplication mocks base method.
-func (m *MockFile) ProceedReplication(ctx context.Context, p file.ProceedReplicationParam) (*file.ProceedReplicationResult, *system.SystemError) {
+func (m *MockFile) ProceedReplication(ctx context.Context, p file.ProceedReplicationParam) (*file.ProceedReplicationResult, *system.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ProceedReplication", ctx, p)
 	ret0, _ := ret[0].(*file.ProceedReplicationResult)
-	ret1, _ := ret[1].(*system.SystemError)
+	ret1, _ := ret[1].(*system.Error)
 	return ret0, ret1
 }
 
@@ -97,11 +97,11 @@ func (mr *MockFileMockRecorder) ProceedReplication(ctx, p interface{}) *gomock.C
 }
 
 // RetrieveFileBySlug mocks base method.
-func (m *MockFile) RetrieveFileBySlug(ctx context.Context, p file.RetrieveFileBySlugParam) (*file.RetrieveFileBySlugResult, *system.SystemError) {
+func (m *MockFile) RetrieveFileBySlug(ctx context.Context, p file.RetrieveFileBySlugParam) (*file.RetrieveFileBySlugResult, *system.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RetrieveFileBySlug", ctx, p)
 	ret0, _ := ret[0].(*file.RetrieveFileBySlugResult)
-	ret1, _ := ret[1].(*system.SystemError)
+	ret1, _ := ret[1].(*system.Error)
 	return ret0, ret1
 }
 
@@ -112,11 +112,11 @@ func (mr *MockFileMockRecorder) RetrieveFileBySlug(ctx, p interface{}) *gomock.C
 }
 
 // ScheduleReplication mocks base method.
-func (m *MockFile) ScheduleReplication(ctx context.Context, p file.ScheduleReplicationParam) (*file.ScheduleReplicationResult, *system.SystemError) {
+func (m *MockFile) ScheduleReplication(ctx context.Context, p file.ScheduleReplicationParam) (*file.ScheduleReplicationResult, *system.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ScheduleReplication", ctx, p)
 	ret0, _ := ret[0].(*file.ScheduleReplicationResult)
-	ret1, _ := ret[1].(*system.SystemError)
+	ret1, _ := ret[1].(*system.Error)
 	return ret0, ret1
 }
 
@@ -127,11 +127,11 @@ func (mr *MockFileMockRecorder) ScheduleReplication(ctx, p interface{}) *gomock.
 }
 
 // SearchFile mocks base method.
-func (m *MockFile) SearchFile(ctx context.Context, p file.SearchFileParam) (*file.SearchFileResult, *system.SystemError) {
+func (m *MockFile) SearchFile(ctx context.Context, p file.SearchFileParam) (*file.SearchFileResult, *system.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SearchFile", ctx, p)
 	ret0, _ := ret[0].(*file.SearchFileResult)
-	ret1, _ := ret[1].(*system.SystemError)
+	ret1, _ := ret[1].(*system.Error)
 	return ret0, ret1
 }
 
@@ -142,11 +142,11 @@ func (mr *MockFileMockRecorder) SearchFile(ctx, p interface{}) *gomock.Call {
 }
 
 // UploadFile mocks base method.
-func (m *MockFile) UploadFile(ctx context.Context, p file.UploadFileParam) (*file.UploadFileResult, *system.SystemError) {
+func (m *MockFile) UploadFile(ctx context.Context, p file.UploadFileParam) (*file.UploadFileResult, *system.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UploadFile", ctx, p)
 	ret0, _ := ret[0].(*file.UploadFileResult)
-	ret1, _ := ret[1].(*system.SystemError)
+	ret1, _ := ret[1].(*system.Error)
 	return ret0, ret1
 }
 

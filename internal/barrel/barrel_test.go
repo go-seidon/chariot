@@ -10,7 +10,7 @@ import (
 	"github.com/go-seidon/chariot/internal/repository"
 	mock_repository "github.com/go-seidon/chariot/internal/repository/mock"
 	mock_datetime "github.com/go-seidon/provider/datetime/mock"
-	mock_identifier "github.com/go-seidon/provider/identifier/mock"
+	mock_identifier "github.com/go-seidon/provider/identity/mock"
 	"github.com/go-seidon/provider/system"
 	mock_validation "github.com/go-seidon/provider/validation/mock"
 
@@ -274,7 +274,7 @@ var _ = Describe("Barrel Package", func() {
 				CreatedAt: currentTs,
 			}
 			result = &barrel.FindBarrelByIdResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success find barrel",
 				},
