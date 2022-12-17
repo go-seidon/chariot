@@ -8,17 +8,17 @@ import (
 	"github.com/go-seidon/chariot/internal/repository"
 	"github.com/go-seidon/provider/datetime"
 	"github.com/go-seidon/provider/hashing"
-	"github.com/go-seidon/provider/identifier"
+	"github.com/go-seidon/provider/identity"
 	"github.com/go-seidon/provider/status"
 	"github.com/go-seidon/provider/system"
 	"github.com/go-seidon/provider/validation"
 )
 
 type AuthClient interface {
-	CreateClient(ctx context.Context, p CreateClientParam) (*CreateClientResult, *system.SystemError)
-	FindClientById(ctx context.Context, p FindClientByIdParam) (*FindClientByIdResult, *system.SystemError)
-	UpdateClientById(ctx context.Context, p UpdateClientByIdParam) (*UpdateClientByIdResult, *system.SystemError)
-	SearchClient(ctx context.Context, p SearchClientParam) (*SearchClientResult, *system.SystemError)
+	CreateClient(ctx context.Context, p CreateClientParam) (*CreateClientResult, *system.Error)
+	FindClientById(ctx context.Context, p FindClientByIdParam) (*FindClientByIdResult, *system.Error)
+	UpdateClientById(ctx context.Context, p UpdateClientByIdParam) (*UpdateClientByIdResult, *system.Error)
+	SearchClient(ctx context.Context, p SearchClientParam) (*SearchClientResult, *system.Error)
 }
 
 type CreateClientParam struct {
@@ -30,7 +30,7 @@ type CreateClientParam struct {
 }
 
 type CreateClientResult struct {
-	Success   system.SystemSuccess
+	Success   system.Success
 	Id        string
 	ClientId  string
 	Name      string
@@ -44,7 +44,7 @@ type FindClientByIdParam struct {
 }
 
 type FindClientByIdResult struct {
-	Success   system.SystemSuccess
+	Success   system.Success
 	Id        string
 	ClientId  string
 	Name      string
@@ -63,7 +63,7 @@ type UpdateClientByIdParam struct {
 }
 
 type UpdateClientByIdResult struct {
-	Success   system.SystemSuccess
+	Success   system.Success
 	Id        string
 	ClientId  string
 	Name      string
@@ -81,7 +81,7 @@ type SearchClientParam struct {
 }
 
 type SearchClientResult struct {
-	Success system.SystemSuccess
+	Success system.Success
 	Items   []SearchClientItem
 	Summary SearchClientSummary
 }
@@ -104,15 +104,15 @@ type SearchClientSummary struct {
 type authClient struct {
 	validator  validation.Validator
 	hasher     hashing.Hasher
-	identifier identifier.Identifier
+	identifier identity.Identifier
 	clock      datetime.Clock
 	authRepo   repository.Auth
 }
 
-func (c *authClient) CreateClient(ctx context.Context, p CreateClientParam) (*CreateClientResult, *system.SystemError) {
+func (c *authClient) CreateClient(ctx context.Context, p CreateClientParam) (*CreateClientResult, *system.Error) {
 	err := c.validator.Validate(p)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
@@ -120,7 +120,7 @@ func (c *authClient) CreateClient(ctx context.Context, p CreateClientParam) (*Cr
 
 	id, err := c.identifier.GenerateId()
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -128,7 +128,7 @@ func (c *authClient) CreateClient(ctx context.Context, p CreateClientParam) (*Cr
 
 	secret, err := c.hasher.Generate(p.ClientSecret)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -146,19 +146,19 @@ func (c *authClient) CreateClient(ctx context.Context, p CreateClientParam) (*Cr
 	})
 	if err != nil {
 		if errors.Is(err, repository.ErrExists) {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.INVALID_PARAM,
 				Message: "client is already exists",
 			}
 		}
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
 	}
 
 	res := &CreateClientResult{
-		Success: system.SystemSuccess{
+		Success: system.Success{
 			Code:    status.ACTION_SUCCESS,
 			Message: "success create auth client",
 		},
@@ -172,10 +172,10 @@ func (c *authClient) CreateClient(ctx context.Context, p CreateClientParam) (*Cr
 	return res, nil
 }
 
-func (c *authClient) FindClientById(ctx context.Context, p FindClientByIdParam) (*FindClientByIdResult, *system.SystemError) {
+func (c *authClient) FindClientById(ctx context.Context, p FindClientByIdParam) (*FindClientByIdResult, *system.Error) {
 	err := c.validator.Validate(p)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
@@ -186,19 +186,19 @@ func (c *authClient) FindClientById(ctx context.Context, p FindClientByIdParam) 
 	})
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.RESOURCE_NOTFOUND,
 				Message: "auth client is not available",
 			}
 		}
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
 	}
 
 	res := &FindClientByIdResult{
-		Success: system.SystemSuccess{
+		Success: system.Success{
 			Code:    status.ACTION_SUCCESS,
 			Message: "success find auth client",
 		},
@@ -213,10 +213,10 @@ func (c *authClient) FindClientById(ctx context.Context, p FindClientByIdParam) 
 	return res, nil
 }
 
-func (c *authClient) UpdateClientById(ctx context.Context, p UpdateClientByIdParam) (*UpdateClientByIdResult, *system.SystemError) {
+func (c *authClient) UpdateClientById(ctx context.Context, p UpdateClientByIdParam) (*UpdateClientByIdResult, *system.Error) {
 	err := c.validator.Validate(p)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
@@ -233,19 +233,19 @@ func (c *authClient) UpdateClientById(ctx context.Context, p UpdateClientByIdPar
 	})
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.RESOURCE_NOTFOUND,
 				Message: "auth client is not available",
 			}
 		}
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
 	}
 
 	res := &UpdateClientByIdResult{
-		Success: system.SystemSuccess{
+		Success: system.Success{
 			Code:    status.ACTION_SUCCESS,
 			Message: "success update auth client",
 		},
@@ -260,10 +260,10 @@ func (c *authClient) UpdateClientById(ctx context.Context, p UpdateClientByIdPar
 	return res, nil
 }
 
-func (c *authClient) SearchClient(ctx context.Context, p SearchClientParam) (*SearchClientResult, *system.SystemError) {
+func (c *authClient) SearchClient(ctx context.Context, p SearchClientParam) (*SearchClientResult, *system.Error) {
 	err := c.validator.Validate(p)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
@@ -281,7 +281,7 @@ func (c *authClient) SearchClient(ctx context.Context, p SearchClientParam) (*Se
 		Offset:   offset,
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -301,7 +301,7 @@ func (c *authClient) SearchClient(ctx context.Context, p SearchClientParam) (*Se
 	}
 
 	res := &SearchClientResult{
-		Success: system.SystemSuccess{
+		Success: system.Success{
 			Code:    status.ACTION_SUCCESS,
 			Message: "success search auth client",
 		},
@@ -317,7 +317,7 @@ func (c *authClient) SearchClient(ctx context.Context, p SearchClientParam) (*Se
 type AuthClientParam struct {
 	Validator  validation.Validator
 	Hasher     hashing.Hasher
-	Identifier identifier.Identifier
+	Identifier identity.Identifier
 	Clock      datetime.Clock
 	AuthRepo   repository.Auth
 }

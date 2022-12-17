@@ -19,7 +19,7 @@ import (
 	"github.com/go-seidon/provider/encoding/base64"
 	"github.com/go-seidon/provider/hashing/bcrypt"
 	"github.com/go-seidon/provider/http"
-	"github.com/go-seidon/provider/identifier/ksuid"
+	"github.com/go-seidon/provider/identity/ksuid"
 	"github.com/go-seidon/provider/logging"
 	"github.com/go-seidon/provider/serialization"
 	"github.com/go-seidon/provider/serialization/json"

@@ -37,11 +37,11 @@ func (m *MockAuthClient) EXPECT() *MockAuthClientMockRecorder {
 }
 
 // CreateClient mocks base method.
-func (m *MockAuthClient) CreateClient(ctx context.Context, p auth.CreateClientParam) (*auth.CreateClientResult, *system.SystemError) {
+func (m *MockAuthClient) CreateClient(ctx context.Context, p auth.CreateClientParam) (*auth.CreateClientResult, *system.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateClient", ctx, p)
 	ret0, _ := ret[0].(*auth.CreateClientResult)
-	ret1, _ := ret[1].(*system.SystemError)
+	ret1, _ := ret[1].(*system.Error)
 	return ret0, ret1
 }
 
@@ -52,11 +52,11 @@ func (mr *MockAuthClientMockRecorder) CreateClient(ctx, p interface{}) *gomock.C
 }
 
 // FindClientById mocks base method.
-func (m *MockAuthClient) FindClientById(ctx context.Context, p auth.FindClientByIdParam) (*auth.FindClientByIdResult, *system.SystemError) {
+func (m *MockAuthClient) FindClientById(ctx context.Context, p auth.FindClientByIdParam) (*auth.FindClientByIdResult, *system.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindClientById", ctx, p)
 	ret0, _ := ret[0].(*auth.FindClientByIdResult)
-	ret1, _ := ret[1].(*system.SystemError)
+	ret1, _ := ret[1].(*system.Error)
 	return ret0, ret1
 }
 
@@ -67,11 +67,11 @@ func (mr *MockAuthClientMockRecorder) FindClientById(ctx, p interface{}) *gomock
 }
 
 // SearchClient mocks base method.
-func (m *MockAuthClient) SearchClient(ctx context.Context, p auth.SearchClientParam) (*auth.SearchClientResult, *system.SystemError) {
+func (m *MockAuthClient) SearchClient(ctx context.Context, p auth.SearchClientParam) (*auth.SearchClientResult, *system.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SearchClient", ctx, p)
 	ret0, _ := ret[0].(*auth.SearchClientResult)
-	ret1, _ := ret[1].(*system.SystemError)
+	ret1, _ := ret[1].(*system.Error)
 	return ret0, ret1
 }
 
@@ -82,11 +82,11 @@ func (mr *MockAuthClientMockRecorder) SearchClient(ctx, p interface{}) *gomock.C
 }
 
 // UpdateClientById mocks base method.
-func (m *MockAuthClient) UpdateClientById(ctx context.Context, p auth.UpdateClientByIdParam) (*auth.UpdateClientByIdResult, *system.SystemError) {
+func (m *MockAuthClient) UpdateClientById(ctx context.Context, p auth.UpdateClientByIdParam) (*auth.UpdateClientByIdResult, *system.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateClientById", ctx, p)
 	ret0, _ := ret[0].(*auth.UpdateClientByIdResult)
-	ret1, _ := ret[1].(*system.SystemError)
+	ret1, _ := ret[1].(*system.Error)
 	return ret0, ret1
 }
 

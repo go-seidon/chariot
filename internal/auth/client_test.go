@@ -10,7 +10,7 @@ import (
 	mock_repository "github.com/go-seidon/chariot/internal/repository/mock"
 	mock_datetime "github.com/go-seidon/provider/datetime/mock"
 	mock_hashing "github.com/go-seidon/provider/hashing/mock"
-	mock_identifier "github.com/go-seidon/provider/identifier/mock"
+	mock_identifier "github.com/go-seidon/provider/identity/mock"
 	"github.com/go-seidon/provider/system"
 	mock_validation "github.com/go-seidon/provider/validation/mock"
 	"github.com/golang/mock/gomock"
@@ -323,7 +323,7 @@ var _ = Describe("Client Package", func() {
 				CreatedAt:    currentTs,
 			}
 			result = &auth.FindClientByIdResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success find auth client",
 				},

@@ -10,7 +10,7 @@ import (
 	"github.com/go-seidon/chariot/internal/signature"
 	mock_signature "github.com/go-seidon/chariot/internal/signature/mock"
 	mock_datetime "github.com/go-seidon/provider/datetime/mock"
-	mock_identifier "github.com/go-seidon/provider/identifier/mock"
+	mock_identifier "github.com/go-seidon/provider/identity/mock"
 	"github.com/go-seidon/provider/system"
 	"github.com/go-seidon/provider/typeconv"
 	mock_validation "github.com/go-seidon/provider/validation/mock"
@@ -79,7 +79,7 @@ var _ = Describe("Session Package", func() {
 				Features: []string{"upload_file", "retrieve_file"},
 			}
 			r = &session.CreateSessionResult{
-				Success: system.SystemSuccess{
+				Success: system.Success{
 					Code:    1000,
 					Message: "success create session",
 				},

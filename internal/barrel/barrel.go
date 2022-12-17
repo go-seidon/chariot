@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-seidon/chariot/internal/repository"
 	"github.com/go-seidon/provider/datetime"
-	"github.com/go-seidon/provider/identifier"
+	"github.com/go-seidon/provider/identity"
 	"github.com/go-seidon/provider/status"
 	"github.com/go-seidon/provider/system"
 	"github.com/go-seidon/provider/validation"
@@ -32,10 +32,10 @@ var (
 )
 
 type Barrel interface {
-	CreateBarrel(ctx context.Context, p CreateBarrelParam) (*CreateBarrelResult, *system.SystemError)
-	FindBarrelById(ctx context.Context, p FindBarrelByIdParam) (*FindBarrelByIdResult, *system.SystemError)
-	UpdateBarrelById(ctx context.Context, p UpdateBarrelByIdParam) (*UpdateBarrelByIdResult, *system.SystemError)
-	SearchBarrel(ctx context.Context, p SearchBarrelParam) (*SearchBarrelResult, *system.SystemError)
+	CreateBarrel(ctx context.Context, p CreateBarrelParam) (*CreateBarrelResult, *system.Error)
+	FindBarrelById(ctx context.Context, p FindBarrelByIdParam) (*FindBarrelByIdResult, *system.Error)
+	UpdateBarrelById(ctx context.Context, p UpdateBarrelByIdParam) (*UpdateBarrelByIdResult, *system.Error)
+	SearchBarrel(ctx context.Context, p SearchBarrelParam) (*SearchBarrelResult, *system.Error)
 }
 
 type CreateBarrelParam struct {
@@ -46,7 +46,7 @@ type CreateBarrelParam struct {
 }
 
 type CreateBarrelResult struct {
-	Success   system.SystemSuccess
+	Success   system.Success
 	Id        string
 	Code      string
 	Name      string
@@ -60,7 +60,7 @@ type FindBarrelByIdParam struct {
 }
 
 type FindBarrelByIdResult struct {
-	Success   system.SystemSuccess
+	Success   system.Success
 	Id        string
 	Code      string
 	Name      string
@@ -79,7 +79,7 @@ type UpdateBarrelByIdParam struct {
 }
 
 type UpdateBarrelByIdResult struct {
-	Success   system.SystemSuccess
+	Success   system.Success
 	Id        string
 	Code      string
 	Name      string
@@ -98,7 +98,7 @@ type SearchBarrelParam struct {
 }
 
 type SearchBarrelResult struct {
-	Success system.SystemSuccess
+	Success system.Success
 	Items   []SearchBarrelItem
 	Summary SearchBarrelSummary
 }
@@ -120,15 +120,15 @@ type SearchBarrelSummary struct {
 
 type barrel struct {
 	validator  validation.Validator
-	identifier identifier.Identifier
+	identifier identity.Identifier
 	clock      datetime.Clock
 	barrelRepo repository.Barrel
 }
 
-func (b *barrel) CreateBarrel(ctx context.Context, p CreateBarrelParam) (*CreateBarrelResult, *system.SystemError) {
+func (b *barrel) CreateBarrel(ctx context.Context, p CreateBarrelParam) (*CreateBarrelResult, *system.Error) {
 	err := b.validator.Validate(p)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
@@ -136,7 +136,7 @@ func (b *barrel) CreateBarrel(ctx context.Context, p CreateBarrelParam) (*Create
 
 	id, err := b.identifier.GenerateId()
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -153,19 +153,19 @@ func (b *barrel) CreateBarrel(ctx context.Context, p CreateBarrelParam) (*Create
 	})
 	if err != nil {
 		if errors.Is(err, repository.ErrExists) {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.INVALID_PARAM,
 				Message: "barrel is already exists",
 			}
 		}
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
 	}
 
 	res := &CreateBarrelResult{
-		Success: system.SystemSuccess{
+		Success: system.Success{
 			Code:    status.ACTION_SUCCESS,
 			Message: "success create barrel",
 		},
@@ -179,10 +179,10 @@ func (b *barrel) CreateBarrel(ctx context.Context, p CreateBarrelParam) (*Create
 	return res, nil
 }
 
-func (b *barrel) FindBarrelById(ctx context.Context, p FindBarrelByIdParam) (*FindBarrelByIdResult, *system.SystemError) {
+func (b *barrel) FindBarrelById(ctx context.Context, p FindBarrelByIdParam) (*FindBarrelByIdResult, *system.Error) {
 	err := b.validator.Validate(p)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
@@ -193,19 +193,19 @@ func (b *barrel) FindBarrelById(ctx context.Context, p FindBarrelByIdParam) (*Fi
 	})
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.RESOURCE_NOTFOUND,
 				Message: "barrel is not available",
 			}
 		}
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
 	}
 
 	res := &FindBarrelByIdResult{
-		Success: system.SystemSuccess{
+		Success: system.Success{
 			Code:    status.ACTION_SUCCESS,
 			Message: "success find barrel",
 		},
@@ -220,10 +220,10 @@ func (b *barrel) FindBarrelById(ctx context.Context, p FindBarrelByIdParam) (*Fi
 	return res, nil
 }
 
-func (b *barrel) UpdateBarrelById(ctx context.Context, p UpdateBarrelByIdParam) (*UpdateBarrelByIdResult, *system.SystemError) {
+func (b *barrel) UpdateBarrelById(ctx context.Context, p UpdateBarrelByIdParam) (*UpdateBarrelByIdResult, *system.Error) {
 	err := b.validator.Validate(p)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
@@ -240,19 +240,19 @@ func (b *barrel) UpdateBarrelById(ctx context.Context, p UpdateBarrelByIdParam) 
 	})
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return nil, &system.SystemError{
+			return nil, &system.Error{
 				Code:    status.RESOURCE_NOTFOUND,
 				Message: "barrel is not available",
 			}
 		}
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
 	}
 
 	res := &UpdateBarrelByIdResult{
-		Success: system.SystemSuccess{
+		Success: system.Success{
 			Code:    status.ACTION_SUCCESS,
 			Message: "success update barrel",
 		},
@@ -267,10 +267,10 @@ func (b *barrel) UpdateBarrelById(ctx context.Context, p UpdateBarrelByIdParam) 
 	return res, nil
 }
 
-func (b *barrel) SearchBarrel(ctx context.Context, p SearchBarrelParam) (*SearchBarrelResult, *system.SystemError) {
+func (b *barrel) SearchBarrel(ctx context.Context, p SearchBarrelParam) (*SearchBarrelResult, *system.Error) {
 	err := b.validator.Validate(p)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
@@ -289,7 +289,7 @@ func (b *barrel) SearchBarrel(ctx context.Context, p SearchBarrelParam) (*Search
 		Offset:    offset,
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -309,7 +309,7 @@ func (b *barrel) SearchBarrel(ctx context.Context, p SearchBarrelParam) (*Search
 	}
 
 	res := &SearchBarrelResult{
-		Success: system.SystemSuccess{
+		Success: system.Success{
 			Code:    status.ACTION_SUCCESS,
 			Message: "success search barrel",
 		},
@@ -324,7 +324,7 @@ func (b *barrel) SearchBarrel(ctx context.Context, p SearchBarrelParam) (*Search
 
 type BarrelParam struct {
 	Validator  validation.Validator
-	Identifier identifier.Identifier
+	Identifier identity.Identifier
 	Clock      datetime.Clock
 	BarrelRepo repository.Barrel
 }

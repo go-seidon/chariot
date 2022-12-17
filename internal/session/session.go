@@ -6,15 +6,15 @@ import (
 
 	"github.com/go-seidon/chariot/internal/signature"
 	"github.com/go-seidon/provider/datetime"
-	"github.com/go-seidon/provider/identifier"
+	"github.com/go-seidon/provider/identity"
 	"github.com/go-seidon/provider/status"
 	"github.com/go-seidon/provider/system"
 	"github.com/go-seidon/provider/validation"
 )
 
 type Session interface {
-	CreateSession(ctx context.Context, p CreateSessionParam) (*CreateSessionResult, *system.SystemError)
-	VerifySession(ctx context.Context, p VerifySessionParam) (*VerifySessionResult, *system.SystemError)
+	CreateSession(ctx context.Context, p CreateSessionParam) (*CreateSessionResult, *system.Error)
+	VerifySession(ctx context.Context, p VerifySessionParam) (*VerifySessionResult, *system.Error)
 }
 
 type CreateSessionParam struct {
@@ -23,7 +23,7 @@ type CreateSessionParam struct {
 }
 
 type CreateSessionResult struct {
-	Success   system.SystemSuccess
+	Success   system.Success
 	CreatedAt time.Time
 	ExpiresAt time.Time
 	Token     string
@@ -39,15 +39,15 @@ type VerifySessionResult struct {
 
 type session struct {
 	validator  validation.Validator
-	identifier identifier.Identifier
+	identifier identity.Identifier
 	clock      datetime.Clock
 	signature  signature.Signature
 }
 
-func (s *session) CreateSession(ctx context.Context, p CreateSessionParam) (*CreateSessionResult, *system.SystemError) {
+func (s *session) CreateSession(ctx context.Context, p CreateSessionParam) (*CreateSessionResult, *system.Error) {
 	err := s.validator.Validate(p)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
@@ -55,7 +55,7 @@ func (s *session) CreateSession(ctx context.Context, p CreateSessionParam) (*Cre
 
 	id, err := s.identifier.GenerateId()
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -77,14 +77,14 @@ func (s *session) CreateSession(ctx context.Context, p CreateSessionParam) (*Cre
 		},
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
 	}
 
 	res := &CreateSessionResult{
-		Success: system.SystemSuccess{
+		Success: system.Success{
 			Code:    status.ACTION_SUCCESS,
 			Message: "success create session",
 		},
@@ -95,10 +95,10 @@ func (s *session) CreateSession(ctx context.Context, p CreateSessionParam) (*Cre
 	return res, nil
 }
 
-func (s *session) VerifySession(ctx context.Context, p VerifySessionParam) (*VerifySessionResult, *system.SystemError) {
+func (s *session) VerifySession(ctx context.Context, p VerifySessionParam) (*VerifySessionResult, *system.Error) {
 	err := s.validator.Validate(p)
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.INVALID_PARAM,
 			Message: err.Error(),
 		}
@@ -108,7 +108,7 @@ func (s *session) VerifySession(ctx context.Context, p VerifySessionParam) (*Ver
 		Signature: p.Token,
 	})
 	if err != nil {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: err.Error(),
 		}
@@ -116,7 +116,7 @@ func (s *session) VerifySession(ctx context.Context, p VerifySessionParam) (*Ver
 
 	data, ok := signature.Data["data"].(map[string]interface{})
 	if !ok {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: "invalid signature data",
 		}
@@ -124,7 +124,7 @@ func (s *session) VerifySession(ctx context.Context, p VerifySessionParam) (*Ver
 
 	features, ok := data["features"].(map[string]interface{})
 	if !ok {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FAILED,
 			Message: "invalid features data",
 		}
@@ -132,7 +132,7 @@ func (s *session) VerifySession(ctx context.Context, p VerifySessionParam) (*Ver
 
 	_, ok = features[p.Feature]
 	if !ok {
-		return nil, &system.SystemError{
+		return nil, &system.Error{
 			Code:    status.ACTION_FORBIDDEN,
 			Message: "feature is not granted",
 		}
@@ -144,7 +144,7 @@ func (s *session) VerifySession(ctx context.Context, p VerifySessionParam) (*Ver
 
 type SessionParam struct {
 	Validator  validation.Validator
-	Identifier identifier.Identifier
+	Identifier identity.Identifier
 	Clock      datetime.Clock
 	Signature  signature.Signature
 }

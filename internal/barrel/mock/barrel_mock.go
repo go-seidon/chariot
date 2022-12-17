@@ -37,11 +37,11 @@ func (m *MockBarrel) EXPECT() *MockBarrelMockRecorder {
 }
 
 // CreateBarrel mocks base method.
-func (m *MockBarrel) CreateBarrel(ctx context.Context, p barrel.CreateBarrelParam) (*barrel.CreateBarrelResult, *system.SystemError) {
+func (m *MockBarrel) CreateBarrel(ctx context.Context, p barrel.CreateBarrelParam) (*barrel.CreateBarrelResult, *system.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateBarrel", ctx, p)
 	ret0, _ := ret[0].(*barrel.CreateBarrelResult)
-	ret1, _ := ret[1].(*system.SystemError)
+	ret1, _ := ret[1].(*system.Error)
 	return ret0, ret1
 }
 
@@ -52,11 +52,11 @@ func (mr *MockBarrelMockRecorder) CreateBarrel(ctx, p interface{}) *gomock.Call 
 }
 
 // FindBarrelById mocks base method.
-func (m *MockBarrel) FindBarrelById(ctx context.Context, p barrel.FindBarrelByIdParam) (*barrel.FindBarrelByIdResult, *system.SystemError) {
+func (m *MockBarrel) FindBarrelById(ctx context.Context, p barrel.FindBarrelByIdParam) (*barrel.FindBarrelByIdResult, *system.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindBarrelById", ctx, p)
 	ret0, _ := ret[0].(*barrel.FindBarrelByIdResult)
-	ret1, _ := ret[1].(*system.SystemError)
+	ret1, _ := ret[1].(*system.Error)
 	return ret0, ret1
 }
 
@@ -67,11 +67,11 @@ func (mr *MockBarrelMockRecorder) FindBarrelById(ctx, p interface{}) *gomock.Cal
 }
 
 // SearchBarrel mocks base method.
-func (m *MockBarrel) SearchBarrel(ctx context.Context, p barrel.SearchBarrelParam) (*barrel.SearchBarrelResult, *system.SystemError) {
+func (m *MockBarrel) SearchBarrel(ctx context.Context, p barrel.SearchBarrelParam) (*barrel.SearchBarrelResult, *system.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SearchBarrel", ctx, p)
 	ret0, _ := ret[0].(*barrel.SearchBarrelResult)
-	ret1, _ := ret[1].(*system.SystemError)
+	ret1, _ := ret[1].(*system.Error)
 	return ret0, ret1
 }
 
@@ -82,11 +82,11 @@ func (mr *MockBarrelMockRecorder) SearchBarrel(ctx, p interface{}) *gomock.Call 
 }
 
 // UpdateBarrelById mocks base method.
-func (m *MockBarrel) UpdateBarrelById(ctx context.Context, p barrel.UpdateBarrelByIdParam) (*barrel.UpdateBarrelByIdResult, *system.SystemError) {
+func (m *MockBarrel) UpdateBarrelById(ctx context.Context, p barrel.UpdateBarrelByIdParam) (*barrel.UpdateBarrelByIdResult, *system.Error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateBarrelById", ctx, p)
 	ret0, _ := ret[0].(*barrel.UpdateBarrelByIdResult)
-	ret1, _ := ret[1].(*system.SystemError)
+	ret1, _ := ret[1].(*system.Error)
 	return ret0, ret1
 }
 
