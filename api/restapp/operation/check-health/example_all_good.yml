@@ -1,0 +1,16 @@
+value:
+  code: 1000
+  message: success check service health
+  data:
+    status: OK
+    details:
+      app-disk:
+        name: app-disk
+        status: OK
+        checked_at: 1664803257299
+        error: ""
+      internet-connection:
+        name: internet-connection
+        status: OK
+        checked_at: 1664803257299
+        error: ""

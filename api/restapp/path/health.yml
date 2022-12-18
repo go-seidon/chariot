@@ -1,0 +1,2 @@
+get:
+  $ref: "./../operation/check-health/operation.yml"

@@ -1,0 +1,26 @@
+
+operationId: CheckHealth
+summary: check service health
+description: check service health
+tags:
+  - healthcheck
+parameters:
+  - $ref: "./../../main.yml#/components/parameters/CorrelationId"
+responses:
+  '200':
+    description: success check service health
+    content: 
+      application/json:
+        schema:
+          $ref: "./response_body.yml"
+        examples:
+          'All Good':
+            $ref: "./example_all_good.yml"
+          'Some Failed':
+            $ref: "./example_some_failed.yml"
+          'All Failed':
+            $ref: "./example_all_failed.yml"
+  '500':
+    $ref: "./../../main.yml#/components/responses/ServerError"
+security:
+  - basicAuth: []

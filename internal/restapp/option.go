@@ -4,17 +4,19 @@ import (
 	"github.com/go-seidon/chariot/internal/app"
 	"github.com/go-seidon/chariot/internal/queue"
 	"github.com/go-seidon/chariot/internal/repository"
+	"github.com/go-seidon/provider/health"
 	"github.com/go-seidon/provider/logging"
 	"github.com/go-seidon/provider/queueing"
 )
 
 type RestAppParam struct {
-	Config     *app.Config
-	Logger     logging.Logger
-	Repository repository.Provider
-	Server     Server
-	Queuer     queueing.Queuer
-	Queue      queue.Queue
+	Config       *app.Config
+	Logger       logging.Logger
+	Repository   repository.Provider
+	Server       Server
+	Queuer       queueing.Queuer
+	Queue        queue.Queue
+	HealthClient health.HealthCheck
 }
 
 type RestAppOption = func(*RestAppParam)
@@ -52,5 +54,11 @@ func WithQueuer(queuer queueing.Queuer) RestAppOption {
 func WithQueue(queue queue.Queue) RestAppOption {
 	return func(p *RestAppParam) {
 		p.Queue = queue
+	}
+}
+
+func WithHealth(hc health.HealthCheck) RestAppOption {
+	return func(p *RestAppParam) {
+		p.HealthClient = hc
 	}
 }

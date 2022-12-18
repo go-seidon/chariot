@@ -130,6 +130,32 @@ const (
 	Public    UploadFileRequestVisibility = "public"
 )
 
+// CheckHealthData defines model for CheckHealthData.
+type CheckHealthData struct {
+	Details CheckHealthData_Details `json:"details"`
+	Status  string                  `json:"status"`
+}
+
+// CheckHealthData_Details defines model for CheckHealthData.Details.
+type CheckHealthData_Details struct {
+	AdditionalProperties map[string]CheckHealthDetail `json:"-"`
+}
+
+// CheckHealthDetail defines model for CheckHealthDetail.
+type CheckHealthDetail struct {
+	CheckedAt int64  `json:"checked_at"`
+	Error     string `json:"error"`
+	Name      string `json:"name"`
+	Status    string `json:"status"`
+}
+
+// CheckHealthResponse defines model for CheckHealthResponse.
+type CheckHealthResponse struct {
+	Code    int32           `json:"code"`
+	Data    CheckHealthData `json:"data"`
+	Message string          `json:"message"`
+}
+
 // CreateAuthClientData defines model for CreateAuthClientData.
 type CreateAuthClientData struct {
 	ClientId  string `json:"client_id"`
@@ -691,6 +717,12 @@ type RetrieveFileBySlugParams struct {
 	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
 }
 
+// CheckHealthParams defines parameters for CheckHealth.
+type CheckHealthParams struct {
+	// correlation id for tracing purposes
+	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
+}
+
 // CreateAuthClientJSONBody defines parameters for CreateAuthClient.
 type CreateAuthClientJSONBody = CreateAuthClientRequest
 
@@ -822,6 +854,59 @@ type SearchFileJSONRequestBody = SearchFileJSONBody
 
 // CreateSessionJSONRequestBody defines body for CreateSession for application/json ContentType.
 type CreateSessionJSONRequestBody = CreateSessionJSONBody
+
+// Getter for additional properties for CheckHealthData_Details. Returns the specified
+// element and whether it was found
+func (a CheckHealthData_Details) Get(fieldName string) (value CheckHealthDetail, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CheckHealthData_Details
+func (a *CheckHealthData_Details) Set(fieldName string, value CheckHealthDetail) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]CheckHealthDetail)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CheckHealthData_Details to handle AdditionalProperties
+func (a *CheckHealthData_Details) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]CheckHealthDetail)
+		for fieldName, fieldBuf := range object {
+			var fieldVal CheckHealthDetail
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CheckHealthData_Details to handle AdditionalProperties
+func (a CheckHealthData_Details) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
 
 // Getter for additional properties for GetFileByIdData_Meta. Returns the specified
 // element and whether it was found

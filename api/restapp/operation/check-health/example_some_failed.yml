@@ -1,0 +1,16 @@
+value:
+  code: 1000
+  message: success check service health
+  data:
+    status: WARNING
+    details:
+      app-disk:
+        name: app-disk
+        status: FAILED
+        checked_at: 1664803257299
+        error: "Critical: disk usage too high 62.32 percent"
+      internet-connection:
+        name: internet-connection
+        status: OK
+        checked_at: 1664803257299
+        error: ""

@@ -1,0 +1,16 @@
+type: object
+required:
+  - name
+  - status
+  - checked_at
+  - error
+properties:
+  name:
+    type: string
+  status:
+    type: string
+  checked_at:
+    type: integer
+    format: int64
+  error:
+    type: string

@@ -9,6 +9,7 @@ import (
 	"github.com/go-seidon/chariot/internal/auth"
 	"github.com/go-seidon/chariot/internal/barrel"
 	"github.com/go-seidon/chariot/internal/file"
+	"github.com/go-seidon/chariot/internal/healthcheck"
 	"github.com/go-seidon/chariot/internal/queue"
 	"github.com/go-seidon/chariot/internal/repository"
 	"github.com/go-seidon/chariot/internal/resthandler"
@@ -19,6 +20,7 @@ import (
 	"github.com/go-seidon/provider/datetime"
 	"github.com/go-seidon/provider/encoding/base64"
 	"github.com/go-seidon/provider/hashing/bcrypt"
+	"github.com/go-seidon/provider/health"
 	"github.com/go-seidon/provider/http"
 	"github.com/go-seidon/provider/identity/ksuid"
 	"github.com/go-seidon/provider/logging"
@@ -33,11 +35,12 @@ import (
 )
 
 type restApp struct {
-	config     *RestAppConfig
-	server     Server
-	logger     logging.Logger
-	repository repository.Provider
-	queue      queue.Queue
+	config       *RestAppConfig
+	server       Server
+	logger       logging.Logger
+	repository   repository.Provider
+	queue        queue.Queue
+	healthClient health.HealthCheck
 }
 
 func (a *restApp) Run(ctx context.Context) error {
@@ -45,6 +48,11 @@ func (a *restApp) Run(ctx context.Context) error {
 
 	a.logger.Infof("Initializing repository")
 	err := a.repository.Init(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = a.healthClient.Start(ctx)
 	if err != nil {
 		return err
 	}
@@ -76,7 +84,12 @@ func (a *restApp) Run(ctx context.Context) error {
 func (a *restApp) Stop(ctx context.Context) error {
 	a.logger.Infof("Stopping %s on: %s", a.config.GetAppName(), a.config.GetAddress())
 
-	err := a.server.Shutdown(ctx)
+	err := a.healthClient.Stop(ctx)
+	if err != nil {
+		a.logger.Errorf("Failed stopping healthcheck, err: %s", err.Error())
+	}
+
+	err = a.server.Shutdown(ctx)
 	if err != nil {
 		return err
 	}
@@ -121,6 +134,14 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 	queuer := p.Queuer
 	if queuer == nil {
 		queuer, err = app.NewDefaultQueueing(p.Config)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	healthClient := p.HealthClient
+	if healthClient == nil {
+		healthClient, err = app.NewDefaultHealthCheck(logger, repo)
 		if err != nil {
 			return nil, err
 		}
@@ -192,6 +213,13 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 				AppVersion: config.AppVersion,
 			},
 		})
+		healthCheck := healthcheck.NewHealthCheck(healthcheck.HealthCheckParam{
+			HealthClient: healthClient,
+		})
+		healthHandler := resthandler.NewHealth(resthandler.HealthParam{
+			HealthClient: healthCheck,
+		})
+
 		authClient := auth.NewAuthClient(auth.AuthClientParam{
 			Validator:  goValidator,
 			Hasher:     bcryptHasher,
@@ -256,20 +284,21 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		basicGroup := e.Group("")
 		basicGroup.GET("/", basicHandler.GetAppInfo)
 
-		basicAuthGroup := e.Group("/v1", basicAuthMiddleware)
-		basicAuthGroup.POST("/auth-client", authHandler.CreateClient)
-		basicAuthGroup.POST("/auth-client/search", authHandler.SearchClient)
-		basicAuthGroup.GET("/auth-client/:id", authHandler.GetClientById)
-		basicAuthGroup.PUT("/auth-client/:id", authHandler.UpdateClientById)
-		basicAuthGroup.POST("/barrel", barrelHandler.CreateBarrel)
-		basicAuthGroup.POST("/barrel/search", barrelHandler.SearchBarrel)
-		basicAuthGroup.GET("/barrel/:id", barrelHandler.GetBarrelById)
-		basicAuthGroup.PUT("/barrel/:id", barrelHandler.UpdateBarrelById)
-		basicAuthGroup.POST("/session", sessionHandler.CreateSession)
-		basicAuthGroup.GET("/file/:id", fileHandler.GetFileById)
-		basicAuthGroup.DELETE("/file/:id", fileHandler.DeleteFileById)
-		basicAuthGroup.POST("/file/search", fileHandler.SearchFile)
-		basicAuthGroup.POST("/file/replication", fileHandler.ScheduleReplication)
+		basicAuthGroup := e.Group("", basicAuthMiddleware)
+		basicAuthGroup.GET("/health", healthHandler.CheckHealth)
+		basicAuthGroup.POST("/v1/auth-client", authHandler.CreateClient)
+		basicAuthGroup.POST("/v1/auth-client/search", authHandler.SearchClient)
+		basicAuthGroup.GET("/v1/auth-client/:id", authHandler.GetClientById)
+		basicAuthGroup.PUT("/v1/auth-client/:id", authHandler.UpdateClientById)
+		basicAuthGroup.POST("/v1/barrel", barrelHandler.CreateBarrel)
+		basicAuthGroup.POST("/v1/barrel/search", barrelHandler.SearchBarrel)
+		basicAuthGroup.GET("/v1/barrel/:id", barrelHandler.GetBarrelById)
+		basicAuthGroup.PUT("/v1/barrel/:id", barrelHandler.UpdateBarrelById)
+		basicAuthGroup.POST("/v1/session", sessionHandler.CreateSession)
+		basicAuthGroup.GET("/v1/file/:id", fileHandler.GetFileById)
+		basicAuthGroup.DELETE("/v1/file/:id", fileHandler.DeleteFileById)
+		basicAuthGroup.POST("/v1/file/search", fileHandler.SearchFile)
+		basicAuthGroup.POST("/v1/file/replication", fileHandler.ScheduleReplication)
 
 		e.POST("/file", fileHandler.UploadFile, uploadMiddleware)
 		e.GET("/file/:slug", fileHandler.RetrieveFileBySlug)
@@ -285,11 +314,12 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 	}
 
 	app := &restApp{
-		server:     server,
-		config:     config,
-		repository: repo,
-		logger:     logger,
-		queue:      que,
+		server:       server,
+		config:       config,
+		repository:   repo,
+		logger:       logger,
+		queue:        que,
+		healthClient: healthClient,
 	}
 	return app, nil
 }
