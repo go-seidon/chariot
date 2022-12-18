@@ -699,12 +699,6 @@ type ServerError = ResponseBodyInfo
 // UnauthenticatedAccess defines model for UnauthenticatedAccess.
 type UnauthenticatedAccess = ResponseBodyInfo
 
-// GetAppInfoParams defines parameters for GetAppInfo.
-type GetAppInfoParams struct {
-	// correlation id for tracing purposes
-	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
-}
-
 // UploadFileParams defines parameters for UploadFile.
 type UploadFileParams struct {
 	// correlation id for tracing purposes
@@ -719,6 +713,12 @@ type RetrieveFileBySlugParams struct {
 
 // CheckHealthParams defines parameters for CheckHealth.
 type CheckHealthParams struct {
+	// correlation id for tracing purposes
+	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
+}
+
+// GetAppInfoParams defines parameters for GetAppInfo.
+type GetAppInfoParams struct {
 	// correlation id for tracing purposes
 	XCorrelationId *CorrelationId `json:"X-Correlation-Id,omitempty"`
 }

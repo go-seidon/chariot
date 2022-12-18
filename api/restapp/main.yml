@@ -14,7 +14,7 @@ servers:
   - url: http://localhost:3030/
     description: local
 paths:
-  /:
+  /info:
     $ref: "./path/info.yml"
   /health:
     $ref: "./path/health.yml"
