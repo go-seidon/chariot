@@ -12,6 +12,7 @@ import (
 	mock_queue "github.com/go-seidon/chariot/internal/queue/mock"
 	mock_repository "github.com/go-seidon/chariot/internal/repository/mock"
 	mock_restapp "github.com/go-seidon/chariot/internal/restapp/mock"
+	mock_health "github.com/go-seidon/provider/health/mock"
 	mock_logging "github.com/go-seidon/provider/logging/mock"
 	mock_queueing "github.com/go-seidon/provider/queueing/mock"
 	"github.com/golang/mock/gomock"
@@ -126,13 +127,14 @@ var _ = Describe("App Package", func() {
 
 	Context("Start function", Label("unit"), func() {
 		var (
-			rApp   app.App
-			ctx    context.Context
-			server *mock_restapp.MockServer
-			logger *mock_logging.MockLogger
-			repo   *mock_repository.MockProvider
-			queue  *mock_queue.MockQueue
-			wg     *sync.WaitGroup
+			rApp         app.App
+			ctx          context.Context
+			server       *mock_restapp.MockServer
+			logger       *mock_logging.MockLogger
+			repo         *mock_repository.MockProvider
+			queue        *mock_queue.MockQueue
+			healthClient *mock_health.MockHealthCheck
+			wg           *sync.WaitGroup
 		)
 
 		BeforeEach(func() {
@@ -144,6 +146,7 @@ var _ = Describe("App Package", func() {
 			repo = mock_repository.NewMockProvider(ctrl)
 			queuer := mock_queueing.NewMockQueuer(ctrl)
 			queue = mock_queue.NewMockQueue(ctrl)
+			healthClient = mock_health.NewMockHealthCheck(ctrl)
 			config := &app.Config{
 				AppName:     "name",
 				AppVersion:  "version",
@@ -157,6 +160,7 @@ var _ = Describe("App Package", func() {
 				restapp.WithRepository(repo),
 				restapp.WithQueue(queue),
 				restapp.WithQueuer(queuer),
+				restapp.WithHealth(healthClient),
 			)
 			wg = &sync.WaitGroup{}
 		})
@@ -189,6 +193,40 @@ var _ = Describe("App Package", func() {
 			})
 		})
 
+		When("failed start healthcheck", func() {
+			It("should return error", func() {
+				logger.
+					EXPECT().
+					Infof(
+						gomock.Eq("Running %s:%s"),
+						gomock.Eq("name-rest"),
+						gomock.Eq("version"),
+					).
+					Times(1)
+
+				logger.
+					EXPECT().
+					Infof(gomock.Eq("Initializing repository")).
+					Times(1)
+
+				repo.
+					EXPECT().
+					Init(gomock.Eq(ctx)).
+					Return(nil).
+					Times(1)
+
+				healthClient.
+					EXPECT().
+					Start(gomock.Eq(ctx)).
+					Return(fmt.Errorf("routine error")).
+					Times(1)
+
+				err := rApp.Run(ctx)
+
+				Expect(err).To(Equal(fmt.Errorf("routine error")))
+			})
+		})
+
 		When("failed start queue", func() {
 			It("should return error", func() {
 				logger.
@@ -218,6 +256,12 @@ var _ = Describe("App Package", func() {
 				repo.
 					EXPECT().
 					Init(gomock.Eq(ctx)).
+					Return(nil).
+					Times(1)
+
+				healthClient.
+					EXPECT().
+					Start(gomock.Eq(ctx)).
 					Return(nil).
 					Times(1)
 
@@ -280,6 +324,12 @@ var _ = Describe("App Package", func() {
 					Return(nil).
 					Times(1)
 
+				healthClient.
+					EXPECT().
+					Start(gomock.Eq(ctx)).
+					Return(nil).
+					Times(1)
+
 				wg.Add(2)
 
 				queue.
@@ -339,6 +389,12 @@ var _ = Describe("App Package", func() {
 					Return(nil).
 					Times(1)
 
+				healthClient.
+					EXPECT().
+					Start(gomock.Eq(ctx)).
+					Return(nil).
+					Times(1)
+
 				wg.Add(2)
 
 				queue.
@@ -369,12 +425,13 @@ var _ = Describe("App Package", func() {
 
 	Context("Stop function", Label("unit"), func() {
 		var (
-			rApp   app.App
-			ctx    context.Context
-			server *mock_restapp.MockServer
-			logger *mock_logging.MockLogger
-			repo   *mock_repository.MockProvider
-			queue  *mock_queue.MockQueue
+			rApp         app.App
+			ctx          context.Context
+			server       *mock_restapp.MockServer
+			logger       *mock_logging.MockLogger
+			repo         *mock_repository.MockProvider
+			queue        *mock_queue.MockQueue
+			healthClient *mock_health.MockHealthCheck
 		)
 
 		BeforeEach(func() {
@@ -386,6 +443,7 @@ var _ = Describe("App Package", func() {
 			repo = mock_repository.NewMockProvider(ctrl)
 			queuer := mock_queueing.NewMockQueuer(ctrl)
 			queue = mock_queue.NewMockQueue(ctrl)
+			healthClient = mock_health.NewMockHealthCheck(ctrl)
 			config := &app.Config{
 				AppName:     "name",
 				AppVersion:  "version",
@@ -399,7 +457,45 @@ var _ = Describe("App Package", func() {
 				restapp.WithRepository(repo),
 				restapp.WithQueue(queue),
 				restapp.WithQueuer(queuer),
+				restapp.WithHealth(healthClient),
 			)
+		})
+
+		When("failed stop healthcheck", func() {
+			It("should return error", func() {
+				logger.
+					EXPECT().
+					Infof(
+						gomock.Eq("Stopping %s on: %s"),
+						gomock.Eq("name-rest"),
+						gomock.Eq("host:1"),
+					).
+					Times(1)
+
+				healthClient.
+					EXPECT().
+					Stop(gomock.Eq(ctx)).
+					Return(fmt.Errorf("routine error")).
+					Times(1)
+
+				logger.
+					EXPECT().
+					Errorf(
+						gomock.Eq("Failed stopping healthcheck, err: %s"),
+						gomock.Eq("routine error"),
+					).
+					Times(1)
+
+				server.
+					EXPECT().
+					Shutdown(gomock.Eq(ctx)).
+					Return(nil).
+					Times(1)
+
+				err := rApp.Stop(ctx)
+
+				Expect(err).To(BeNil())
+			})
 		})
 
 		When("failed stop server", func() {
@@ -411,6 +507,12 @@ var _ = Describe("App Package", func() {
 						gomock.Eq("name-rest"),
 						gomock.Eq("host:1"),
 					).
+					Times(1)
+
+				healthClient.
+					EXPECT().
+					Stop(gomock.Eq(ctx)).
+					Return(nil).
 					Times(1)
 
 				server.
@@ -434,6 +536,12 @@ var _ = Describe("App Package", func() {
 						gomock.Eq("name-rest"),
 						gomock.Eq("host:1"),
 					).
+					Times(1)
+
+				healthClient.
+					EXPECT().
+					Stop(gomock.Eq(ctx)).
+					Return(nil).
 					Times(1)
 
 				server.
