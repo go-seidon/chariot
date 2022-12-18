@@ -1,0 +1,11 @@
+type: object
+required:
+- status
+- details
+properties:
+  status:
+    type: string
+  details:
+    type: object
+    additionalProperties:
+      $ref: "./response_detail.yml"

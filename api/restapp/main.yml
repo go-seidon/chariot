@@ -16,6 +16,8 @@ servers:
 paths:
   /:
     $ref: "./path/info.yml"
+  /health:
+    $ref: "./path/health.yml"
   /file:
     $ref: "./path/file.yml"
   /file/{slug}:
@@ -59,6 +61,14 @@ components:
       $ref: "./operation/get-app-info/response_body.yml"
     GetAppInfoData:
       $ref: "./operation/get-app-info/response_data.yml"
+
+    # health
+    CheckHealthResponse:
+      $ref: "./operation/check-health/response_body.yml"
+    CheckHealthData:
+      $ref: "./operation/check-health/response_data.yml"
+    CheckHealthDetail:
+      $ref: "./operation/check-health/response_detail.yml"
 
     # barrel management
     CreateBarrelRequest:
