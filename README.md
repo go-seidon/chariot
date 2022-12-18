@@ -77,14 +77,11 @@ TBA
 ```
 
 ## Todo
-1. Devs: Enhancement
-- Override default error handler (echo router)
-- Unit test: app NewDefaultConfig
-- Unit test: storage multipart test
-2. Admin: dashboard monitoring
-- data exporter: CollectMetris
-- prometheus (rest exporter)
-- grafana
+1. Devs: Tracing
+- open telemetry (https://opentelemetry.io/)
+2. Devs: Monitoring
+- prometheus (metric exporter)
+- grafana data visualization
 
 ## Nice to have
 1. Admin: Backup File
@@ -102,6 +99,8 @@ TBA
 7. Client: Upload Rule (resolution)
 8. Devs: Caching support
 9. Devs: Add dead letter exchange & queue for `proceed_file_replication` queue
+10. Unit test: storage multipart test
+11. Unit test: app NewDefaultConfig
 
 ## Issue
 1. Gorm not inserting has many association, issue since gorm@v1.22.5 [ref](https://github.com/go-gorm/gorm/issues/5754). Current solution is to use gorm@v1.22.4, mysql@v1.2.1, dbresolver@v1.1.0

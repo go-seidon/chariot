@@ -3,6 +3,7 @@ package restapp
 import (
 	"context"
 	"fmt"
+	net_http "net/http"
 
 	"github.com/go-seidon/chariot/internal/app"
 	"github.com/go-seidon/chariot/internal/auth"
@@ -27,6 +28,8 @@ import (
 	"github.com/go-seidon/provider/slug/goslug"
 	"github.com/go-seidon/provider/validation/govalidator"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/gommon/bytes"
 )
 
 type restApp struct {
@@ -54,7 +57,10 @@ func (a *restApp) Run(ctx context.Context) error {
 
 	go func() {
 		a.logger.Infof("Listening on: %s", a.config.GetAddress())
-		listeners <- a.server.Start(a.config.GetAddress())
+		err := a.server.Start(a.config.GetAddress())
+		if err != net_http.ErrServerClosed {
+			listeners <- err
+		}
 	}()
 
 	for i := 0; i < 2; i++ {
@@ -126,6 +132,22 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 	server := p.Server
 	if server == nil {
 		e := echo.New()
+		e.Debug = p.Config.AppDebug
+		e.HTTPErrorHandler = NewErrorHandler(ErrorHandlerParam{
+			Debug:  p.Config.AppDebug,
+			Logger: logger,
+		})
+		e.Use(middleware.Recover())
+		e.Use(middleware.RequestID())
+		e.Use(middleware.CORS())
+		e.Use(middleware.Secure())
+		e.Use(middleware.BodyLimitWithConfig(middleware.BodyLimitConfig{
+			Limit: bytes.Format(p.Config.StorageFormSize + 1024), // set form max size + add 1KB non file field
+		}))
+		e.Use(NewRequestLog(RequestLogParam{
+			Logger: logger,
+		}))
+
 		server = &echoServer{e}
 
 		goValidator := govalidator.NewValidator()
