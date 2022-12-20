@@ -163,6 +163,7 @@ var _ = Describe("Basic Auth Package", func() {
 				ClientId: "client_id",
 			}
 			findRes = &repository.FindClientResult{
+				Status:       "active",
 				ClientId:     "client_id",
 				ClientSecret: "hashed_client_secret",
 			}
@@ -211,6 +212,32 @@ var _ = Describe("Basic Auth Package", func() {
 					EXPECT().
 					FindClient(gomock.Eq(ctx), gomock.Eq(findParam)).
 					Return(nil, repository.ErrNotFound).
+					Times(1)
+
+				res, err := basicAuth.CheckCredential(ctx, p)
+
+				Expect(res.IsValid()).To(BeFalse())
+				Expect(err).To(BeNil())
+			})
+		})
+
+		When("client is inactive", func() {
+			It("should return error", func() {
+				encoder.
+					EXPECT().
+					Decode(gomock.Eq(p.AuthToken)).
+					Return([]byte("client_id:client_secret"), nil).
+					Times(1)
+
+				findRes := &repository.FindClientResult{
+					ClientId:     "client_id",
+					ClientSecret: "hashed_client_secret",
+					Status:       "inactive",
+				}
+				authRepo.
+					EXPECT().
+					FindClient(gomock.Eq(ctx), gomock.Eq(findParam)).
+					Return(findRes, nil).
 					Times(1)
 
 				res, err := basicAuth.CheckCredential(ctx, p)

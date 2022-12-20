@@ -38,7 +38,7 @@ type restApp struct {
 	config       *RestAppConfig
 	server       Server
 	logger       logging.Logger
-	repository   repository.Provider
+	repository   repository.Repository
 	queue        queue.Queue
 	healthClient health.HealthCheck
 }

@@ -38,9 +38,9 @@ type ParseAuthTokenResult struct {
 }
 
 type basicAuth struct {
-	oAuthRepo repository.Auth
-	encoder   encoding.Encoder
-	hasher    hashing.Hasher
+	authRepo repository.Auth
+	encoder  encoding.Encoder
+	hasher   hashing.Hasher
 }
 
 func (a *basicAuth) ParseAuthToken(ctx context.Context, p ParseAuthTokenParam) (*ParseAuthTokenResult, error) {
@@ -81,7 +81,7 @@ func (a *basicAuth) CheckCredential(ctx context.Context, p CheckCredentialParam)
 	}
 
 	res := &CheckCredentialResult{TokenValid: false}
-	oClient, err := a.oAuthRepo.FindClient(ctx, repository.FindClientParam{
+	authClient, err := a.authRepo.FindClient(ctx, repository.FindClientParam{
 		ClientId: client.ClientId,
 	})
 	if err != nil {
@@ -91,7 +91,11 @@ func (a *basicAuth) CheckCredential(ctx context.Context, p CheckCredentialParam)
 		return nil, err
 	}
 
-	err = a.hasher.Verify(oClient.ClientSecret, client.ClientSecret)
+	if authClient.Status != STATUS_ACTIVE {
+		return res, nil
+	}
+
+	err = a.hasher.Verify(authClient.ClientSecret, client.ClientSecret)
 	if err != nil {
 		return res, nil
 	}
@@ -107,10 +111,9 @@ type NewBasicAuthParam struct {
 }
 
 func NewBasicAuth(p NewBasicAuthParam) *basicAuth {
-	auth := &basicAuth{
-		oAuthRepo: p.AuthRepo,
-		encoder:   p.Encoder,
-		hasher:    p.Hasher,
+	return &basicAuth{
+		authRepo: p.AuthRepo,
+		encoder:  p.Encoder,
+		hasher:   p.Hasher,
 	}
-	return auth
 }

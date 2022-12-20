@@ -34,6 +34,7 @@ var _ = Describe("File Handler", func() {
 			rec         *httptest.ResponseRecorder
 			serializer  *serialization.MockSerializer
 			fileClient  *mock_file.MockFile
+			fileData    *mock_io.MockReadAtSeekCloser
 			uploadParam file.UploadFileParam
 			uploadRes   *file.UploadFileResult
 		)
@@ -93,12 +94,13 @@ var _ = Describe("File Handler", func() {
 			serializer = serialization.NewMockSerializer(ctrl)
 			jsonSerializer := json.NewSerializer()
 			fileClient = mock_file.NewMockFile(ctrl)
+			fileData = mock_io.NewMockReadAtSeekCloser(ctrl)
 			fileHandler := resthandler.NewFile(resthandler.FileParam{
 				Serializer: jsonSerializer,
 				File:       fileClient,
 				FileParser: func(h *mime_multipart.FileHeader) (*multipart.FileInfo, error) {
 					return &multipart.FileInfo{
-						Data:      nil,
+						Data:      fileData,
 						Name:      "dolphin 22",
 						Size:      23342,
 						Extension: "jpg",
@@ -109,7 +111,7 @@ var _ = Describe("File Handler", func() {
 			h = fileHandler.UploadFile
 
 			uploadParam = file.UploadFileParam{
-				Data: nil,
+				Data: fileData,
 				Info: file.UploadFileInfo{
 					Name:      "dolphin 22",
 					Mimetype:  "image/jpeg",
@@ -190,12 +192,18 @@ var _ = Describe("File Handler", func() {
 
 		When("failed parse meta", func() {
 			It("should return error", func() {
+				fileData.
+					EXPECT().
+					Close().
+					Return(nil).
+					Times(1)
+
 				fileHandler := resthandler.NewFile(resthandler.FileParam{
 					Serializer: serializer,
 					File:       fileClient,
 					FileParser: func(h *mime_multipart.FileHeader) (*multipart.FileInfo, error) {
 						return &multipart.FileInfo{
-							Data:      nil,
+							Data:      fileData,
 							Name:      "dolphin 22",
 							Size:      23342,
 							Extension: "jpg",
@@ -224,6 +232,12 @@ var _ = Describe("File Handler", func() {
 
 		When("there is invalid data", func() {
 			It("should return error", func() {
+				fileData.
+					EXPECT().
+					Close().
+					Return(nil).
+					Times(1)
+
 				fileClient.
 					EXPECT().
 					UploadFile(gomock.Eq(ctx.Request().Context()), gomock.Eq(uploadParam)).
@@ -247,6 +261,12 @@ var _ = Describe("File Handler", func() {
 
 		When("failed upload file", func() {
 			It("should return error", func() {
+				fileData.
+					EXPECT().
+					Close().
+					Return(nil).
+					Times(1)
+
 				fileClient.
 					EXPECT().
 					UploadFile(gomock.Eq(ctx.Request().Context()), gomock.Eq(uploadParam)).
@@ -270,6 +290,12 @@ var _ = Describe("File Handler", func() {
 
 		When("success upload file", func() {
 			It("should return result", func() {
+				fileData.
+					EXPECT().
+					Close().
+					Return(nil).
+					Times(1)
+
 				fileClient.
 					EXPECT().
 					UploadFile(gomock.Eq(ctx.Request().Context()), gomock.Eq(uploadParam)).
@@ -428,6 +454,12 @@ var _ = Describe("File Handler", func() {
 
 		When("success retrieve file", func() {
 			It("should return error", func() {
+				fileData.
+					EXPECT().
+					Close().
+					Return(nil).
+					Times(1)
+
 				fileData.
 					EXPECT().
 					Read(gomock.Any()).

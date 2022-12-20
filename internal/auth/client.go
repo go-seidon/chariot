@@ -14,6 +14,11 @@ import (
 	"github.com/go-seidon/provider/validation"
 )
 
+const (
+	STATUS_ACTIVE   = "active"
+	STATUS_INACTIVE = "inactive"
+)
+
 type AuthClient interface {
 	CreateClient(ctx context.Context, p CreateClientParam) (*CreateClientResult, *system.Error)
 	FindClientById(ctx context.Context, p FindClientByIdParam) (*FindClientByIdResult, *system.Error)

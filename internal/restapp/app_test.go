@@ -79,7 +79,7 @@ var _ = Describe("App Package", func() {
 					RepositoryProvider: "mysql",
 					QueueProvider:      "rabbitmq",
 				}
-				repo := mock_repository.NewMockProvider(ctrl)
+				repo := mock_repository.NewMockRepository(ctrl)
 				repo.
 					EXPECT().
 					GetAuth().
@@ -131,7 +131,7 @@ var _ = Describe("App Package", func() {
 			ctx          context.Context
 			server       *mock_restapp.MockServer
 			logger       *mock_logging.MockLogger
-			repo         *mock_repository.MockProvider
+			repo         *mock_repository.MockRepository
 			queue        *mock_queue.MockQueue
 			healthClient *mock_health.MockHealthCheck
 			wg           *sync.WaitGroup
@@ -143,7 +143,7 @@ var _ = Describe("App Package", func() {
 			ctrl := gomock.NewController(t)
 			server = mock_restapp.NewMockServer(ctrl)
 			logger = mock_logging.NewMockLogger(ctrl)
-			repo = mock_repository.NewMockProvider(ctrl)
+			repo = mock_repository.NewMockRepository(ctrl)
 			queuer := mock_queueing.NewMockQueuer(ctrl)
 			queue = mock_queue.NewMockQueue(ctrl)
 			healthClient = mock_health.NewMockHealthCheck(ctrl)
@@ -429,7 +429,7 @@ var _ = Describe("App Package", func() {
 			ctx          context.Context
 			server       *mock_restapp.MockServer
 			logger       *mock_logging.MockLogger
-			repo         *mock_repository.MockProvider
+			repo         *mock_repository.MockRepository
 			queue        *mock_queue.MockQueue
 			healthClient *mock_health.MockHealthCheck
 		)
@@ -440,7 +440,7 @@ var _ = Describe("App Package", func() {
 			ctrl := gomock.NewController(t)
 			server = mock_restapp.NewMockServer(ctrl)
 			logger = mock_logging.NewMockLogger(ctrl)
-			repo = mock_repository.NewMockProvider(ctrl)
+			repo = mock_repository.NewMockRepository(ctrl)
 			queuer := mock_queueing.NewMockQueuer(ctrl)
 			queue = mock_queue.NewMockQueue(ctrl)
 			healthClient = mock_health.NewMockHealthCheck(ctrl)

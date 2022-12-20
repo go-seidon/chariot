@@ -11,7 +11,7 @@ import (
 	"gorm.io/plugin/dbresolver"
 )
 
-func NewDefaultRepository(config *Config) (repository.Provider, error) {
+func NewDefaultRepository(config *Config) (repository.Repository, error) {
 	if config == nil {
 		return nil, fmt.Errorf("invalid config")
 	}
@@ -20,7 +20,7 @@ func NewDefaultRepository(config *Config) (repository.Provider, error) {
 		return nil, fmt.Errorf("invalid repository provider")
 	}
 
-	var repo repository.Provider
+	var repo repository.Repository
 	if config.RepositoryProvider == repository.PROVIDER_MYSQL {
 		dbPrimary, err := mysql_client.NewClient(
 			mysql_client.WithAuth(config.MySQLPrimaryUser, config.MySQLPrimaryPassword),
