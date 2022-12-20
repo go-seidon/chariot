@@ -38,7 +38,7 @@ var _ = Describe("Repository Provider", func() {
 
 	Context("GetAuth function", Label("unit"), func() {
 		var (
-			provider repository.Provider
+			provider repository.Repository
 		)
 
 		BeforeEach(func() {
@@ -57,7 +57,7 @@ var _ = Describe("Repository Provider", func() {
 
 	Context("GetBarrel function", Label("unit"), func() {
 		var (
-			provider repository.Provider
+			provider repository.Repository
 		)
 
 		BeforeEach(func() {
@@ -76,7 +76,7 @@ var _ = Describe("Repository Provider", func() {
 
 	Context("GetFile function", Label("unit"), func() {
 		var (
-			provider repository.Provider
+			provider repository.Repository
 		)
 
 		BeforeEach(func() {
@@ -95,7 +95,7 @@ var _ = Describe("Repository Provider", func() {
 
 	Context("Init function", Label("unit"), func() {
 		var (
-			provider repository.Provider
+			provider repository.Repository
 			ctx      context.Context
 		)
 
@@ -116,7 +116,7 @@ var _ = Describe("Repository Provider", func() {
 
 	Context("Ping function", Label("unit"), func() {
 		var (
-			provider repository.Provider
+			provider repository.Repository
 			ctx      context.Context
 			client   *mock_mysql.MockClient
 		)

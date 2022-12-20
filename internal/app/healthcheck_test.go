@@ -14,14 +14,14 @@ var _ = Describe("Healthcheck Package", func() {
 	Context("NewDefaultHealthCheck function", Label("unit"), func() {
 		var (
 			logger     *mock_logging.MockLogger
-			repository *mock_repository.MockProvider
+			repository *mock_repository.MockRepository
 		)
 
 		BeforeEach(func() {
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
 			logger = mock_logging.NewMockLogger(ctrl)
-			repository = mock_repository.NewMockProvider(ctrl)
+			repository = mock_repository.NewMockRepository(ctrl)
 		})
 
 		When("success create default healthcheck", func() {

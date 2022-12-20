@@ -12,7 +12,7 @@ import (
 type RestAppParam struct {
 	Config       *app.Config
 	Logger       logging.Logger
-	Repository   repository.Provider
+	Repository   repository.Repository
 	Server       Server
 	Queuer       queueing.Queuer
 	Queue        queue.Queue
@@ -33,7 +33,7 @@ func WithLogger(l logging.Logger) RestAppOption {
 	}
 }
 
-func WithRepository(r repository.Provider) RestAppOption {
+func WithRepository(r repository.Repository) RestAppOption {
 	return func(p *RestAppParam) {
 		p.Repository = r
 	}

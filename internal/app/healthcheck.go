@@ -9,7 +9,7 @@ import (
 	"github.com/go-seidon/provider/logging"
 )
 
-func NewDefaultHealthCheck(logger logging.Logger, repo repository.Provider) (health.HealthCheck, error) {
+func NewDefaultHealthCheck(logger logging.Logger, repo repository.Repository) (health.HealthCheck, error) {
 
 	inetPingJob, err := job.NewHttpPing(job.HttpPingParam{
 		Name:     "internet-connection",

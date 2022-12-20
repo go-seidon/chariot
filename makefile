@@ -36,6 +36,10 @@ test:
 test-coverage:
 	ginkgo -r -v -p -race --progress --randomize-all --randomize-suites -cover -coverprofile="coverage.out"
 
+.PHONY: test-watch
+test-watch:
+	ginkgo watch -r -v -p -race --trace
+
 .PHONY: test-unit
 test-unit:
 	ginkgo -r -v -p -race --label-filter="unit" -cover -coverprofile="coverage.out"
@@ -63,7 +67,7 @@ generate-mock:
 	mockgen -package=mock_repository -source internal/repository/auth.go -destination=internal/repository/mock/auth_mock.go
 	mockgen -package=mock_repository -source internal/repository/barrel.go -destination=internal/repository/mock/barrel_mock.go
 	mockgen -package=mock_repository -source internal/repository/file.go -destination=internal/repository/mock/file_mock.go
-	mockgen -package=mock_repository -source internal/repository/provider.go -destination=internal/repository/mock/provider_mock.go
+	mockgen -package=mock_repository -source internal/repository/repository.go -destination=internal/repository/mock/repository_mock.go
 	mockgen -package=mock_restapp -source internal/restapp/server.go -destination=internal/restapp/mock/server_mock.go
 	mockgen -package=mock_session -source internal/session/session.go -destination=internal/session/mock/session_mock.go
 	mockgen -package=mock_signature -source internal/signature/signature.go -destination=internal/signature/mock/signature_mock.go
