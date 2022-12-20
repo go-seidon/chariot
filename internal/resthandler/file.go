@@ -35,6 +35,7 @@ func (h *fileHandler) UploadFile(ctx echo.Context) error {
 			Message: ferr.Error(),
 		})
 	}
+	defer fileInfo.Data.Close()
 
 	meta := map[string]string{}
 	metas := strings.TrimSpace(ctx.FormValue("meta"))
@@ -115,6 +116,8 @@ func (h *fileHandler) RetrieveFileBySlug(ctx echo.Context) error {
 			Message: err.Message,
 		})
 	}
+	defer findFile.Data.Close()
+
 	return ctx.Stream(http.StatusOK, findFile.Mimetype, findFile.Data)
 }
 
