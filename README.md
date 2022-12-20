@@ -77,11 +77,12 @@ TBA
 ```
 
 ## Todo
-1. Devs: Tracing
-- open telemetry (https://opentelemetry.io/)
-2. Devs: Monitoring
+1. Devs: Observability
 - prometheus (metric exporter)
+2. Devs: Monitoring
 - grafana data visualization
+3. Devs: Tracing
+- open telemetry (https://opentelemetry.io/)
 
 ## Nice to have
 1. Admin: Backup File
