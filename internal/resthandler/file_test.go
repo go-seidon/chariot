@@ -140,6 +140,8 @@ var _ = Describe("File Handler", func() {
 				Size:       23342,
 				Visibility: "public",
 				Status:     "available",
+				FileUrl:    "http://localhost/file/dolphine-22.jpg",
+				AccessUrl:  "http://localhost/file/dolphine-22.jpg",
 				Meta: map[string]string{
 					"user_id": "123",
 					"feature": "profile",
@@ -320,6 +322,8 @@ var _ = Describe("File Handler", func() {
 					Status:     restapp.UploadFileDataStatus(uploadRes.Status),
 					Visibility: restapp.UploadFileDataVisibility(uploadRes.Visibility),
 					UploadedAt: uploadRes.UploadedAt.Local().UnixMilli(),
+					FileUrl:    uploadRes.FileUrl,
+					AccessUrl:  uploadRes.AccessUrl,
 					Meta: &restapp.UploadFileData_Meta{
 						AdditionalProperties: uploadRes.Meta,
 					},

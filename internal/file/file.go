@@ -81,6 +81,7 @@ type UploadFileResult struct {
 	Visibility string
 	Status     string
 	FileUrl    string
+	AccessUrl  string
 	UploadedAt time.Time
 	Meta       map[string]string
 }
@@ -389,8 +390,9 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 	}
 
 	fileUrl := fmt.Sprintf("%s/file/%s", f.config.AppHost, createFile.Slug)
+	accessUrl := fileUrl
 	if createFile.Visibility == VISIBILITY_PROTECTED {
-		fileUrl = fmt.Sprintf("%s?token=%s", fileUrl, token)
+		accessUrl = fmt.Sprintf("%s?token=%s", fileUrl, token)
 	}
 
 	res := &UploadFileResult{
@@ -408,6 +410,7 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 		Status:     createFile.Status,
 		UploadedAt: createFile.UploadedAt,
 		FileUrl:    fileUrl,
+		AccessUrl:  accessUrl,
 		Meta:       createFile.Meta,
 	}
 	return res, nil

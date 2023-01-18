@@ -30,10 +30,8 @@ func NewDefaultLog(config *Config, appName string) (logging.Logger, error) {
 		opts = append(opts, prettyOpt)
 	}
 
-	skipApp := logrus.AddStackSkip("github.com/go-seidon/chariot/internal/app")
-	skipLog := logrus.AddStackSkip("github.com/go-seidon/provider/logging/logrus")
-	opts = append(opts, skipApp)
-	opts = append(opts, skipLog)
+	opts = append(opts, logrus.AddStackSkip("github.com/go-seidon/chariot/internal/app"))
+	opts = append(opts, logrus.AddStackSkip("github.com/go-seidon/provider/logging/logrus"))
 
 	return logrus.NewLogger(opts...), nil
 }

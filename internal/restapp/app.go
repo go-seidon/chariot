@@ -168,8 +168,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		e.Use(NewRequestLog(RequestLogParam{
 			Logger: logger,
 		}))
-
-		server = &echoServer{e}
+		server = e
 
 		goValidator := govalidator.NewValidator()
 		bcryptHasher := bcrypt.NewHasher()

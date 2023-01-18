@@ -11,6 +11,7 @@ value:
     visibility: public
     status: available
     file_url: http://localhost:3030/file/lumba-lumba.jpg
+    access_url: http://localhost:3030/file/lumba-lumba.jpg?token=secret-token
     uploaded_at: 1664891858856
     meta:
       feature: profile
