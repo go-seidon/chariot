@@ -4,7 +4,7 @@ APP_VERSION = "1.0.0"
 APP_DEBUG = true
 
 REST_APP_HOST = "localhost"
-REST_APP_PORT = 3030
+REST_APP_PORT = 20110
 
 REPOSITORY_PROVIDER = "mysql"
 
@@ -20,7 +20,7 @@ MYSQL_SECONDARY_USER = "admin"
 MYSQL_SECONDARY_PASSWORD = "123456"
 MYSQL_SECONDARY_DB_NAME = "chariot"
 
-STORAGE_ACCESS_HOST = "http://localhost:3030"
+STORAGE_ACCESS_HOST = "http://localhost:20110"
 STORAGE_FORM_SIZE = 1073741824
 
 QUEUE_PROVIDER = "rabbitmq"
@@ -37,12 +37,12 @@ SIGNATURE_KEY = "-----BEGIN RSA PRIVATE KEY-----MIIEoQIBAAKCAQBjXu56Nt/27NGrPkCO
 
 [BARRELS.HIPPO1]
 PROVIDER = "goseidon_hippo"
-HIPPO_SERVER_HOST = "http://localhost:3000"
-HIPPO_CLIENT_ID = "chariot"
+HIPPO_SERVER_HOST = "http://localhost:20120"
+HIPPO_CLIENT_ID = "goseidon"
 HIPPO_CLIENT_SECRET = "storage!@#$%"
 
 [BARRELS.HIPPO2]
 PROVIDER = "goseidon_hippo"
-HIPPO_SERVER_HOST = "http://localhost:3000"
-HIPPO_CLIENT_ID = "chariot"
+HIPPO_SERVER_HOST = "http://localhost:20120"
+HIPPO_CLIENT_ID = "goseidon"
 HIPPO_CLIENT_SECRET = "storage!@#$%"
