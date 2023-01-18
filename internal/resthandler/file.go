@@ -90,6 +90,7 @@ func (h *fileHandler) UploadFile(ctx echo.Context) error {
 			Visibility: restapp.UploadFileDataVisibility(uploadFile.Visibility),
 			Status:     restapp.UploadFileDataStatus(uploadFile.Status),
 			FileUrl:    uploadFile.FileUrl,
+			AccessUrl:  uploadFile.AccessUrl,
 			UploadedAt: uploadFile.UploadedAt.UnixMilli(),
 			Meta: &restapp.UploadFileData_Meta{
 				AdditionalProperties: uploadFile.Meta,
