@@ -630,6 +630,7 @@ type UpdateBarrelByIdResponse struct {
 
 // UploadFileData defines model for UploadFileData.
 type UploadFileData struct {
+	AccessUrl  string                   `json:"access_url"`
 	Extension  string                   `json:"extension"`
 	FileUrl    string                   `json:"file_url"`
 	Id         string                   `json:"id"`

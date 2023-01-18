@@ -10,6 +10,7 @@ required:
 - status
 - uploaded_at
 - file_url
+- access_url
 properties:
   id:
     type: string
@@ -40,6 +41,8 @@ properties:
     type: integer
     format: int64
   file_url:
+    type: string
+  access_url:
     type: string
   meta:
     type: object
