@@ -214,6 +214,7 @@ var _ = Describe("File Package", func() {
 				Visibility: createFileRes.Visibility,
 				Status:     createFileRes.Status,
 				FileUrl:    fmt.Sprintf("%s/file/%s", "http://localhost", createFileRes.Slug),
+				AccessUrl:  fmt.Sprintf("%s/file/%s", "http://localhost", createFileRes.Slug),
 				UploadedAt: createFileRes.UploadedAt,
 				Meta:       createFileRes.Meta,
 			}
@@ -706,6 +707,7 @@ var _ = Describe("File Package", func() {
 					Visibility: createFileRes.Visibility,
 					Status:     createFileRes.Status,
 					FileUrl:    fmt.Sprintf("%s/file/%s", "http://localhost", createFileRes.Slug),
+					AccessUrl:  fmt.Sprintf("%s/file/%s", "http://localhost", createFileRes.Slug),
 					UploadedAt: createFileRes.UploadedAt,
 					Meta:       createFileRes.Meta,
 				}
@@ -848,7 +850,8 @@ var _ = Describe("File Package", func() {
 					Size:       createFileRes.Size,
 					Visibility: createFileRes.Visibility,
 					Status:     createFileRes.Status,
-					FileUrl:    fmt.Sprintf("%s/file/%s?token=%s", "http://localhost", createFileRes.Slug, createSessRes.Token),
+					FileUrl:    fmt.Sprintf("%s/file/%s", "http://localhost", createFileRes.Slug),
+					AccessUrl:  fmt.Sprintf("%s/file/%s?token=%s", "http://localhost", createFileRes.Slug, createSessRes.Token),
 					UploadedAt: createFileRes.UploadedAt,
 					Meta:       createFileRes.Meta,
 				}
