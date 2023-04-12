@@ -7,8 +7,8 @@ import (
 
 	"github.com/go-seidon/chariot/api/restapp"
 	"github.com/go-seidon/chariot/internal/restmiddleware"
-	"github.com/go-seidon/chariot/internal/session"
-	mock_session "github.com/go-seidon/chariot/internal/session/mock"
+	"github.com/go-seidon/chariot/internal/service"
+	mock_service "github.com/go-seidon/chariot/internal/service/mock"
 	mock_http "github.com/go-seidon/provider/http/mock"
 	mock_serialization "github.com/go-seidon/provider/serialization/mock"
 	"github.com/go-seidon/provider/system"
@@ -19,7 +19,7 @@ import (
 var _ = Describe("Session Auth Middleware", func() {
 	Context("Handle Function", Label("unit"), func() {
 		var (
-			sessionClient *mock_session.MockSession
+			sessionClient *mock_service.MockSession
 			serializer    *mock_serialization.MockSerializer
 			handler       *mock_http.MockHandler
 			m             http.Handler
@@ -27,14 +27,14 @@ var _ = Describe("Session Auth Middleware", func() {
 			rw  *mock_http.MockResponseWriter
 			req *http.Request
 
-			verifyParam session.VerifySessionParam
-			verifyRes   *session.VerifySessionResult
+			verifyParam service.VerifySessionParam
+			verifyRes   *service.VerifySessionResult
 		)
 
 		BeforeEach(func() {
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
-			sessionClient = mock_session.NewMockSession(ctrl)
+			sessionClient = mock_service.NewMockSession(ctrl)
 			serializer = mock_serialization.NewMockSerializer(ctrl)
 			handler = mock_http.NewMockHandler(ctrl)
 			fn := restmiddleware.NewSessionAuth(restmiddleware.SessionAuthParam{
@@ -56,11 +56,11 @@ var _ = Describe("Session Auth Middleware", func() {
 			req, _ = http.NewRequest(http.MethodPost, "/", body)
 			req.Header.Add("Content-Type", writer.FormDataContentType())
 
-			verifyParam = session.VerifySessionParam{
+			verifyParam = service.VerifySessionParam{
 				Token:   "session-token",
 				Feature: "upload_file",
 			}
-			verifyRes = &session.VerifySessionResult{}
+			verifyRes = &service.VerifySessionResult{}
 		})
 
 		When("token is not specified", func() {

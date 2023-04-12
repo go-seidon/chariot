@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-seidon/chariot/internal/file"
-	mock_file "github.com/go-seidon/chariot/internal/file/mock"
 	"github.com/go-seidon/chariot/internal/queuehandler"
+	"github.com/go-seidon/chariot/internal/service"
+	mock_service "github.com/go-seidon/chariot/internal/service/mock"
 	"github.com/go-seidon/provider/queueing"
 	mock_queueing "github.com/go-seidon/provider/queueing/mock"
 	mock_serialization "github.com/go-seidon/provider/serialization/mock"
@@ -19,16 +19,15 @@ import (
 )
 
 var _ = Describe("File Handler", func() {
-
 	Context("ProceedReplication function", Label("unit"), func() {
 		var (
 			ctx        context.Context
 			currentTs  time.Time
 			h          queueing.Listener
 			serializer *mock_serialization.MockSerializer
-			fileClient *mock_file.MockFile
+			fileClient *mock_service.MockFile
 			message    *mock_queueing.MockMessage
-			replRes    *file.ProceedReplicationResult
+			replRes    *service.ProceedReplicationResult
 		)
 
 		BeforeEach(func() {
@@ -37,14 +36,14 @@ var _ = Describe("File Handler", func() {
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
 			serializer = mock_serialization.NewMockSerializer(ctrl)
-			fileClient = mock_file.NewMockFile(ctrl)
+			fileClient = mock_service.NewMockFile(ctrl)
 			message = mock_queueing.NewMockMessage(ctrl)
 			fileHandler := queuehandler.NewFile(queuehandler.FileParam{
 				Serializer: serializer,
 				File:       fileClient,
 			})
 			h = fileHandler.ProceedReplication
-			replRes = &file.ProceedReplicationResult{
+			replRes = &service.ProceedReplicationResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success replicate file",
@@ -321,7 +320,7 @@ var _ = Describe("File Handler", func() {
 			ctx        context.Context
 			h          queueing.Listener
 			serializer *mock_serialization.MockSerializer
-			fileClient *mock_file.MockFile
+			fileClient *mock_service.MockFile
 			message    *mock_queueing.MockMessage
 		)
 
@@ -330,7 +329,7 @@ var _ = Describe("File Handler", func() {
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
 			serializer = mock_serialization.NewMockSerializer(ctrl)
-			fileClient = mock_file.NewMockFile(ctrl)
+			fileClient = mock_service.NewMockFile(ctrl)
 			message = mock_queueing.NewMockMessage(ctrl)
 			fileHandler := queuehandler.NewFile(queuehandler.FileParam{
 				Serializer: serializer,

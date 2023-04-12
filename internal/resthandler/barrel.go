@@ -4,14 +4,14 @@ import (
 	"net/http"
 
 	"github.com/go-seidon/chariot/api/restapp"
-	"github.com/go-seidon/chariot/internal/barrel"
+	"github.com/go-seidon/chariot/internal/service"
 	"github.com/go-seidon/provider/status"
 	"github.com/go-seidon/provider/typeconv"
 	"github.com/labstack/echo/v4"
 )
 
 type barrelHandler struct {
-	barrelClient barrel.Barrel
+	barrelClient service.Barrel
 }
 
 func (h *barrelHandler) CreateBarrel(ctx echo.Context) error {
@@ -23,7 +23,7 @@ func (h *barrelHandler) CreateBarrel(ctx echo.Context) error {
 		})
 	}
 
-	createRes, err := h.barrelClient.CreateBarrel(ctx.Request().Context(), barrel.CreateBarrelParam{
+	createRes, err := h.barrelClient.CreateBarrel(ctx.Request().Context(), service.CreateBarrelParam{
 		Code:     req.Code,
 		Name:     req.Name,
 		Provider: string(req.Provider),
@@ -58,7 +58,7 @@ func (h *barrelHandler) CreateBarrel(ctx echo.Context) error {
 }
 
 func (h *barrelHandler) GetBarrelById(ctx echo.Context) error {
-	findRes, err := h.barrelClient.FindBarrelById(ctx.Request().Context(), barrel.FindBarrelByIdParam{
+	findRes, err := h.barrelClient.FindBarrelById(ctx.Request().Context(), service.FindBarrelByIdParam{
 		Id: ctx.Param("id"),
 	})
 	if err != nil {
@@ -110,7 +110,7 @@ func (h *barrelHandler) UpdateBarrelById(ctx echo.Context) error {
 		})
 	}
 
-	updateRes, err := h.barrelClient.UpdateBarrelById(ctx.Request().Context(), barrel.UpdateBarrelByIdParam{
+	updateRes, err := h.barrelClient.UpdateBarrelById(ctx.Request().Context(), service.UpdateBarrelByIdParam{
 		Id:       ctx.Param("id"),
 		Code:     req.Code,
 		Name:     req.Name,
@@ -183,7 +183,7 @@ func (h *barrelHandler) SearchBarrel(ctx echo.Context) error {
 		page = req.Pagination.Page
 	}
 
-	searchRes, err := h.barrelClient.SearchBarrel(ctx.Request().Context(), barrel.SearchBarrelParam{
+	searchRes, err := h.barrelClient.SearchBarrel(ctx.Request().Context(), service.SearchBarrelParam{
 		Keyword:    typeconv.StringVal(req.Keyword),
 		Statuses:   statuses,
 		Providers:  providers,
@@ -236,7 +236,7 @@ func (h *barrelHandler) SearchBarrel(ctx echo.Context) error {
 }
 
 type BarrelParam struct {
-	Barrel barrel.Barrel
+	Barrel service.Barrel
 }
 
 func NewBarrel(p BarrelParam) *barrelHandler {

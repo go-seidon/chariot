@@ -7,14 +7,12 @@ import (
 
 	"github.com/go-seidon/chariot/internal/app"
 	"github.com/go-seidon/chariot/internal/auth"
-	"github.com/go-seidon/chariot/internal/barrel"
-	"github.com/go-seidon/chariot/internal/file"
 	"github.com/go-seidon/chariot/internal/healthcheck"
 	"github.com/go-seidon/chariot/internal/queue"
 	"github.com/go-seidon/chariot/internal/repository"
 	"github.com/go-seidon/chariot/internal/resthandler"
 	"github.com/go-seidon/chariot/internal/restmiddleware"
-	"github.com/go-seidon/chariot/internal/session"
+	"github.com/go-seidon/chariot/internal/service"
 	"github.com/go-seidon/chariot/internal/signature/jwt"
 	"github.com/go-seidon/chariot/internal/storage/multipart"
 	"github.com/go-seidon/provider/datetime"
@@ -147,7 +145,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		}
 	}
 
-	var fileClient file.File
+	var fileClient service.File
 	var protobufSerializer serialization.Serializer
 
 	server := p.Server
@@ -219,7 +217,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			HealthClient: healthCheck,
 		})
 
-		authClient := auth.NewAuthClient(auth.AuthClientParam{
+		authClient := service.NewAuthClient(service.AuthClientParam{
 			Validator:  goValidator,
 			Hasher:     bcryptHasher,
 			Identifier: ksuidIdentifier,
@@ -230,7 +228,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			AuthClient: authClient,
 		})
 
-		barrelClient := barrel.NewBarrel(barrel.BarrelParam{
+		barrelClient := service.NewBarrel(service.BarrelParam{
 			Validator:  goValidator,
 			Identifier: ksuidIdentifier,
 			Clock:      clock,
@@ -240,15 +238,15 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			Barrel: barrelClient,
 		})
 
-		sessionClient := session.NewSession(session.SessionParam{
+		sessionClient := service.NewSession(service.SessionParam{
 			Validator:  goValidator,
 			Signature:  jwtSignature,
 			Clock:      clock,
 			Identifier: ksuidIdentifier,
 		})
 
-		fileClient = file.NewFile(file.FileParam{
-			Config: &file.FileConfig{
+		fileClient = service.NewFile(service.FileParam{
+			Config: &service.FileConfig{
 				AppHost: p.Config.StorageAccessHost,
 			},
 			Validator:     goValidator,

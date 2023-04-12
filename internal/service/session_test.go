@@ -1,12 +1,11 @@
-package session_test
+package service_test
 
 import (
 	"context"
 	"fmt"
-	"testing"
 	"time"
 
-	"github.com/go-seidon/chariot/internal/session"
+	"github.com/go-seidon/chariot/internal/service"
 	"github.com/go-seidon/chariot/internal/signature"
 	mock_signature "github.com/go-seidon/chariot/internal/signature/mock"
 	mock_datetime "github.com/go-seidon/provider/datetime/mock"
@@ -19,20 +18,14 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestSession(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Session Package")
-}
-
 var _ = Describe("Session Package", func() {
-
 	Context("CreateSession function", Label("unit"), func() {
 		var (
 			ctx           context.Context
 			currentTs     time.Time
-			sessionClient session.Session
-			p             session.CreateSessionParam
-			r             *session.CreateSessionResult
+			sessionClient service.Session
+			p             service.CreateSessionParam
+			r             *service.CreateSessionResult
 			validator     *mock_validation.MockValidator
 			identifier    *mock_identifier.MockIdentifier
 			clock         *mock_datetime.MockClock
@@ -50,7 +43,7 @@ var _ = Describe("Session Package", func() {
 			identifier = mock_identifier.NewMockIdentifier(ctrl)
 			clock = mock_datetime.NewMockClock(ctrl)
 			signer = mock_signature.NewMockSignature(ctrl)
-			sessionClient = session.NewSession(session.SessionParam{
+			sessionClient = service.NewSession(service.SessionParam{
 				Validator:  validator,
 				Identifier: identifier,
 				Clock:      clock,
@@ -74,11 +67,11 @@ var _ = Describe("Session Package", func() {
 				ExpiresAt: expiresAt.UTC(),
 				Signature: "signature",
 			}
-			p = session.CreateSessionParam{
+			p = service.CreateSessionParam{
 				Duration: 600,
 				Features: []string{"upload_file", "retrieve_file"},
 			}
-			r = &session.CreateSessionResult{
+			r = &service.CreateSessionResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success create session",
@@ -198,9 +191,9 @@ var _ = Describe("Session Package", func() {
 	Context("VerifySession function", Label("unit"), func() {
 		var (
 			ctx           context.Context
-			sessionClient session.Session
-			p             session.VerifySessionParam
-			r             *session.VerifySessionResult
+			sessionClient service.Session
+			p             service.VerifySessionParam
+			r             *service.VerifySessionResult
 			validator     *mock_validation.MockValidator
 			identifier    *mock_identifier.MockIdentifier
 			clock         *mock_datetime.MockClock
@@ -217,14 +210,14 @@ var _ = Describe("Session Package", func() {
 			identifier = mock_identifier.NewMockIdentifier(ctrl)
 			clock = mock_datetime.NewMockClock(ctrl)
 			signer = mock_signature.NewMockSignature(ctrl)
-			sessionClient = session.NewSession(session.SessionParam{
+			sessionClient = service.NewSession(service.SessionParam{
 				Validator:  validator,
 				Identifier: identifier,
 				Clock:      clock,
 				Signature:  signer,
 			})
 
-			p = session.VerifySessionParam{
+			p = service.VerifySessionParam{
 				Feature: "upload_file",
 				Token:   "abc",
 			}
@@ -240,7 +233,7 @@ var _ = Describe("Session Package", func() {
 					},
 				},
 			}
-			r = &session.VerifySessionResult{}
+			r = &service.VerifySessionResult{}
 		})
 
 		When("there is invalid data", func() {

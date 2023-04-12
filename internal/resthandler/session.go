@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/go-seidon/chariot/api/restapp"
-	"github.com/go-seidon/chariot/internal/session"
+	"github.com/go-seidon/chariot/internal/service"
 	"github.com/go-seidon/provider/status"
 	"github.com/labstack/echo/v4"
 )
 
 type sessionHandler struct {
-	sessionClient session.Session
+	sessionClient service.Session
 }
 
 func (h *sessionHandler) CreateSession(ctx echo.Context) error {
@@ -28,7 +28,7 @@ func (h *sessionHandler) CreateSession(ctx echo.Context) error {
 		features = append(features, string(feature))
 	}
 
-	createRes, err := h.sessionClient.CreateSession(ctx.Request().Context(), session.CreateSessionParam{
+	createRes, err := h.sessionClient.CreateSession(ctx.Request().Context(), service.CreateSessionParam{
 		Duration: time.Duration(req.Duration),
 		Features: features,
 	})
@@ -58,7 +58,7 @@ func (h *sessionHandler) CreateSession(ctx echo.Context) error {
 }
 
 type SessionParam struct {
-	Session session.Session
+	Session service.Session
 }
 
 func NewSession(p SessionParam) *sessionHandler {

@@ -1,4 +1,4 @@
-package auth
+package service
 
 import (
 	"context"
@@ -12,11 +12,6 @@ import (
 	"github.com/go-seidon/provider/status"
 	"github.com/go-seidon/provider/system"
 	"github.com/go-seidon/provider/validation"
-)
-
-const (
-	STATUS_ACTIVE   = "active"
-	STATUS_INACTIVE = "inactive"
 )
 
 type AuthClient interface {
@@ -105,6 +100,8 @@ type SearchClientSummary struct {
 	TotalItems int64
 	Page       int64
 }
+
+var _ AuthClient = (*authClient)(nil)
 
 type authClient struct {
 	validator  validation.Validator

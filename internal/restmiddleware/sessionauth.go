@@ -4,13 +4,13 @@ import (
 	"net/http"
 
 	"github.com/go-seidon/chariot/api/restapp"
-	"github.com/go-seidon/chariot/internal/session"
+	"github.com/go-seidon/chariot/internal/service"
 	"github.com/go-seidon/provider/serialization"
 	"github.com/go-seidon/provider/status"
 )
 
 type sessionAuth struct {
-	sessionClient session.Session
+	sessionClient service.Session
 	serializer    serialization.Serializer
 	feature       string
 }
@@ -34,7 +34,7 @@ func (m *sessionAuth) Handle(h http.Handler) http.Handler {
 			return
 		}
 
-		_, err := m.sessionClient.VerifySession(r.Context(), session.VerifySessionParam{
+		_, err := m.sessionClient.VerifySession(r.Context(), service.VerifySessionParam{
 			Token:   token,
 			Feature: m.feature,
 		})
@@ -55,7 +55,7 @@ func (m *sessionAuth) Handle(h http.Handler) http.Handler {
 }
 
 type SessionAuthParam struct {
-	SessionClient session.Session
+	SessionClient service.Session
 	Serializer    serialization.Serializer
 	Feature       string
 }

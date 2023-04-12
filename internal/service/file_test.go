@@ -1,18 +1,16 @@
-package file_test
+package service_test
 
 import (
 	"context"
 	"fmt"
 	"strings"
-	"testing"
 	"time"
 
 	"github.com/go-seidon/chariot/api/queue"
-	"github.com/go-seidon/chariot/internal/file"
 	"github.com/go-seidon/chariot/internal/repository"
 	mock_repository "github.com/go-seidon/chariot/internal/repository/mock"
-	"github.com/go-seidon/chariot/internal/session"
-	mock_session "github.com/go-seidon/chariot/internal/session/mock"
+	"github.com/go-seidon/chariot/internal/service"
+	mock_service "github.com/go-seidon/chariot/internal/service/mock"
 	"github.com/go-seidon/chariot/internal/storage"
 	mock_storage "github.com/go-seidon/chariot/internal/storage/mock"
 	"github.com/go-seidon/chariot/internal/storage/router"
@@ -31,31 +29,26 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestFile(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "File Package")
-}
-
 var _ = Describe("File Package", func() {
 	Context("UploadFile function", Label("unit"), func() {
 		var (
 			ctx             context.Context
 			currentTs       time.Time
-			fileClient      file.File
+			fileClient      service.File
 			validator       *mock_validation.MockValidator
 			identifier      *mock_identifier.MockIdentifier
 			clock           *mock_datetime.MockClock
 			slugger         *mock_slug.MockSlugger
 			barrelRepo      *mock_repository.MockBarrel
 			fileRepo        *mock_repository.MockFile
-			sessionClient   *mock_session.MockSession
+			sessionClient   *mock_service.MockSession
 			storageRouter   *mock_storage.MockRouter
 			storagePrimary  *mock_storage.MockStorage
 			fileData        *mock_io.MockReader
-			p               file.UploadFileParam
-			r               *file.UploadFileResult
-			createSessParam session.CreateSessionParam
-			createSessRes   *session.CreateSessionResult
+			p               service.UploadFileParam
+			r               *service.UploadFileResult
+			createSessParam service.CreateSessionParam
+			createSessRes   *service.CreateSessionResult
 			searchParam     repository.SearchBarrelParam
 			searchRes       *repository.SearchBarrelResult
 			createStgParam  router.CreateStorageParam
@@ -79,9 +72,9 @@ var _ = Describe("File Package", func() {
 			storageRouter = mock_storage.NewMockRouter(ctrl)
 			storagePrimary = mock_storage.NewMockStorage(ctrl)
 			fileData = mock_io.NewMockReader(ctrl)
-			sessionClient = mock_session.NewMockSession(ctrl)
-			fileClient = file.NewFile(file.FileParam{
-				Config: &file.FileConfig{
+			sessionClient = mock_service.NewMockSession(ctrl)
+			fileClient = service.NewFile(service.FileParam{
+				Config: &service.FileConfig{
 					AppHost: "http://localhost",
 				},
 				Validator:     validator,
@@ -93,9 +86,9 @@ var _ = Describe("File Package", func() {
 				Router:        storageRouter,
 				SessionClient: sessionClient,
 			})
-			p = file.UploadFileParam{
+			p = service.UploadFileParam{
 				Data: fileData,
-				Info: file.UploadFileInfo{
+				Info: service.UploadFileInfo{
 					Name:      "Dolphin 22",
 					Mimetype:  "image/jpeg",
 					Extension: "jpg",
@@ -105,16 +98,16 @@ var _ = Describe("File Package", func() {
 						"user_id": "8c7ffa05-70c7-437e-8166-0f6a651a9575",
 					},
 				},
-				Setting: file.UploadFileSetting{
+				Setting: service.UploadFileSetting{
 					Visibility: "public",
 					Barrels:    []string{"hippo1", "s3backup"},
 				},
 			}
-			createSessParam = session.CreateSessionParam{
+			createSessParam = service.CreateSessionParam{
 				Duration: 1800,
 				Features: []string{"retrieve_file"},
 			}
-			createSessRes = &session.CreateSessionResult{
+			createSessRes = &service.CreateSessionResult{
 				Success:   system.Success{},
 				CreatedAt: currentTs.UTC(),
 				ExpiresAt: currentTs.Add(1800 * time.Second).UTC(),
@@ -199,7 +192,7 @@ var _ = Describe("File Package", func() {
 				CreatedAt:  createFileParam.CreatedAt,
 				UploadedAt: createFileParam.UploadedAt,
 			}
-			r = &file.UploadFileResult{
+			r = &service.UploadFileResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success upload file",
@@ -249,9 +242,9 @@ var _ = Describe("File Package", func() {
 
 		When("failed create session", func() {
 			It("should return error", func() {
-				p := file.UploadFileParam{
+				p := service.UploadFileParam{
 					Data: fileData,
-					Info: file.UploadFileInfo{
+					Info: service.UploadFileInfo{
 						Name:      "Dolphin 22",
 						Mimetype:  "image/jpeg",
 						Extension: "jpg",
@@ -261,7 +254,7 @@ var _ = Describe("File Package", func() {
 							"user_id": "8c7ffa05-70c7-437e-8166-0f6a651a9575",
 						},
 					},
-					Setting: file.UploadFileSetting{
+					Setting: service.UploadFileSetting{
 						Visibility: "protected",
 						Barrels:    []string{"hippo1", "s3backup"},
 					},
@@ -562,9 +555,9 @@ var _ = Describe("File Package", func() {
 
 		When("success upload to one barrel", func() {
 			It("should return result", func() {
-				p := file.UploadFileParam{
+				p := service.UploadFileParam{
 					Data: fileData,
-					Info: file.UploadFileInfo{
+					Info: service.UploadFileInfo{
 						Name:      "Dolphin 22",
 						Mimetype:  "image/jpeg",
 						Extension: "",
@@ -574,7 +567,7 @@ var _ = Describe("File Package", func() {
 							"user_id": "8c7ffa05-70c7-437e-8166-0f6a651a9575",
 						},
 					},
-					Setting: file.UploadFileSetting{
+					Setting: service.UploadFileSetting{
 						Visibility: "public",
 						Barrels:    []string{"hippo1"},
 					},
@@ -692,7 +685,7 @@ var _ = Describe("File Package", func() {
 
 				res, err := fileClient.UploadFile(ctx, p)
 
-				r := &file.UploadFileResult{
+				r := &service.UploadFileResult{
 					Success: system.Success{
 						Code:    1000,
 						Message: "success upload file",
@@ -717,9 +710,9 @@ var _ = Describe("File Package", func() {
 
 		When("success upload protected file", func() {
 			It("should return result", func() {
-				p := file.UploadFileParam{
+				p := service.UploadFileParam{
 					Data: fileData,
-					Info: file.UploadFileInfo{
+					Info: service.UploadFileInfo{
 						Name:      "Dolphin 22",
 						Mimetype:  "image/jpeg",
 						Extension: "jpg",
@@ -729,7 +722,7 @@ var _ = Describe("File Package", func() {
 							"user_id": "8c7ffa05-70c7-437e-8166-0f6a651a9575",
 						},
 					},
-					Setting: file.UploadFileSetting{
+					Setting: service.UploadFileSetting{
 						Visibility: "protected",
 						Barrels:    []string{"hippo1", "s3backup"},
 					},
@@ -836,7 +829,7 @@ var _ = Describe("File Package", func() {
 
 				res, err := fileClient.UploadFile(ctx, p)
 
-				r := &file.UploadFileResult{
+				r := &service.UploadFileResult{
 					Success: system.Success{
 						Code:    1000,
 						Message: "success upload file",
@@ -864,7 +857,7 @@ var _ = Describe("File Package", func() {
 		var (
 			ctx            context.Context
 			currentTs      time.Time
-			fileClient     file.File
+			fileClient     service.File
 			validator      *mock_validation.MockValidator
 			identifier     *mock_identifier.MockIdentifier
 			clock          *mock_datetime.MockClock
@@ -873,17 +866,17 @@ var _ = Describe("File Package", func() {
 			fileRepo       *mock_repository.MockFile
 			storageRouter  *mock_storage.MockRouter
 			storagePrimary *mock_storage.MockStorage
-			sessionClient  *mock_session.MockSession
+			sessionClient  *mock_service.MockSession
 			fileData       *mock_io.MockReadCloser
-			p              file.RetrieveFileBySlugParam
-			r              *file.RetrieveFileBySlugResult
+			p              service.RetrieveFileBySlugParam
+			r              *service.RetrieveFileBySlugResult
 			createStgParam router.CreateStorageParam
 			retrieveParam  storage.RetrieveObjectParam
 			retrieveRes    *storage.RetrieveObjectResult
 			findFileParam  repository.FindFileParam
 			findFileRes    *repository.FindFileResult
-			verifyParam    session.VerifySessionParam
-			verifyRes      *session.VerifySessionResult
+			verifyParam    service.VerifySessionParam
+			verifyRes      *service.VerifySessionResult
 		)
 
 		BeforeEach(func() {
@@ -899,9 +892,9 @@ var _ = Describe("File Package", func() {
 			fileRepo = mock_repository.NewMockFile(ctrl)
 			storageRouter = mock_storage.NewMockRouter(ctrl)
 			storagePrimary = mock_storage.NewMockStorage(ctrl)
-			sessionClient = mock_session.NewMockSession(ctrl)
+			sessionClient = mock_service.NewMockSession(ctrl)
 			fileData = mock_io.NewMockReadCloser(ctrl)
-			fileClient = file.NewFile(file.FileParam{
+			fileClient = service.NewFile(service.FileParam{
 				Validator:     validator,
 				Identifier:    identifier,
 				Clock:         clock,
@@ -922,7 +915,7 @@ var _ = Describe("File Package", func() {
 				Data:        fileData,
 				RetrievedAt: currentTs,
 			}
-			p = file.RetrieveFileBySlugParam{
+			p = service.RetrieveFileBySlugParam{
 				Slug:  "dolphin-22.jpg",
 				Token: "session-token",
 			}
@@ -964,7 +957,7 @@ var _ = Describe("File Package", func() {
 					},
 				},
 			}
-			r = &file.RetrieveFileBySlugResult{
+			r = &service.RetrieveFileBySlugResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success retrieve file",
@@ -974,11 +967,11 @@ var _ = Describe("File Package", func() {
 				Visibility: findFileRes.Visibility,
 				Status:     findFileRes.Status,
 			}
-			verifyParam = session.VerifySessionParam{
+			verifyParam = service.VerifySessionParam{
 				Token:   p.Token,
 				Feature: "retrieve_file",
 			}
-			verifyRes = &session.VerifySessionResult{}
+			verifyRes = &service.VerifySessionResult{}
 		})
 
 		When("there is invalid data", func() {
@@ -1505,7 +1498,7 @@ var _ = Describe("File Package", func() {
 
 				res, err := fileClient.RetrieveFileBySlug(ctx, p)
 
-				r := &file.RetrieveFileBySlugResult{
+				r := &service.RetrieveFileBySlugResult{
 					Success: system.Success{
 						Code:    1000,
 						Message: "success retrieve file",
@@ -1565,7 +1558,7 @@ var _ = Describe("File Package", func() {
 		var (
 			ctx           context.Context
 			currentTs     time.Time
-			fileClient    file.File
+			fileClient    service.File
 			validator     *mock_validation.MockValidator
 			identifier    *mock_identifier.MockIdentifier
 			clock         *mock_datetime.MockClock
@@ -1573,8 +1566,8 @@ var _ = Describe("File Package", func() {
 			barrelRepo    *mock_repository.MockBarrel
 			fileRepo      *mock_repository.MockFile
 			storageRouter *mock_storage.MockRouter
-			p             file.GetFileByIdParam
-			r             *file.GetFileByIdResult
+			p             service.GetFileByIdParam
+			r             *service.GetFileByIdResult
 			findFileParam repository.FindFileParam
 			findFileRes   *repository.FindFileResult
 		)
@@ -1591,7 +1584,7 @@ var _ = Describe("File Package", func() {
 			barrelRepo = mock_repository.NewMockBarrel(ctrl)
 			fileRepo = mock_repository.NewMockFile(ctrl)
 			storageRouter = mock_storage.NewMockRouter(ctrl)
-			fileClient = file.NewFile(file.FileParam{
+			fileClient = service.NewFile(service.FileParam{
 				Validator:  validator,
 				Identifier: identifier,
 				Clock:      clock,
@@ -1600,7 +1593,7 @@ var _ = Describe("File Package", func() {
 				FileRepo:   fileRepo,
 				Router:     storageRouter,
 			})
-			p = file.GetFileByIdParam{
+			p = service.GetFileByIdParam{
 				Id: "id",
 			}
 			findFileParam = repository.FindFileParam{
@@ -1655,10 +1648,10 @@ var _ = Describe("File Package", func() {
 				},
 			}
 
-			locations := []file.GetFileByIdLocation{}
+			locations := []service.GetFileByIdLocation{}
 			for _, location := range findFileRes.Locations {
-				locations = append(locations, file.GetFileByIdLocation{
-					Barrel: file.GetFileByIdBarrel{
+				locations = append(locations, service.GetFileByIdLocation{
+					Barrel: service.GetFileByIdBarrel{
 						Id:       location.Barrel.Id,
 						Code:     location.Barrel.Code,
 						Provider: location.Barrel.Provider,
@@ -1672,7 +1665,7 @@ var _ = Describe("File Package", func() {
 					UploadedAt: location.UploadedAt,
 				})
 			}
-			r = &file.GetFileByIdResult{
+			r = &service.GetFileByIdResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success get file",
@@ -1780,8 +1773,8 @@ var _ = Describe("File Package", func() {
 		var (
 			ctx         context.Context
 			currentTs   time.Time
-			fileClient  file.File
-			p           file.SearchFileParam
+			fileClient  service.File
+			p           service.SearchFileParam
 			validator   *mock_validation.MockValidator
 			identifier  *mock_identifier.MockIdentifier
 			clock       *mock_datetime.MockClock
@@ -1799,13 +1792,13 @@ var _ = Describe("File Package", func() {
 			identifier = mock_identifier.NewMockIdentifier(ctrl)
 			clock = mock_datetime.NewMockClock(ctrl)
 			fileRepo = mock_repository.NewMockFile(ctrl)
-			fileClient = file.NewFile(file.FileParam{
+			fileClient = service.NewFile(service.FileParam{
 				Validator:  validator,
 				Identifier: identifier,
 				Clock:      clock,
 				FileRepo:   fileRepo,
 			})
-			p = file.SearchFileParam{
+			p = service.SearchFileParam{
 				Keyword:       "sa",
 				TotalItems:    24,
 				Page:          2,
@@ -1990,7 +1983,7 @@ var _ = Describe("File Package", func() {
 		var (
 			ctx           context.Context
 			currentTs     time.Time
-			fileClient    file.File
+			fileClient    service.File
 			validator     *mock_validation.MockValidator
 			identifier    *mock_identifier.MockIdentifier
 			clock         *mock_datetime.MockClock
@@ -2000,8 +1993,8 @@ var _ = Describe("File Package", func() {
 			storageRouter *mock_storage.MockRouter
 			serializer    *mock_serialization.MockSerializer
 			queuer        *mock_queueing.MockQueuer
-			p             file.DeleteFileByIdParam
-			r             *file.DeleteFileByIdResult
+			p             service.DeleteFileByIdParam
+			r             *service.DeleteFileByIdResult
 			findFileParam repository.FindFileParam
 			findFileRes   *repository.FindFileResult
 			updateParam   repository.UpdateFileParam
@@ -2024,7 +2017,7 @@ var _ = Describe("File Package", func() {
 			storageRouter = mock_storage.NewMockRouter(ctrl)
 			serializer = mock_serialization.NewMockSerializer(ctrl)
 			queuer = mock_queueing.NewMockQueuer(ctrl)
-			fileClient = file.NewFile(file.FileParam{
+			fileClient = service.NewFile(service.FileParam{
 				Validator:  validator,
 				Identifier: identifier,
 				Clock:      clock,
@@ -2035,7 +2028,7 @@ var _ = Describe("File Package", func() {
 				Serializer: serializer,
 				Pubsub:     queuer,
 			})
-			p = file.DeleteFileByIdParam{
+			p = service.DeleteFileByIdParam{
 				Id: "id",
 			}
 			findFileParam = repository.FindFileParam{
@@ -2076,7 +2069,7 @@ var _ = Describe("File Package", func() {
 				ExchangeName: "file_deletion",
 				MessageBody:  []byte{},
 			}
-			r = &file.DeleteFileByIdResult{
+			r = &service.DeleteFileByIdResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success delete file",
@@ -2340,7 +2333,7 @@ var _ = Describe("File Package", func() {
 		var (
 			ctx            context.Context
 			currentTs      time.Time
-			fileClient     file.File
+			fileClient     service.File
 			validator      *mock_validation.MockValidator
 			identifier     *mock_identifier.MockIdentifier
 			clock          *mock_datetime.MockClock
@@ -2351,8 +2344,8 @@ var _ = Describe("File Package", func() {
 			serializer     *mock_serialization.MockSerializer
 			queuer         *mock_queueing.MockQueuer
 			deleteStorage  *mock_storage.MockStorage
-			p              file.ProceedDeletionParam
-			r              *file.ProceedDeletionResult
+			p              service.ProceedDeletionParam
+			r              *service.ProceedDeletionResult
 			findFileParam  repository.FindFileParam
 			findFileRes    *repository.FindFileResult
 			deletingParam  repository.UpdateLocationByIdsParam
@@ -2377,7 +2370,7 @@ var _ = Describe("File Package", func() {
 			serializer = mock_serialization.NewMockSerializer(ctrl)
 			queuer = mock_queueing.NewMockQueuer(ctrl)
 			deleteStorage = mock_storage.NewMockStorage(ctrl)
-			fileClient = file.NewFile(file.FileParam{
+			fileClient = service.NewFile(service.FileParam{
 				Validator:  validator,
 				Identifier: identifier,
 				Clock:      clock,
@@ -2388,10 +2381,10 @@ var _ = Describe("File Package", func() {
 				Serializer: serializer,
 				Pubsub:     queuer,
 			})
-			p = file.ProceedDeletionParam{
+			p = service.ProceedDeletionParam{
 				LocationId: "l1",
 			}
-			r = &file.ProceedDeletionResult{
+			r = &service.ProceedDeletionResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success delete file",
@@ -2777,7 +2770,7 @@ var _ = Describe("File Package", func() {
 		var (
 			ctx           context.Context
 			currentTs     time.Time
-			fileClient    file.File
+			fileClient    service.File
 			validator     *mock_validation.MockValidator
 			identifier    *mock_identifier.MockIdentifier
 			clock         *mock_datetime.MockClock
@@ -2786,9 +2779,9 @@ var _ = Describe("File Package", func() {
 			fileRepo      *mock_repository.MockFile
 			storageRouter *mock_storage.MockRouter
 			serializer    *mock_serialization.MockSerializer
-			p             file.ScheduleReplicationParam
+			p             service.ScheduleReplicationParam
 			pubsub        *mock_queueing.MockPubsub
-			r             *file.ScheduleReplicationResult
+			r             *service.ScheduleReplicationResult
 			searchParam   repository.SearchLocationParam
 			searchRes     *repository.SearchLocationResult
 			updateParam   repository.UpdateLocationByIdsParam
@@ -2809,7 +2802,7 @@ var _ = Describe("File Package", func() {
 			storageRouter = mock_storage.NewMockRouter(ctrl)
 			serializer = mock_serialization.NewMockSerializer(ctrl)
 			pubsub = mock_queueing.NewMockPubsub(ctrl)
-			fileClient = file.NewFile(file.FileParam{
+			fileClient = service.NewFile(service.FileParam{
 				Validator:  validator,
 				Identifier: identifier,
 				Clock:      clock,
@@ -2821,7 +2814,7 @@ var _ = Describe("File Package", func() {
 				Pubsub:     pubsub,
 			})
 
-			p = file.ScheduleReplicationParam{
+			p = service.ScheduleReplicationParam{
 				MaxItems: 5,
 			}
 			searchParam = repository.SearchLocationParam{
@@ -2865,7 +2858,7 @@ var _ = Describe("File Package", func() {
 				ExchangeName: "file_replication",
 				MessageBody:  []byte{},
 			}
-			r = &file.ScheduleReplicationResult{
+			r = &service.ScheduleReplicationResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success schedule replication",
@@ -2935,7 +2928,7 @@ var _ = Describe("File Package", func() {
 
 				res, err := fileClient.ScheduleReplication(ctx, p)
 
-				r := &file.ScheduleReplicationResult{
+				r := &service.ScheduleReplicationResult{
 					Success: system.Success{
 						Code:    1000,
 						Message: "there is no pending replication",
@@ -3111,7 +3104,7 @@ var _ = Describe("File Package", func() {
 		var (
 			ctx               context.Context
 			currentTs         time.Time
-			fileClient        file.File
+			fileClient        service.File
 			validator         *mock_validation.MockValidator
 			identifier        *mock_identifier.MockIdentifier
 			clock             *mock_datetime.MockClock
@@ -3123,7 +3116,7 @@ var _ = Describe("File Package", func() {
 			replicaStorage    *mock_storage.MockStorage
 			serializer        *mock_serialization.MockSerializer
 			pubsub            *mock_queueing.MockPubsub
-			p                 file.ProceedReplicationParam
+			p                 service.ProceedReplicationParam
 			findParam         repository.FindFileParam
 			findRes           *repository.FindFileResult
 			primParam         router.CreateStorageParam
@@ -3135,7 +3128,7 @@ var _ = Describe("File Package", func() {
 			updateUploadRes   *repository.UpdateLocationByIdsResult
 			updateParam       repository.UpdateLocationByIdsParam
 			updateRes         *repository.UpdateLocationByIdsResult
-			r                 *file.ProceedReplicationResult
+			r                 *service.ProceedReplicationResult
 		)
 
 		BeforeEach(func() {
@@ -3154,7 +3147,7 @@ var _ = Describe("File Package", func() {
 			replicaStorage = mock_storage.NewMockStorage(ctrl)
 			serializer = mock_serialization.NewMockSerializer(ctrl)
 			pubsub = mock_queueing.NewMockPubsub(ctrl)
-			fileClient = file.NewFile(file.FileParam{
+			fileClient = service.NewFile(service.FileParam{
 				Validator:  validator,
 				Identifier: identifier,
 				Clock:      clock,
@@ -3166,7 +3159,7 @@ var _ = Describe("File Package", func() {
 				Pubsub:     pubsub,
 			})
 
-			p = file.ProceedReplicationParam{
+			p = service.ProceedReplicationParam{
 				LocationId: "loc2",
 			}
 			findParam = repository.FindFileParam{
@@ -3235,7 +3228,7 @@ var _ = Describe("File Package", func() {
 			updateRes = &repository.UpdateLocationByIdsResult{
 				TotalUpdated: 1,
 			}
-			r = &file.ProceedReplicationResult{
+			r = &service.ProceedReplicationResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success replicate file",

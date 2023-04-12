@@ -1,4 +1,4 @@
-package session
+package service
 
 import (
 	"context"
@@ -37,14 +37,16 @@ type VerifySessionParam struct {
 type VerifySessionResult struct {
 }
 
-type session struct {
+var _ Session = (*sessionService)(nil)
+
+type sessionService struct {
 	validator  validation.Validator
 	identifier identity.Identifier
 	clock      datetime.Clock
 	signature  signature.Signature
 }
 
-func (s *session) CreateSession(ctx context.Context, p CreateSessionParam) (*CreateSessionResult, *system.Error) {
+func (s *sessionService) CreateSession(ctx context.Context, p CreateSessionParam) (*CreateSessionResult, *system.Error) {
 	err := s.validator.Validate(p)
 	if err != nil {
 		return nil, &system.Error{
@@ -95,7 +97,7 @@ func (s *session) CreateSession(ctx context.Context, p CreateSessionParam) (*Cre
 	return res, nil
 }
 
-func (s *session) VerifySession(ctx context.Context, p VerifySessionParam) (*VerifySessionResult, *system.Error) {
+func (s *sessionService) VerifySession(ctx context.Context, p VerifySessionParam) (*VerifySessionResult, *system.Error) {
 	err := s.validator.Validate(p)
 	if err != nil {
 		return nil, &system.Error{
@@ -149,8 +151,8 @@ type SessionParam struct {
 	Signature  signature.Signature
 }
 
-func NewSession(p SessionParam) *session {
-	return &session{
+func NewSession(p SessionParam) *sessionService {
+	return &sessionService{
 		validator:  p.Validator,
 		identifier: p.Identifier,
 		clock:      p.Clock,

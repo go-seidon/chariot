@@ -9,8 +9,8 @@ import (
 
 	"github.com/go-seidon/chariot/api/restapp"
 	"github.com/go-seidon/chariot/internal/resthandler"
-	"github.com/go-seidon/chariot/internal/session"
-	mock_session "github.com/go-seidon/chariot/internal/session/mock"
+	"github.com/go-seidon/chariot/internal/service"
+	mock_service "github.com/go-seidon/chariot/internal/service/mock"
 	"github.com/go-seidon/provider/system"
 	"github.com/golang/mock/gomock"
 	"github.com/labstack/echo/v4"
@@ -19,16 +19,15 @@ import (
 )
 
 var _ = Describe("Session Handler", func() {
-
 	Context("CreateSession function", Label("unit"), func() {
 		var (
 			currentTs     time.Time
 			ctx           echo.Context
 			h             func(ctx echo.Context) error
 			rec           *httptest.ResponseRecorder
-			sessionClient *mock_session.MockSession
-			createParam   session.CreateSessionParam
-			createRes     *session.CreateSessionResult
+			sessionClient *mock_service.MockSession
+			createParam   service.CreateSessionParam
+			createRes     *service.CreateSessionResult
 		)
 
 		BeforeEach(func() {
@@ -48,16 +47,16 @@ var _ = Describe("Session Handler", func() {
 
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
-			sessionClient = mock_session.NewMockSession(ctrl)
+			sessionClient = mock_service.NewMockSession(ctrl)
 			sessionHandler := resthandler.NewSession(resthandler.SessionParam{
 				Session: sessionClient,
 			})
 			h = sessionHandler.CreateSession
-			createParam = session.CreateSessionParam{
+			createParam = service.CreateSessionParam{
 				Duration: time.Duration(reqBody.Duration),
 				Features: []string{"upload_file", "retrieve_file"},
 			}
-			createRes = &session.CreateSessionResult{
+			createRes = &service.CreateSessionResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success create session",

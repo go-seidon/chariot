@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/go-seidon/chariot/api/restapp"
-	"github.com/go-seidon/chariot/internal/auth"
-	mock_auth "github.com/go-seidon/chariot/internal/auth/mock"
 	"github.com/go-seidon/chariot/internal/resthandler"
+	"github.com/go-seidon/chariot/internal/service"
+	mock_service "github.com/go-seidon/chariot/internal/service/mock"
 	"github.com/go-seidon/provider/system"
 	"github.com/golang/mock/gomock"
 	"github.com/labstack/echo/v4"
@@ -25,9 +25,9 @@ var _ = Describe("Auth Handler", func() {
 			ctx         echo.Context
 			h           func(ctx echo.Context) error
 			rec         *httptest.ResponseRecorder
-			authClient  *mock_auth.MockAuthClient
-			createParam auth.CreateClientParam
-			createRes   *auth.CreateClientResult
+			authClient  *mock_service.MockAuthClient
+			createParam service.CreateClientParam
+			createRes   *service.CreateClientResult
 		)
 
 		BeforeEach(func() {
@@ -50,19 +50,19 @@ var _ = Describe("Auth Handler", func() {
 
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
-			authClient = mock_auth.NewMockAuthClient(ctrl)
+			authClient = mock_service.NewMockAuthClient(ctrl)
 			authHandler := resthandler.NewAuth(resthandler.AuthParam{
 				AuthClient: authClient,
 			})
 			h = authHandler.CreateClient
-			createParam = auth.CreateClientParam{
+			createParam = service.CreateClientParam{
 				ClientId:     reqBody.ClientId,
 				ClientSecret: reqBody.ClientSecret,
 				Name:         reqBody.Name,
 				Type:         string(reqBody.Type),
 				Status:       string(reqBody.Status),
 			}
-			createRes = &auth.CreateClientResult{
+			createRes = &service.CreateClientResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success create auth client",
@@ -185,9 +185,9 @@ var _ = Describe("Auth Handler", func() {
 			ctx        echo.Context
 			h          func(ctx echo.Context) error
 			rec        *httptest.ResponseRecorder
-			authClient *mock_auth.MockAuthClient
-			findParam  auth.FindClientByIdParam
-			findRes    *auth.FindClientByIdResult
+			authClient *mock_service.MockAuthClient
+			findParam  service.FindClientByIdParam
+			findRes    *service.FindClientByIdResult
 		)
 
 		BeforeEach(func() {
@@ -204,15 +204,15 @@ var _ = Describe("Auth Handler", func() {
 
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
-			authClient = mock_auth.NewMockAuthClient(ctrl)
+			authClient = mock_service.NewMockAuthClient(ctrl)
 			authHandler := resthandler.NewAuth(resthandler.AuthParam{
 				AuthClient: authClient,
 			})
 			h = authHandler.GetClientById
-			findParam = auth.FindClientByIdParam{
+			findParam = service.FindClientByIdParam{
 				Id: "mock-id",
 			}
-			findRes = &auth.FindClientByIdResult{
+			findRes = &service.FindClientByIdResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success find auth client",
@@ -334,9 +334,9 @@ var _ = Describe("Auth Handler", func() {
 			ctx         echo.Context
 			h           func(ctx echo.Context) error
 			rec         *httptest.ResponseRecorder
-			authClient  *mock_auth.MockAuthClient
-			updateParam auth.UpdateClientByIdParam
-			updateRes   *auth.UpdateClientByIdResult
+			authClient  *mock_service.MockAuthClient
+			updateParam service.UpdateClientByIdParam
+			updateRes   *service.UpdateClientByIdResult
 		)
 
 		BeforeEach(func() {
@@ -360,19 +360,19 @@ var _ = Describe("Auth Handler", func() {
 
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
-			authClient = mock_auth.NewMockAuthClient(ctrl)
+			authClient = mock_service.NewMockAuthClient(ctrl)
 			authHandler := resthandler.NewAuth(resthandler.AuthParam{
 				AuthClient: authClient,
 			})
 			h = authHandler.UpdateClientById
-			updateParam = auth.UpdateClientByIdParam{
+			updateParam = service.UpdateClientByIdParam{
 				Id:       "mock-id",
 				ClientId: reqBody.ClientId,
 				Name:     reqBody.Name,
 				Type:     string(reqBody.Type),
 				Status:   string(reqBody.Status),
 			}
-			updateRes = &auth.UpdateClientByIdResult{
+			updateRes = &service.UpdateClientByIdResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success update auth client",
@@ -520,9 +520,9 @@ var _ = Describe("Auth Handler", func() {
 			ctx         echo.Context
 			h           func(ctx echo.Context) error
 			rec         *httptest.ResponseRecorder
-			authClient  *mock_auth.MockAuthClient
-			searchParam auth.SearchClientParam
-			searchRes   *auth.SearchClientResult
+			authClient  *mock_service.MockAuthClient
+			searchParam service.SearchClientParam
+			searchRes   *service.SearchClientResult
 		)
 
 		BeforeEach(func() {
@@ -549,23 +549,23 @@ var _ = Describe("Auth Handler", func() {
 
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
-			authClient = mock_auth.NewMockAuthClient(ctrl)
+			authClient = mock_service.NewMockAuthClient(ctrl)
 			authHandler := resthandler.NewAuth(resthandler.AuthParam{
 				AuthClient: authClient,
 			})
 			h = authHandler.SearchClient
-			searchParam = auth.SearchClientParam{
+			searchParam = service.SearchClientParam{
 				Keyword:    "goseidon",
 				TotalItems: 24,
 				Page:       2,
 				Statuses:   []string{"active"},
 			}
-			searchRes = &auth.SearchClientResult{
+			searchRes = &service.SearchClientResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success search auth client",
 				},
-				Items: []auth.SearchClientItem{
+				Items: []service.SearchClientItem{
 					{
 						Id:        "id-1",
 						ClientId:  "client-id-1",
@@ -585,7 +585,7 @@ var _ = Describe("Auth Handler", func() {
 						UpdatedAt: &currentTs,
 					},
 				},
-				Summary: auth.SearchClientSummary{
+				Summary: service.SearchClientSummary{
 					TotalItems: 2,
 					Page:       2,
 				},
@@ -668,13 +668,13 @@ var _ = Describe("Auth Handler", func() {
 
 		When("there is no client", func() {
 			It("should return empty result", func() {
-				searchRes := &auth.SearchClientResult{
+				searchRes := &service.SearchClientResult{
 					Success: system.Success{
 						Code:    1000,
 						Message: "success search auth client",
 					},
-					Items: []auth.SearchClientItem{},
-					Summary: auth.SearchClientSummary{
+					Items: []service.SearchClientItem{},
+					Summary: service.SearchClientSummary{
 						TotalItems: 0,
 						Page:       2,
 					},
@@ -704,12 +704,12 @@ var _ = Describe("Auth Handler", func() {
 
 		When("there is one client", func() {
 			It("should return result", func() {
-				searchRes := &auth.SearchClientResult{
+				searchRes := &service.SearchClientResult{
 					Success: system.Success{
 						Code:    1000,
 						Message: "success search auth client",
 					},
-					Items: []auth.SearchClientItem{
+					Items: []service.SearchClientItem{
 						{
 							Id:        "id-1",
 							ClientId:  "client-id-1",
@@ -720,7 +720,7 @@ var _ = Describe("Auth Handler", func() {
 							UpdatedAt: nil,
 						},
 					},
-					Summary: auth.SearchClientSummary{
+					Summary: service.SearchClientSummary{
 						TotalItems: 1,
 						Page:       2,
 					},

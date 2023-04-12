@@ -4,14 +4,14 @@ import (
 	"net/http"
 
 	"github.com/go-seidon/chariot/api/restapp"
-	"github.com/go-seidon/chariot/internal/auth"
+	"github.com/go-seidon/chariot/internal/service"
 	"github.com/go-seidon/provider/status"
 	"github.com/go-seidon/provider/typeconv"
 	"github.com/labstack/echo/v4"
 )
 
 type authHandler struct {
-	authClient auth.AuthClient
+	authClient service.AuthClient
 }
 
 func (h *authHandler) CreateClient(ctx echo.Context) error {
@@ -23,7 +23,7 @@ func (h *authHandler) CreateClient(ctx echo.Context) error {
 		})
 	}
 
-	createRes, err := h.authClient.CreateClient(ctx.Request().Context(), auth.CreateClientParam{
+	createRes, err := h.authClient.CreateClient(ctx.Request().Context(), service.CreateClientParam{
 		ClientId:     req.ClientId,
 		ClientSecret: req.ClientSecret,
 		Name:         req.Name,
@@ -59,7 +59,7 @@ func (h *authHandler) CreateClient(ctx echo.Context) error {
 }
 
 func (h *authHandler) GetClientById(ctx echo.Context) error {
-	findRes, err := h.authClient.FindClientById(ctx.Request().Context(), auth.FindClientByIdParam{
+	findRes, err := h.authClient.FindClientById(ctx.Request().Context(), service.FindClientByIdParam{
 		Id: ctx.Param("id"),
 	})
 	if err != nil {
@@ -111,7 +111,7 @@ func (h *authHandler) UpdateClientById(ctx echo.Context) error {
 		})
 	}
 
-	updateRes, err := h.authClient.UpdateClientById(ctx.Request().Context(), auth.UpdateClientByIdParam{
+	updateRes, err := h.authClient.UpdateClientById(ctx.Request().Context(), service.UpdateClientByIdParam{
 		Id:       ctx.Param("id"),
 		ClientId: req.ClientId,
 		Name:     req.Name,
@@ -177,7 +177,7 @@ func (h *authHandler) SearchClient(ctx echo.Context) error {
 		page = req.Pagination.Page
 	}
 
-	searchRes, err := h.authClient.SearchClient(ctx.Request().Context(), auth.SearchClientParam{
+	searchRes, err := h.authClient.SearchClient(ctx.Request().Context(), service.SearchClientParam{
 		Keyword:    typeconv.StringVal(req.Keyword),
 		Statuses:   statuses,
 		TotalItems: totalItems,
@@ -230,7 +230,7 @@ func (h *authHandler) SearchClient(ctx echo.Context) error {
 }
 
 type AuthParam struct {
-	AuthClient auth.AuthClient
+	AuthClient service.AuthClient
 }
 
 func NewAuth(p AuthParam) *authHandler {

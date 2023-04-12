@@ -3,8 +3,8 @@ package queue
 import (
 	"context"
 
-	"github.com/go-seidon/chariot/internal/file"
 	"github.com/go-seidon/chariot/internal/queuehandler"
+	"github.com/go-seidon/chariot/internal/service"
 	"github.com/go-seidon/provider/queueing"
 	"github.com/go-seidon/provider/serialization"
 )
@@ -16,7 +16,7 @@ type Queue interface {
 type queue struct {
 	queuer     queueing.Queuer
 	serializer serialization.Serializer
-	fileClient file.File
+	fileClient service.File
 }
 
 func (q *queue) Start(ctx context.Context) error {
@@ -170,7 +170,7 @@ func (q *queue) Start(ctx context.Context) error {
 type QueueParam struct {
 	Queuer     queueing.Queuer
 	Serializer serialization.Serializer
-	File       file.File
+	File       service.File
 }
 
 func NewQueue(p QueueParam) *queue {
