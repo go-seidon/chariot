@@ -198,35 +198,40 @@ func (r *auth) SearchClient(ctx context.Context, p repository.SearchClientParam)
 		WithContext(ctx).
 		Clauses(dbresolver.Read)
 
-	searchQuery := query
-	if p.Keyword != "" {
-		searchQuery = searchQuery.
-			Where("name LIKE ?", "%"+p.Keyword+"%").
-			Or("client_id LIKE ?", "%"+p.Keyword+"%")
-	}
-
 	if len(p.Statuses) > 0 {
-		searchQuery = searchQuery.
-			Where("status IN ?", p.Statuses)
+		query.Where("status IN ?", p.Statuses)
 	}
 
-	countQuery := searchQuery.Table("auth_client")
-
-	if p.Limit > 0 {
-		searchQuery = searchQuery.Limit(int(p.Limit))
-	}
-
-	if p.Offset > 0 {
-		searchQuery = searchQuery.Offset(int(p.Offset))
+	if p.Keyword != "" {
+		keyword := "%" + p.Keyword + "%"
+		query.Where(
+			r.gormClient.
+				Where("name LIKE ?", keyword).
+				Or("client_id LIKE ?", keyword),
+		)
 	}
 
 	res := &repository.SearchClientResult{
 		Summary: repository.SearchClientSummary{},
 		Items:   []repository.SearchClientItem{},
 	}
-	authClients := []AuthClient{}
+	countRes := query.
+		Table("auth_client").
+		Count(&res.Summary.TotalItems)
+	if countRes.Error != nil {
+		return nil, countRes.Error
+	}
 
-	searchRes := searchQuery.
+	if p.Limit > 0 {
+		query.Limit(int(p.Limit))
+	}
+
+	if p.Offset > 0 {
+		query.Offset(int(p.Offset))
+	}
+
+	authClients := []AuthClient{}
+	searchRes := query.
 		Select(`id, client_id, client_secret, name, type, status, created_at, updated_at`).
 		Find(&authClients)
 
@@ -248,11 +253,6 @@ func (r *auth) SearchClient(ctx context.Context, p repository.SearchClientParam)
 			CreatedAt:    time.UnixMilli(authClient.CreatedAt).UTC(),
 			UpdatedAt:    typeconv.Time(time.UnixMilli(authClient.UpdatedAt).UTC()),
 		})
-	}
-
-	countRes := countQuery.Count(&res.Summary.TotalItems)
-	if countRes.Error != nil {
-		return nil, countRes.Error
 	}
 
 	return res, nil

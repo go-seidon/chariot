@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/go-seidon/chariot/api/queue"
@@ -329,9 +330,9 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 	uploadFile, err := uploader.UploadObject(ctx, storage.UploadObjectParam{
 		Data:      p.Data,
 		Id:        typeconv.String(primaryBarrel.ObjectId),
-		Name:      typeconv.String(p.Info.Name),
-		Mimetype:  typeconv.String(p.Info.Mimetype),
-		Extension: typeconv.String(p.Info.Extension),
+		Name:      typeconv.String(strings.ToLower(p.Info.Name)),
+		Mimetype:  typeconv.String(strings.ToLower(p.Info.Mimetype)),
+		Extension: typeconv.String(strings.ToLower(p.Info.Extension)),
 	})
 	if err != nil {
 		return nil, &system.Error{
@@ -371,9 +372,9 @@ func (f *file) UploadFile(ctx context.Context, p UploadFileParam) (*UploadFileRe
 	createFile, err := f.fileRepo.CreateFile(ctx, repository.CreateFileParam{
 		Id:         primaryBarrel.ObjectId,
 		Slug:       slug,
-		Name:       p.Info.Name,
-		Mimetype:   p.Info.Mimetype,
-		Extension:  p.Info.Extension,
+		Name:       strings.ToLower(p.Info.Name),
+		Mimetype:   strings.ToLower(p.Info.Mimetype),
+		Extension:  strings.ToLower(p.Info.Extension),
 		Size:       p.Info.Size,
 		Meta:       p.Info.Meta,
 		Status:     STATUS_AVAILABLE,

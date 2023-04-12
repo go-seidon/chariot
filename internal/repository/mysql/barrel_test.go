@@ -388,7 +388,6 @@ var _ = Describe("Barrel Repository", func() {
 	})
 
 	Context("FindBarrel function", Label("unit"), func() {
-
 		var (
 			ctx        context.Context
 			currentTs  time.Time
@@ -501,7 +500,6 @@ var _ = Describe("Barrel Repository", func() {
 	})
 
 	Context("UpdateBarrel function", Label("unit"), func() {
-
 		var (
 			ctx        context.Context
 			currentTs  time.Time
@@ -879,7 +877,6 @@ var _ = Describe("Barrel Repository", func() {
 	})
 
 	Context("SearchBarrel function", Label("unit"), func() {
-
 		var (
 			ctx        context.Context
 			currentTs  time.Time
@@ -955,7 +952,7 @@ var _ = Describe("Barrel Repository", func() {
 			searchStmt = regexp.QuoteMeta(strings.TrimSpace(`
 				SELECT id, code, name, provider, status, created_at, updated_at 
 				FROM ` + "`barrel`" + ` 
-				WHERE name LIKE ? OR code LIKE ?
+				WHERE (name LIKE ? OR code LIKE ?)
 				AND status IN (?)
 				AND provider IN (?)
 				AND code IN (?)
@@ -965,7 +962,7 @@ var _ = Describe("Barrel Repository", func() {
 			countStmt = regexp.QuoteMeta(strings.TrimSpace(`
 				SELECT count(*)
 				FROM ` + "`barrel`" + ` 
-				WHERE name LIKE ? OR code LIKE ?
+				WHERE (name LIKE ? OR code LIKE ?)
 				AND status IN (?)
 				AND provider IN (?)
 				AND code IN (?)
@@ -995,8 +992,39 @@ var _ = Describe("Barrel Repository", func() {
 			}
 		})
 
+		When("failed count search barrel", func() {
+			It("should return result", func() {
+				dbClient.
+					ExpectQuery(countStmt).
+					WithArgs(
+						"%"+p.Keyword+"%",
+						"%"+p.Keyword+"%",
+						p.Statuses[0],
+						p.Providers[0],
+						p.Codes[0],
+					).
+					WillReturnError(fmt.Errorf("network error"))
+
+				res, err := barrelRepo.SearchBarrel(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
 		When("failed search barrel", func() {
 			It("should return error", func() {
+				dbClient.
+					ExpectQuery(countStmt).
+					WithArgs(
+						"%"+p.Keyword+"%",
+						"%"+p.Keyword+"%",
+						p.Statuses[0],
+						p.Providers[0],
+						p.Codes[0],
+					).
+					WillReturnRows(countRows)
+
 				dbClient.
 					ExpectQuery(searchStmt).
 					WithArgs(
@@ -1015,8 +1043,22 @@ var _ = Describe("Barrel Repository", func() {
 			})
 		})
 
-		When("there are no barrel", func() {
+		When("there is no barrel", func() {
 			It("should return empty result", func() {
+				countRows := sqlmock.
+					NewRows([]string{"count(*)"}).
+					AddRow(0)
+				dbClient.
+					ExpectQuery(countStmt).
+					WithArgs(
+						"%"+p.Keyword+"%",
+						"%"+p.Keyword+"%",
+						p.Statuses[0],
+						p.Providers[0],
+						p.Codes[0],
+					).
+					WillReturnRows(countRows)
+
 				dbClient.
 					ExpectQuery(searchStmt).
 					WithArgs(
@@ -1041,69 +1083,9 @@ var _ = Describe("Barrel Repository", func() {
 			})
 		})
 
-		When("failed count search barrel", func() {
-			It("should return result", func() {
-				searchRows := sqlmock.NewRows([]string{
-					"id", "code",
-					"name", "provider", "status",
-					"created_at", "updated_at",
-				}).AddRow(
-					"id-1", "code-1",
-					"name-1", "goseidon_hippo", "inactive",
-					currentTs.UnixMilli(), currentTs.UnixMilli(),
-				)
-				dbClient.
-					ExpectQuery(searchStmt).
-					WithArgs(
-						"%"+p.Keyword+"%",
-						"%"+p.Keyword+"%",
-						p.Statuses[0],
-						p.Providers[0],
-						p.Codes[0],
-					).
-					WillReturnRows(searchRows)
-
-				dbClient.
-					ExpectQuery(countStmt).
-					WithArgs(
-						"%"+p.Keyword+"%",
-						"%"+p.Keyword+"%",
-						p.Statuses[0],
-						p.Providers[0],
-						p.Codes[0],
-					).
-					WillReturnError(fmt.Errorf("network error"))
-
-				res, err := barrelRepo.SearchBarrel(ctx, p)
-
-				Expect(res).To(BeNil())
-				Expect(err).To(Equal(fmt.Errorf("network error")))
-			})
-		})
-
 		When("there is one barrel", func() {
 			It("should return result", func() {
-				searchRows := sqlmock.NewRows([]string{
-					"id", "code",
-					"name", "provider", "status",
-					"created_at", "updated_at",
-				}).AddRow(
-					"id-1", "code-1",
-					"name-1", "goseidon_hippo", "inactive",
-					currentTs.UnixMilli(), currentTs.UnixMilli(),
-				)
-				dbClient.
-					ExpectQuery(searchStmt).
-					WithArgs(
-						"%"+p.Keyword+"%",
-						"%"+p.Keyword+"%",
-						p.Statuses[0],
-						p.Providers[0],
-						p.Codes[0],
-					).
-					WillReturnRows(searchRows)
-
-				countRows = sqlmock.
+				countRows := sqlmock.
 					NewRows([]string{"count(*)"}).
 					AddRow(1)
 				dbClient.
@@ -1116,6 +1098,26 @@ var _ = Describe("Barrel Repository", func() {
 						p.Codes[0],
 					).
 					WillReturnRows(countRows)
+
+				searchRows := sqlmock.NewRows([]string{
+					"id", "code",
+					"name", "provider", "status",
+					"created_at", "updated_at",
+				}).AddRow(
+					"id-1", "code-1",
+					"name-1", "goseidon_hippo", "inactive",
+					currentTs.UnixMilli(), currentTs.UnixMilli(),
+				)
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						"%"+p.Keyword+"%",
+						"%"+p.Keyword+"%",
+						p.Statuses[0],
+						p.Providers[0],
+						p.Codes[0],
+					).
+					WillReturnRows(searchRows)
 
 				res, err := barrelRepo.SearchBarrel(ctx, p)
 
@@ -1143,17 +1145,6 @@ var _ = Describe("Barrel Repository", func() {
 		When("there are some barrels", func() {
 			It("should return result", func() {
 				dbClient.
-					ExpectQuery(searchStmt).
-					WithArgs(
-						"%"+p.Keyword+"%",
-						"%"+p.Keyword+"%",
-						p.Statuses[0],
-						p.Providers[0],
-						p.Codes[0],
-					).
-					WillReturnRows(searchRows)
-
-				dbClient.
 					ExpectQuery(countStmt).
 					WithArgs(
 						"%"+p.Keyword+"%",
@@ -1163,6 +1154,17 @@ var _ = Describe("Barrel Repository", func() {
 						p.Codes[0],
 					).
 					WillReturnRows(countRows)
+
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						"%"+p.Keyword+"%",
+						"%"+p.Keyword+"%",
+						p.Statuses[0],
+						p.Providers[0],
+						p.Codes[0],
+					).
+					WillReturnRows(searchRows)
 
 				res, err := barrelRepo.SearchBarrel(ctx, p)
 

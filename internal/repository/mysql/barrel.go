@@ -190,48 +190,50 @@ func (r *barrel) SearchBarrel(ctx context.Context, p repository.SearchBarrelPara
 		WithContext(ctx).
 		Clauses(dbresolver.Read)
 
-	searchQuery := query
 	if p.Keyword != "" {
-		searchQuery = searchQuery.
-			Where("name LIKE ?", "%"+p.Keyword+"%").
-			Or("code LIKE ?", "%"+p.Keyword+"%")
+		keyword := "%" + p.Keyword + "%"
+		query.Where(
+			r.gormClient.
+				Where("name LIKE ?", keyword).
+				Or("code LIKE ?", keyword),
+		)
 	}
 
 	if len(p.Statuses) > 0 {
-		searchQuery = searchQuery.
-			Where("status IN ?", p.Statuses)
+		query.Where("status IN ?", p.Statuses)
 	}
 
 	if len(p.Providers) > 0 {
-		searchQuery = searchQuery.
-			Where("provider IN ?", p.Providers)
+		query.Where("provider IN ?", p.Providers)
 	}
 
 	if len(p.Codes) > 0 {
-		searchQuery = searchQuery.
-			Where("code IN ?", p.Codes)
-	}
-
-	countQuery := searchQuery.Table("barrel")
-
-	if p.Limit > 0 {
-		searchQuery = searchQuery.Limit(int(p.Limit))
-	}
-
-	if p.Offset > 0 {
-		searchQuery = searchQuery.Offset(int(p.Offset))
+		query.Where("code IN ?", p.Codes)
 	}
 
 	res := &repository.SearchBarrelResult{
 		Summary: repository.SearchBarrelSummary{},
 		Items:   []repository.SearchBarrelItem{},
 	}
-	barrels := []Barrel{}
+	countRes := query.
+		Table("barrel").
+		Count(&res.Summary.TotalItems)
+	if countRes.Error != nil {
+		return nil, countRes.Error
+	}
 
-	searchRes := searchQuery.
+	if p.Limit > 0 {
+		query.Limit(int(p.Limit))
+	}
+
+	if p.Offset > 0 {
+		query.Offset(int(p.Offset))
+	}
+
+	barrels := []Barrel{}
+	searchRes := query.
 		Select(`id, code, name, provider, status, created_at, updated_at`).
 		Find(&barrels)
-
 	if searchRes.Error != nil {
 		if errors.Is(searchRes.Error, gorm.ErrRecordNotFound) {
 			return res, nil
@@ -251,10 +253,6 @@ func (r *barrel) SearchBarrel(ctx context.Context, p repository.SearchBarrelPara
 		})
 	}
 
-	countRes := countQuery.Count(&res.Summary.TotalItems)
-	if countRes.Error != nil {
-		return nil, countRes.Error
-	}
 	return res, nil
 }
 
