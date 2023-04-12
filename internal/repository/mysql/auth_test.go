@@ -21,7 +21,6 @@ import (
 )
 
 var _ = Describe("Auth Repository", func() {
-
 	Context("CreateClient function", Label("unit"), func() {
 		var (
 			ctx        context.Context
@@ -389,7 +388,6 @@ var _ = Describe("Auth Repository", func() {
 	})
 
 	Context("FindClient function", Label("unit"), func() {
-
 		var (
 			ctx       context.Context
 			currentTs time.Time
@@ -521,7 +519,6 @@ var _ = Describe("Auth Repository", func() {
 	})
 
 	Context("UpdateClient function", Label("unit"), func() {
-
 		var (
 			ctx        context.Context
 			currentTs  time.Time
@@ -899,7 +896,6 @@ var _ = Describe("Auth Repository", func() {
 	})
 
 	Context("SearchClient function", Label("unit"), func() {
-
 		var (
 			ctx        context.Context
 			currentTs  time.Time
@@ -974,18 +970,18 @@ var _ = Describe("Auth Repository", func() {
 				},
 			}
 			searchStmt = regexp.QuoteMeta(strings.TrimSpace(`
-				SELECT id, client_id, client_secret, name, type, status, created_at, updated_at 
-				FROM ` + "`auth_client`" + ` 
-				WHERE name LIKE ? OR client_id LIKE ?
-				AND status IN (?)
+				SELECT id, client_id, client_secret, name, type, status, created_at, updated_at
+				FROM ` + "`auth_client`" + `
+				WHERE status IN (?)
+				AND (name LIKE ? OR client_id LIKE ?)
 				LIMIT 24
 				OFFSET 48
 			`))
 			countStmt = regexp.QuoteMeta(strings.TrimSpace(`
 				SELECT count(*)
 				FROM ` + "`auth_client`" + ` 
-				WHERE name LIKE ? OR client_id LIKE ?
-				AND status IN (?)
+				WHERE status IN (?)
+				AND (name LIKE ? OR client_id LIKE ?)
 			`))
 			searchRows = sqlmock.NewRows([]string{
 				"id", "client_id", "client_secret",
@@ -1012,14 +1008,14 @@ var _ = Describe("Auth Repository", func() {
 			}
 		})
 
-		When("failed search client", func() {
-			It("should return error", func() {
+		When("failed count search client", func() {
+			It("should return result", func() {
 				dbClient.
-					ExpectQuery(searchStmt).
+					ExpectQuery(countStmt).
 					WithArgs(
-						"%"+p.Keyword+"%",
-						"%"+p.Keyword+"%",
-						p.Statuses[0],
+						"active",
+						"%goseidon%",
+						"%goseidon%",
 					).
 					WillReturnError(fmt.Errorf("network error"))
 
@@ -1030,14 +1026,53 @@ var _ = Describe("Auth Repository", func() {
 			})
 		})
 
-		When("there are no client", func() {
-			It("should return empty result", func() {
+		When("failed search client", func() {
+			It("should return error", func() {
+				dbClient.
+					ExpectQuery(countStmt).
+					WithArgs(
+						"active",
+						"%goseidon%",
+						"%goseidon%",
+					).
+					WillReturnRows(countRows)
+
 				dbClient.
 					ExpectQuery(searchStmt).
 					WithArgs(
-						"%"+p.Keyword+"%",
-						"%"+p.Keyword+"%",
-						p.Statuses[0],
+						"active",
+						"%goseidon%",
+						"%goseidon%",
+					).
+					WillReturnError(fmt.Errorf("network error"))
+
+				res, err := authRepo.SearchClient(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
+		When("there is no client", func() {
+			It("should return empty result", func() {
+				countRows := sqlmock.
+					NewRows([]string{"count(*)"}).
+					AddRow(0)
+				dbClient.
+					ExpectQuery(countStmt).
+					WithArgs(
+						"active",
+						"%goseidon%",
+						"%goseidon%",
+					).
+					WillReturnRows(countRows)
+
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						"active",
+						"%goseidon%",
+						"%goseidon%",
 					).
 					WillReturnError(gorm.ErrRecordNotFound)
 
@@ -1054,44 +1089,20 @@ var _ = Describe("Auth Repository", func() {
 			})
 		})
 
-		When("failed count search client", func() {
+		When("there is one client", func() {
 			It("should return result", func() {
-				searchRows := sqlmock.NewRows([]string{
-					"id", "client_id", "client_secret",
-					"name", "type", "status",
-					"created_at", "updated_at",
-				}).AddRow(
-					"id-1", "client-id-1", "client-secret-1",
-					"name-1", "basic", "inactive",
-					currentTs.UnixMilli(), nil,
-				)
-				dbClient.
-					ExpectQuery(searchStmt).
-					WithArgs(
-						"%"+p.Keyword+"%",
-						"%"+p.Keyword+"%",
-						p.Statuses[0],
-					).
-					WillReturnRows(searchRows)
-
+				countRows := sqlmock.
+					NewRows([]string{"count(*)"}).
+					AddRow(1)
 				dbClient.
 					ExpectQuery(countStmt).
 					WithArgs(
-						"%"+p.Keyword+"%",
-						"%"+p.Keyword+"%",
-						p.Statuses[0],
+						"active",
+						"%goseidon%",
+						"%goseidon%",
 					).
-					WillReturnError(fmt.Errorf("network error"))
+					WillReturnRows(countRows)
 
-				res, err := authRepo.SearchClient(ctx, p)
-
-				Expect(res).To(BeNil())
-				Expect(err).To(Equal(fmt.Errorf("network error")))
-			})
-		})
-
-		When("there is one client", func() {
-			It("should return result", func() {
 				searchRows := sqlmock.NewRows([]string{
 					"id", "client_id", "client_secret",
 					"name", "type", "status",
@@ -1104,23 +1115,11 @@ var _ = Describe("Auth Repository", func() {
 				dbClient.
 					ExpectQuery(searchStmt).
 					WithArgs(
-						"%"+p.Keyword+"%",
-						"%"+p.Keyword+"%",
-						p.Statuses[0],
+						"active",
+						"%goseidon%",
+						"%goseidon%",
 					).
 					WillReturnRows(searchRows)
-
-				countRows = sqlmock.
-					NewRows([]string{"count(*)"}).
-					AddRow(1)
-				dbClient.
-					ExpectQuery(countStmt).
-					WithArgs(
-						"%"+p.Keyword+"%",
-						"%"+p.Keyword+"%",
-						p.Statuses[0],
-					).
-					WillReturnRows(countRows)
 
 				res, err := authRepo.SearchClient(ctx, p)
 
@@ -1149,22 +1148,22 @@ var _ = Describe("Auth Repository", func() {
 		When("there are some clients", func() {
 			It("should return result", func() {
 				dbClient.
-					ExpectQuery(searchStmt).
-					WithArgs(
-						"%"+p.Keyword+"%",
-						"%"+p.Keyword+"%",
-						p.Statuses[0],
-					).
-					WillReturnRows(searchRows)
-
-				dbClient.
 					ExpectQuery(countStmt).
 					WithArgs(
-						"%"+p.Keyword+"%",
-						"%"+p.Keyword+"%",
-						p.Statuses[0],
+						"active",
+						"%goseidon%",
+						"%goseidon%",
 					).
 					WillReturnRows(countRows)
+
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						"active",
+						"%goseidon%",
+						"%goseidon%",
+					).
+					WillReturnRows(searchRows)
 
 				res, err := authRepo.SearchClient(ctx, p)
 

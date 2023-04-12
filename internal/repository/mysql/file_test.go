@@ -640,7 +640,6 @@ var _ = Describe("File Repository", func() {
 	})
 
 	Context("FindFile function", Label("unit"), func() {
-
 		var (
 			ctx              context.Context
 			currentTs        time.Time
@@ -1038,7 +1037,6 @@ var _ = Describe("File Repository", func() {
 	})
 
 	Context("SearchFile function", Label("unit"), func() {
-
 		var (
 			ctx          context.Context
 			currentTs    time.Time
@@ -1160,8 +1158,6 @@ var _ = Describe("File Repository", func() {
 				AND size <= ?
 				AND uploaded_at >= ?
 				AND uploaded_at <= ?
-				LIMIT 24
-				OFFSET 48
 			`))
 			searchRows = sqlmock.NewRows([]string{
 				"id", "slug", "name", "mimetype",
@@ -1191,8 +1187,49 @@ var _ = Describe("File Repository", func() {
 			}
 		})
 
+		When("failed count search file", func() {
+			It("should return result", func() {
+				dbClient.
+					ExpectQuery(countStmt).
+					WithArgs(
+						"%"+p.Keyword+"%",
+						p.StatusIn[0],
+						p.StatusIn[1],
+						p.VisibilityIn[0],
+						p.ExtensionIn[0],
+						p.ExtensionIn[1],
+						p.SizeGte,
+						p.SizeLte,
+						p.UploadDateGte,
+						p.UploadDateLte,
+					).
+					WillReturnError(fmt.Errorf("network error"))
+
+				res, err := fileRepo.SearchFile(ctx, p)
+
+				Expect(res).To(BeNil())
+				Expect(err).To(Equal(fmt.Errorf("network error")))
+			})
+		})
+
 		When("failed search file", func() {
 			It("should return error", func() {
+				dbClient.
+					ExpectQuery(countStmt).
+					WithArgs(
+						"%"+p.Keyword+"%",
+						p.StatusIn[0],
+						p.StatusIn[1],
+						p.VisibilityIn[0],
+						p.ExtensionIn[0],
+						p.ExtensionIn[1],
+						p.SizeGte,
+						p.SizeLte,
+						p.UploadDateGte,
+						p.UploadDateLte,
+					).
+					WillReturnRows(countRows)
+
 				dbClient.
 					ExpectQuery(searchStmt).
 					WithArgs(
@@ -1216,8 +1253,27 @@ var _ = Describe("File Repository", func() {
 			})
 		})
 
-		When("there are no file", func() {
+		When("there is no file", func() {
 			It("should return empty result", func() {
+				countRows := sqlmock.
+					NewRows([]string{"count(*)"}).
+					AddRow(0)
+				dbClient.
+					ExpectQuery(countStmt).
+					WithArgs(
+						"%"+p.Keyword+"%",
+						p.StatusIn[0],
+						p.StatusIn[1],
+						p.VisibilityIn[0],
+						p.ExtensionIn[0],
+						p.ExtensionIn[1],
+						p.SizeGte,
+						p.SizeLte,
+						p.UploadDateGte,
+						p.UploadDateLte,
+					).
+					WillReturnRows(countRows)
+
 				dbClient.
 					ExpectQuery(searchStmt).
 					WithArgs(
@@ -1247,107 +1303,8 @@ var _ = Describe("File Repository", func() {
 			})
 		})
 
-		When("failed count search file", func() {
-			It("should return result", func() {
-				searchRows := sqlmock.NewRows([]string{
-					"id", "slug", "name", "mimetype",
-					"extension", "size", "visibility", "status",
-					"uploaded_at", "created_at", "updated_at", "deleted_at",
-				}).AddRow(
-					"id-1", "dolphin-22.jpg", "Dolphin 22", "image/jpeg",
-					"jpg", 1025, "public", "available",
-					currentTs.UnixMilli(), currentTs.UnixMilli(),
-					currentTs.UnixMilli(), nil,
-				)
-				dbClient.
-					ExpectQuery(searchStmt).
-					WithArgs(
-						"%"+p.Keyword+"%",
-						p.StatusIn[0],
-						p.StatusIn[1],
-						p.VisibilityIn[0],
-						p.ExtensionIn[0],
-						p.ExtensionIn[1],
-						p.SizeGte,
-						p.SizeLte,
-						p.UploadDateGte,
-						p.UploadDateLte,
-					).
-					WillReturnRows(searchRows)
-
-				findMetaStmt := regexp.QuoteMeta("SELECT file_id, `key`, value FROM `file_meta` WHERE `file_meta`.`file_id` = ?")
-				findMetaRows := sqlmock.NewRows([]string{
-					"file_id", "key", "value",
-				}).
-					AddRow("id-1", "user_id", "123").
-					AddRow("id-1", "feature", "profile")
-				dbClient.
-					ExpectQuery(findMetaStmt).
-					WithArgs("id-1").
-					WillReturnRows(findMetaRows)
-
-				dbClient.
-					ExpectQuery(countStmt).
-					WithArgs(
-						"%"+p.Keyword+"%",
-						p.StatusIn[0],
-						p.StatusIn[1],
-						p.VisibilityIn[0],
-						p.ExtensionIn[0],
-						p.ExtensionIn[1],
-						p.SizeGte,
-						p.SizeLte,
-						p.UploadDateGte,
-						p.UploadDateLte,
-					).
-					WillReturnError(fmt.Errorf("network error"))
-
-				res, err := fileRepo.SearchFile(ctx, p)
-
-				Expect(res).To(BeNil())
-				Expect(err).To(Equal(fmt.Errorf("network error")))
-			})
-		})
-
 		When("there is one file", func() {
 			It("should return result", func() {
-				searchRows := sqlmock.NewRows([]string{
-					"id", "slug", "name", "mimetype",
-					"extension", "size", "visibility", "status",
-					"uploaded_at", "created_at", "updated_at", "deleted_at",
-				}).AddRow(
-					"id-1", "dolphin-22.jpg", "Dolphin 22", "image/jpeg",
-					"jpg", 1025, "public", "available",
-					currentTs.UnixMilli(), currentTs.UnixMilli(),
-					currentTs.UnixMilli(), nil,
-				)
-				dbClient.
-					ExpectQuery(searchStmt).
-					WithArgs(
-						"%"+p.Keyword+"%",
-						p.StatusIn[0],
-						p.StatusIn[1],
-						p.VisibilityIn[0],
-						p.ExtensionIn[0],
-						p.ExtensionIn[1],
-						p.SizeGte,
-						p.SizeLte,
-						p.UploadDateGte,
-						p.UploadDateLte,
-					).
-					WillReturnRows(searchRows)
-
-				findMetaStmt := regexp.QuoteMeta("SELECT file_id, `key`, value FROM `file_meta` WHERE `file_meta`.`file_id` = ?")
-				findMetaRows := sqlmock.NewRows([]string{
-					"file_id", "key", "value",
-				}).
-					AddRow("id-1", "user_id", "123").
-					AddRow("id-1", "feature", "profile")
-				dbClient.
-					ExpectQuery(findMetaStmt).
-					WithArgs("id-1").
-					WillReturnRows(findMetaRows)
-
 				countRows := sqlmock.
 					NewRows([]string{"count(*)"}).
 					AddRow(1)
@@ -1366,6 +1323,43 @@ var _ = Describe("File Repository", func() {
 						p.UploadDateLte,
 					).
 					WillReturnRows(countRows)
+
+				searchRows := sqlmock.NewRows([]string{
+					"id", "slug", "name", "mimetype",
+					"extension", "size", "visibility", "status",
+					"uploaded_at", "created_at", "updated_at", "deleted_at",
+				}).AddRow(
+					"id-1", "dolphin-22.jpg", "Dolphin 22", "image/jpeg",
+					"jpg", 1025, "public", "available",
+					currentTs.UnixMilli(), currentTs.UnixMilli(),
+					currentTs.UnixMilli(), nil,
+				)
+				dbClient.
+					ExpectQuery(searchStmt).
+					WithArgs(
+						"%"+p.Keyword+"%",
+						p.StatusIn[0],
+						p.StatusIn[1],
+						p.VisibilityIn[0],
+						p.ExtensionIn[0],
+						p.ExtensionIn[1],
+						p.SizeGte,
+						p.SizeLte,
+						p.UploadDateGte,
+						p.UploadDateLte,
+					).
+					WillReturnRows(searchRows)
+
+				findMetaStmt := regexp.QuoteMeta("SELECT file_id, `key`, value FROM `file_meta` WHERE `file_meta`.`file_id` = ?")
+				findMetaRows := sqlmock.NewRows([]string{
+					"file_id", "key", "value",
+				}).
+					AddRow("id-1", "user_id", "123").
+					AddRow("id-1", "feature", "profile")
+				dbClient.
+					ExpectQuery(findMetaStmt).
+					WithArgs("id-1").
+					WillReturnRows(findMetaRows)
 
 				res, err := fileRepo.SearchFile(ctx, p)
 
@@ -1402,6 +1396,22 @@ var _ = Describe("File Repository", func() {
 		When("there are some files", func() {
 			It("should return result", func() {
 				dbClient.
+					ExpectQuery(countStmt).
+					WithArgs(
+						"%"+p.Keyword+"%",
+						p.StatusIn[0],
+						p.StatusIn[1],
+						p.VisibilityIn[0],
+						p.ExtensionIn[0],
+						p.ExtensionIn[1],
+						p.SizeGte,
+						p.SizeLte,
+						p.UploadDateGte,
+						p.UploadDateLte,
+					).
+					WillReturnRows(countRows)
+
+				dbClient.
 					ExpectQuery(searchStmt).
 					WithArgs(
 						"%"+p.Keyword+"%",
@@ -1429,22 +1439,6 @@ var _ = Describe("File Repository", func() {
 					WithArgs("id-1", "id-2").
 					WillReturnRows(findMetaRows)
 
-				dbClient.
-					ExpectQuery(countStmt).
-					WithArgs(
-						"%"+p.Keyword+"%",
-						p.StatusIn[0],
-						p.StatusIn[1],
-						p.VisibilityIn[0],
-						p.ExtensionIn[0],
-						p.ExtensionIn[1],
-						p.SizeGte,
-						p.SizeLte,
-						p.UploadDateGte,
-						p.UploadDateLte,
-					).
-					WillReturnRows(countRows)
-
 				res, err := fileRepo.SearchFile(ctx, p)
 
 				Expect(res).To(Equal(r))
@@ -1453,6 +1447,22 @@ var _ = Describe("File Repository", func() {
 		})
 
 		DescribeTable("search using custom sort", func(sort string, query string) {
+			dbClient.
+				ExpectQuery(countStmt).
+				WithArgs(
+					"%"+p.Keyword+"%",
+					p.StatusIn[0],
+					p.StatusIn[1],
+					p.VisibilityIn[0],
+					p.ExtensionIn[0],
+					p.ExtensionIn[1],
+					p.SizeGte,
+					p.SizeLte,
+					p.UploadDateGte,
+					p.UploadDateLte,
+				).
+				WillReturnRows(countRows)
+
 			searchStmt := regexp.QuoteMeta(strings.TrimSpace(`
 				SELECT id, slug, name, mimetype, extension, size, visibility, status, uploaded_at, created_at, updated_at, deleted_at
 				FROM ` + "`file`" + ` 
@@ -1496,22 +1506,6 @@ var _ = Describe("File Repository", func() {
 				WithArgs("id-1", "id-2").
 				WillReturnRows(findMetaRows)
 
-			dbClient.
-				ExpectQuery(countStmt).
-				WithArgs(
-					"%"+p.Keyword+"%",
-					p.StatusIn[0],
-					p.StatusIn[1],
-					p.VisibilityIn[0],
-					p.ExtensionIn[0],
-					p.ExtensionIn[1],
-					p.SizeGte,
-					p.SizeLte,
-					p.UploadDateGte,
-					p.UploadDateLte,
-				).
-				WillReturnRows(countRows)
-
 			p := repository.SearchFileParam{
 				Limit:         24,
 				Offset:        48,
@@ -1538,7 +1532,6 @@ var _ = Describe("File Repository", func() {
 	})
 
 	Context("UpdateFile function", Label("unit"), func() {
-
 		var (
 			ctx        context.Context
 			currentTs  time.Time
@@ -1838,7 +1831,6 @@ var _ = Describe("File Repository", func() {
 	})
 
 	Context("SearchLocation function", Label("unit"), func() {
-
 		var (
 			ctx        context.Context
 			dbClient   sqlmock.Sqlmock
@@ -2077,7 +2069,6 @@ var _ = Describe("File Repository", func() {
 	})
 
 	Context("UpdateLocationByIds function", Label("unit"), func() {
-
 		var (
 			ctx        context.Context
 			currentTs  time.Time
