@@ -58,7 +58,6 @@ test-watch-integration:
 
 .PHONY: generate-mock
 generate-mock:
-	mockgen -package=mock_auth -source internal/auth/client.go -destination=internal/auth/mock/client_mock.go
 	mockgen -package=mock_auth -source internal/auth/basic.go -destination=internal/auth/mock/basic_mock.go
 	mockgen -package=mock_barrel -source internal/barrel/barrel.go -destination=internal/barrel/mock/barrel_mock.go
 	mockgen -package=mock_file -source internal/file/file.go -destination=internal/file/mock/file_mock.go
@@ -69,6 +68,7 @@ generate-mock:
 	mockgen -package=mock_repository -source internal/repository/file.go -destination=internal/repository/mock/file_mock.go
 	mockgen -package=mock_repository -source internal/repository/repository.go -destination=internal/repository/mock/repository_mock.go
 	mockgen -package=mock_restapp -source internal/restapp/server.go -destination=internal/restapp/mock/server_mock.go
+	mockgen -package=mock_service -source internal/service/auth.go -destination=internal/service/mock/auth_mock.go
 	mockgen -package=mock_session -source internal/session/session.go -destination=internal/session/mock/session_mock.go
 	mockgen -package=mock_signature -source internal/signature/signature.go -destination=internal/signature/mock/signature_mock.go
 	mockgen -package=mock_storage -source internal/storage/storage.go -destination=internal/storage/mock/storage_mock.go

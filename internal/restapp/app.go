@@ -14,6 +14,7 @@ import (
 	"github.com/go-seidon/chariot/internal/repository"
 	"github.com/go-seidon/chariot/internal/resthandler"
 	"github.com/go-seidon/chariot/internal/restmiddleware"
+	"github.com/go-seidon/chariot/internal/service"
 	"github.com/go-seidon/chariot/internal/session"
 	"github.com/go-seidon/chariot/internal/signature/jwt"
 	"github.com/go-seidon/chariot/internal/storage/multipart"
@@ -219,7 +220,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			HealthClient: healthCheck,
 		})
 
-		authClient := auth.NewAuthClient(auth.AuthClientParam{
+		authClient := service.NewAuthClient(service.AuthClientParam{
 			Validator:  goValidator,
 			Hasher:     bcryptHasher,
 			Identifier: ksuidIdentifier,
