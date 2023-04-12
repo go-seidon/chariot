@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/go-seidon/chariot/api/queue"
-	"github.com/go-seidon/chariot/internal/file"
+	"github.com/go-seidon/chariot/internal/service"
 	"github.com/go-seidon/provider/queueing"
 	"github.com/go-seidon/provider/serialization"
 	"github.com/go-seidon/provider/status"
@@ -12,7 +12,7 @@ import (
 
 type fileHandler struct {
 	serializer serialization.Serializer
-	fileClient file.File
+	fileClient service.File
 }
 
 func (h *fileHandler) ProceedReplication(ctx context.Context, message queueing.Message) error {
@@ -26,7 +26,7 @@ func (h *fileHandler) ProceedReplication(ctx context.Context, message queueing.M
 		return err
 	}
 
-	_, repErr := h.fileClient.ProceedReplication(ctx, file.ProceedReplicationParam{
+	_, repErr := h.fileClient.ProceedReplication(ctx, service.ProceedReplicationParam{
 		LocationId: data.LocationId,
 	})
 	if repErr != nil {
@@ -65,7 +65,7 @@ func (h *fileHandler) ProceedDeletion(ctx context.Context, message queueing.Mess
 		return err
 	}
 
-	_, delErr := h.fileClient.ProceedDeletion(ctx, file.ProceedDeletionParam{
+	_, delErr := h.fileClient.ProceedDeletion(ctx, service.ProceedDeletionParam{
 		LocationId: data.LocationId,
 	})
 	if delErr != nil {
@@ -95,7 +95,7 @@ func (h *fileHandler) ProceedDeletion(ctx context.Context, message queueing.Mess
 
 type FileParam struct {
 	Serializer serialization.Serializer
-	File       file.File
+	File       service.File
 }
 
 func NewFile(p FileParam) *fileHandler {

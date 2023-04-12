@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/go-seidon/chariot/api/restapp"
-	"github.com/go-seidon/chariot/internal/file"
+	"github.com/go-seidon/chariot/internal/service"
 	"github.com/go-seidon/chariot/internal/storage/multipart"
 	"github.com/go-seidon/provider/serialization"
 	"github.com/go-seidon/provider/status"
@@ -14,7 +14,7 @@ import (
 )
 
 type fileHandler struct {
-	fileClient file.File
+	fileClient service.File
 	fileParser multipart.Parser
 	serializer serialization.Serializer
 }
@@ -49,16 +49,16 @@ func (h *fileHandler) UploadFile(ctx echo.Context) error {
 		}
 	}
 
-	uploadFile, err := h.fileClient.UploadFile(ctx.Request().Context(), file.UploadFileParam{
+	uploadFile, err := h.fileClient.UploadFile(ctx.Request().Context(), service.UploadFileParam{
 		Data: fileInfo.Data,
-		Info: file.UploadFileInfo{
+		Info: service.UploadFileInfo{
 			Name:      fileInfo.Name,
 			Size:      fileInfo.Size,
 			Mimetype:  fileInfo.Mimetype,
 			Extension: fileInfo.Extension,
 			Meta:      meta,
 		},
-		Setting: file.UploadFileSetting{
+		Setting: service.UploadFileSetting{
 			Visibility: ctx.FormValue("visibility"),
 			Barrels:    strings.Split(ctx.FormValue("barrels"), ","),
 		},
@@ -100,7 +100,7 @@ func (h *fileHandler) UploadFile(ctx echo.Context) error {
 }
 
 func (h *fileHandler) RetrieveFileBySlug(ctx echo.Context) error {
-	findFile, err := h.fileClient.RetrieveFileBySlug(ctx.Request().Context(), file.RetrieveFileBySlugParam{
+	findFile, err := h.fileClient.RetrieveFileBySlug(ctx.Request().Context(), service.RetrieveFileBySlugParam{
 		Slug:  ctx.Param("slug"),
 		Token: ctx.QueryParam("token"),
 	})
@@ -123,7 +123,7 @@ func (h *fileHandler) RetrieveFileBySlug(ctx echo.Context) error {
 }
 
 func (h *fileHandler) GetFileById(ctx echo.Context) error {
-	getFile, err := h.fileClient.GetFileById(ctx.Request().Context(), file.GetFileByIdParam{
+	getFile, err := h.fileClient.GetFileById(ctx.Request().Context(), service.GetFileByIdParam{
 		Id: ctx.Param("id"),
 	})
 	if err != nil {
@@ -242,7 +242,7 @@ func (h *fileHandler) SearchFile(ctx echo.Context) error {
 		sort = string(*req.Sort)
 	}
 
-	searchRes, err := h.fileClient.SearchFile(ctx.Request().Context(), file.SearchFileParam{
+	searchRes, err := h.fileClient.SearchFile(ctx.Request().Context(), service.SearchFileParam{
 		Sort:          sort,
 		Keyword:       typeconv.StringVal(req.Keyword),
 		TotalItems:    totalItems,
@@ -311,7 +311,7 @@ func (h *fileHandler) SearchFile(ctx echo.Context) error {
 }
 
 func (h *fileHandler) DeleteFileById(ctx echo.Context) error {
-	deleteFile, err := h.fileClient.DeleteFileById(ctx.Request().Context(), file.DeleteFileByIdParam{
+	deleteFile, err := h.fileClient.DeleteFileById(ctx.Request().Context(), service.DeleteFileByIdParam{
 		Id: ctx.Param("id"),
 	})
 	if err != nil {
@@ -346,7 +346,7 @@ func (h *fileHandler) ScheduleReplication(ctx echo.Context) error {
 		})
 	}
 
-	scheduleRes, err := h.fileClient.ScheduleReplication(ctx.Request().Context(), file.ScheduleReplicationParam{
+	scheduleRes, err := h.fileClient.ScheduleReplication(ctx.Request().Context(), service.ScheduleReplicationParam{
 		MaxItems: req.MaxItems,
 	})
 	if err != nil {
@@ -379,7 +379,7 @@ func (h *fileHandler) ScheduleReplication(ctx echo.Context) error {
 }
 
 type FileParam struct {
-	File       file.File
+	File       service.File
 	FileParser multipart.Parser
 	Serializer serialization.Serializer
 }

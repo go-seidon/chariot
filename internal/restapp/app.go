@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-seidon/chariot/internal/app"
 	"github.com/go-seidon/chariot/internal/auth"
-	"github.com/go-seidon/chariot/internal/file"
 	"github.com/go-seidon/chariot/internal/healthcheck"
 	"github.com/go-seidon/chariot/internal/queue"
 	"github.com/go-seidon/chariot/internal/repository"
@@ -147,7 +146,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 		}
 	}
 
-	var fileClient file.File
+	var fileClient service.File
 	var protobufSerializer serialization.Serializer
 
 	server := p.Server
@@ -247,8 +246,8 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			Identifier: ksuidIdentifier,
 		})
 
-		fileClient = file.NewFile(file.FileParam{
-			Config: &file.FileConfig{
+		fileClient = service.NewFile(service.FileParam{
+			Config: &service.FileConfig{
 				AppHost: p.Config.StorageAccessHost,
 			},
 			Validator:     goValidator,
