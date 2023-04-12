@@ -69,7 +69,7 @@ generate-mock:
 	mockgen -package=mock_service -source internal/service/auth.go -destination=internal/service/mock/auth_mock.go
 	mockgen -package=mock_service -source internal/service/barrel.go -destination=internal/service/mock/barrel_mock.go
 	mockgen -package=mock_service -source internal/service/file.go -destination=internal/service/mock/file_mock.go
-	mockgen -package=mock_session -source internal/session/session.go -destination=internal/session/mock/session_mock.go
+	mockgen -package=mock_service -source internal/service/session.go -destination=internal/service/mock/session_mock.go
 	mockgen -package=mock_signature -source internal/signature/signature.go -destination=internal/signature/mock/signature_mock.go
 	mockgen -package=mock_storage -source internal/storage/storage.go -destination=internal/storage/mock/storage_mock.go
 	mockgen -package=mock_storage -source internal/storage/router/router.go -destination=internal/storage/mock/router_mock.go

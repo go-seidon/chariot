@@ -12,7 +12,6 @@ import (
 	"github.com/go-seidon/chariot/internal/barrel"
 	"github.com/go-seidon/chariot/internal/file"
 	"github.com/go-seidon/chariot/internal/repository"
-	"github.com/go-seidon/chariot/internal/session"
 	"github.com/go-seidon/chariot/internal/storage"
 	"github.com/go-seidon/chariot/internal/storage/router"
 	"github.com/go-seidon/provider/datetime"
@@ -222,7 +221,7 @@ type fileService struct {
 	config        *FileConfig
 	validator     validation.Validator
 	identifier    identity.Identifier
-	sessionClient session.Session
+	sessionClient Session
 	slugger       slug.Slugger
 	clock         datetime.Clock
 	serializer    serialization.Serializer
@@ -250,7 +249,7 @@ func (f *fileService) UploadFile(ctx context.Context, p UploadFileParam) (*Uploa
 
 	var token string
 	if p.Setting.Visibility == file.VISIBILITY_PROTECTED {
-		session, err := f.sessionClient.CreateSession(ctx, session.CreateSessionParam{
+		session, err := f.sessionClient.CreateSession(ctx, CreateSessionParam{
 			Duration: 1800,
 			Features: []string{"retrieve_file"},
 		})
@@ -441,7 +440,7 @@ func (f *fileService) RetrieveFileBySlug(ctx context.Context, p RetrieveFileBySl
 	}
 
 	if findFile.Visibility == file.VISIBILITY_PROTECTED {
-		_, err := f.sessionClient.VerifySession(ctx, session.VerifySessionParam{
+		_, err := f.sessionClient.VerifySession(ctx, VerifySessionParam{
 			Token:   p.Token,
 			Feature: "retrieve_file",
 		})
@@ -1065,7 +1064,7 @@ type FileParam struct {
 	Config        *FileConfig
 	Validator     validation.Validator
 	Identifier    identity.Identifier
-	SessionClient session.Session
+	SessionClient Session
 	Slugger       slug.Slugger
 	Clock         datetime.Clock
 	Serializer    serialization.Serializer

@@ -10,8 +10,7 @@ import (
 	"github.com/go-seidon/chariot/internal/repository"
 	mock_repository "github.com/go-seidon/chariot/internal/repository/mock"
 	"github.com/go-seidon/chariot/internal/service"
-	"github.com/go-seidon/chariot/internal/session"
-	mock_session "github.com/go-seidon/chariot/internal/session/mock"
+	mock_service "github.com/go-seidon/chariot/internal/service/mock"
 	"github.com/go-seidon/chariot/internal/storage"
 	mock_storage "github.com/go-seidon/chariot/internal/storage/mock"
 	"github.com/go-seidon/chariot/internal/storage/router"
@@ -42,14 +41,14 @@ var _ = Describe("File Package", func() {
 			slugger         *mock_slug.MockSlugger
 			barrelRepo      *mock_repository.MockBarrel
 			fileRepo        *mock_repository.MockFile
-			sessionClient   *mock_session.MockSession
+			sessionClient   *mock_service.MockSession
 			storageRouter   *mock_storage.MockRouter
 			storagePrimary  *mock_storage.MockStorage
 			fileData        *mock_io.MockReader
 			p               service.UploadFileParam
 			r               *service.UploadFileResult
-			createSessParam session.CreateSessionParam
-			createSessRes   *session.CreateSessionResult
+			createSessParam service.CreateSessionParam
+			createSessRes   *service.CreateSessionResult
 			searchParam     repository.SearchBarrelParam
 			searchRes       *repository.SearchBarrelResult
 			createStgParam  router.CreateStorageParam
@@ -73,7 +72,7 @@ var _ = Describe("File Package", func() {
 			storageRouter = mock_storage.NewMockRouter(ctrl)
 			storagePrimary = mock_storage.NewMockStorage(ctrl)
 			fileData = mock_io.NewMockReader(ctrl)
-			sessionClient = mock_session.NewMockSession(ctrl)
+			sessionClient = mock_service.NewMockSession(ctrl)
 			fileClient = service.NewFile(service.FileParam{
 				Config: &service.FileConfig{
 					AppHost: "http://localhost",
@@ -104,11 +103,11 @@ var _ = Describe("File Package", func() {
 					Barrels:    []string{"hippo1", "s3backup"},
 				},
 			}
-			createSessParam = session.CreateSessionParam{
+			createSessParam = service.CreateSessionParam{
 				Duration: 1800,
 				Features: []string{"retrieve_file"},
 			}
-			createSessRes = &session.CreateSessionResult{
+			createSessRes = &service.CreateSessionResult{
 				Success:   system.Success{},
 				CreatedAt: currentTs.UTC(),
 				ExpiresAt: currentTs.Add(1800 * time.Second).UTC(),
@@ -867,7 +866,7 @@ var _ = Describe("File Package", func() {
 			fileRepo       *mock_repository.MockFile
 			storageRouter  *mock_storage.MockRouter
 			storagePrimary *mock_storage.MockStorage
-			sessionClient  *mock_session.MockSession
+			sessionClient  *mock_service.MockSession
 			fileData       *mock_io.MockReadCloser
 			p              service.RetrieveFileBySlugParam
 			r              *service.RetrieveFileBySlugResult
@@ -876,8 +875,8 @@ var _ = Describe("File Package", func() {
 			retrieveRes    *storage.RetrieveObjectResult
 			findFileParam  repository.FindFileParam
 			findFileRes    *repository.FindFileResult
-			verifyParam    session.VerifySessionParam
-			verifyRes      *session.VerifySessionResult
+			verifyParam    service.VerifySessionParam
+			verifyRes      *service.VerifySessionResult
 		)
 
 		BeforeEach(func() {
@@ -893,7 +892,7 @@ var _ = Describe("File Package", func() {
 			fileRepo = mock_repository.NewMockFile(ctrl)
 			storageRouter = mock_storage.NewMockRouter(ctrl)
 			storagePrimary = mock_storage.NewMockStorage(ctrl)
-			sessionClient = mock_session.NewMockSession(ctrl)
+			sessionClient = mock_service.NewMockSession(ctrl)
 			fileData = mock_io.NewMockReadCloser(ctrl)
 			fileClient = service.NewFile(service.FileParam{
 				Validator:     validator,
@@ -968,11 +967,11 @@ var _ = Describe("File Package", func() {
 				Visibility: findFileRes.Visibility,
 				Status:     findFileRes.Status,
 			}
-			verifyParam = session.VerifySessionParam{
+			verifyParam = service.VerifySessionParam{
 				Token:   p.Token,
 				Feature: "retrieve_file",
 			}
-			verifyRes = &session.VerifySessionResult{}
+			verifyRes = &service.VerifySessionResult{}
 		})
 
 		When("there is invalid data", func() {

@@ -13,7 +13,6 @@ import (
 	"github.com/go-seidon/chariot/internal/resthandler"
 	"github.com/go-seidon/chariot/internal/restmiddleware"
 	"github.com/go-seidon/chariot/internal/service"
-	"github.com/go-seidon/chariot/internal/session"
 	"github.com/go-seidon/chariot/internal/signature/jwt"
 	"github.com/go-seidon/chariot/internal/storage/multipart"
 	"github.com/go-seidon/provider/datetime"
@@ -239,7 +238,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			Barrel: barrelClient,
 		})
 
-		sessionClient := session.NewSession(session.SessionParam{
+		sessionClient := service.NewSession(service.SessionParam{
 			Validator:  goValidator,
 			Signature:  jwtSignature,
 			Clock:      clock,
