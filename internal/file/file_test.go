@@ -3,6 +3,7 @@ package file_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -36,9 +37,7 @@ func TestFile(t *testing.T) {
 }
 
 var _ = Describe("File Package", func() {
-
 	Context("UploadFile function", Label("unit"), func() {
-
 		var (
 			ctx             context.Context
 			currentTs       time.Time
@@ -146,9 +145,9 @@ var _ = Describe("File Package", func() {
 			uploadParam = storage.UploadObjectParam{
 				Data:      p.Data,
 				Id:        typeconv.String("mock-id"),
-				Name:      typeconv.String(p.Info.Name),
-				Mimetype:  typeconv.String(p.Info.Mimetype),
-				Extension: typeconv.String(p.Info.Extension),
+				Name:      typeconv.String(strings.ToLower(p.Info.Name)),
+				Mimetype:  typeconv.String(strings.ToLower(p.Info.Mimetype)),
+				Extension: typeconv.String(strings.ToLower(p.Info.Extension)),
 			}
 			uploadRes = &storage.UploadObjectResult{
 				ObjectId:   "object-id",
@@ -157,9 +156,9 @@ var _ = Describe("File Package", func() {
 			createFileParam = repository.CreateFileParam{
 				Id:         "mock-id",
 				Slug:       "dolphin-22.jpg",
-				Name:       p.Info.Name,
-				Mimetype:   p.Info.Mimetype,
-				Extension:  p.Info.Extension,
+				Name:       strings.ToLower(p.Info.Name),
+				Mimetype:   strings.ToLower(p.Info.Mimetype),
+				Extension:  strings.ToLower(p.Info.Extension),
 				Size:       p.Info.Size,
 				Visibility: p.Setting.Visibility,
 				Status:     "available",
@@ -622,9 +621,9 @@ var _ = Describe("File Package", func() {
 				uploadParam := storage.UploadObjectParam{
 					Data:      p.Data,
 					Id:        typeconv.String("mock-id"),
-					Name:      typeconv.String(p.Info.Name),
-					Mimetype:  typeconv.String(p.Info.Mimetype),
-					Extension: typeconv.String(p.Info.Extension),
+					Name:      typeconv.String(strings.ToLower(p.Info.Name)),
+					Mimetype:  typeconv.String(strings.ToLower(p.Info.Mimetype)),
+					Extension: typeconv.String(strings.ToLower(p.Info.Extension)),
 				}
 				uploadRes := &storage.UploadObjectResult{
 					ObjectId:   "object-id",
@@ -651,9 +650,9 @@ var _ = Describe("File Package", func() {
 				createFileParam = repository.CreateFileParam{
 					Id:         "mock-id",
 					Slug:       "dolphin-22",
-					Name:       p.Info.Name,
-					Mimetype:   p.Info.Mimetype,
-					Extension:  p.Info.Extension,
+					Name:       strings.ToLower(p.Info.Name),
+					Mimetype:   strings.ToLower(p.Info.Mimetype),
+					Extension:  strings.ToLower(p.Info.Extension),
 					Size:       p.Info.Size,
 					Visibility: p.Setting.Visibility,
 					Status:     "available",
@@ -786,9 +785,9 @@ var _ = Describe("File Package", func() {
 				createFileParam := repository.CreateFileParam{
 					Id:         "mock-id",
 					Slug:       "dolphin-22.jpg",
-					Name:       p.Info.Name,
-					Mimetype:   p.Info.Mimetype,
-					Extension:  p.Info.Extension,
+					Name:       strings.ToLower(p.Info.Name),
+					Mimetype:   strings.ToLower(p.Info.Mimetype),
+					Extension:  strings.ToLower(p.Info.Extension),
 					Size:       p.Info.Size,
 					Visibility: p.Setting.Visibility,
 					Status:     "available",
@@ -862,7 +861,6 @@ var _ = Describe("File Package", func() {
 	})
 
 	Context("RetrieveFileBySlug function", Label("unit"), func() {
-
 		var (
 			ctx            context.Context
 			currentTs      time.Time
@@ -1564,7 +1562,6 @@ var _ = Describe("File Package", func() {
 	})
 
 	Context("GetFileById function", Label("unit"), func() {
-
 		var (
 			ctx           context.Context
 			currentTs     time.Time
@@ -1780,7 +1777,6 @@ var _ = Describe("File Package", func() {
 	})
 
 	Context("SearchFile function", Label("unit"), func() {
-
 		var (
 			ctx         context.Context
 			currentTs   time.Time
@@ -1991,7 +1987,6 @@ var _ = Describe("File Package", func() {
 	})
 
 	Context("DeleteFileById function", Label("unit"), func() {
-
 		var (
 			ctx           context.Context
 			currentTs     time.Time
@@ -2342,7 +2337,6 @@ var _ = Describe("File Package", func() {
 	})
 
 	Context("ProceedDeletion function", Label("unit"), func() {
-
 		var (
 			ctx            context.Context
 			currentTs      time.Time
@@ -2780,7 +2774,6 @@ var _ = Describe("File Package", func() {
 	})
 
 	Context("ScheduleReplication function", Label("unit"), func() {
-
 		var (
 			ctx           context.Context
 			currentTs     time.Time
@@ -3115,7 +3108,6 @@ var _ = Describe("File Package", func() {
 	})
 
 	Context("ProceedReplication function", Label("unit"), func() {
-
 		var (
 			ctx               context.Context
 			currentTs         time.Time
