@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/go-seidon/chariot/api/restapp"
-	"github.com/go-seidon/chariot/internal/barrel"
-	mock_barrel "github.com/go-seidon/chariot/internal/barrel/mock"
 	"github.com/go-seidon/chariot/internal/resthandler"
+	"github.com/go-seidon/chariot/internal/service"
+	mock_service "github.com/go-seidon/chariot/internal/service/mock"
 	"github.com/go-seidon/provider/system"
 	"github.com/golang/mock/gomock"
 	"github.com/labstack/echo/v4"
@@ -19,16 +19,15 @@ import (
 )
 
 var _ = Describe("Barrel Handler", func() {
-
 	Context("CreateBarrel function", Label("unit"), func() {
 		var (
 			currentTs    time.Time
 			ctx          echo.Context
 			h            func(ctx echo.Context) error
 			rec          *httptest.ResponseRecorder
-			barrelClient *mock_barrel.MockBarrel
-			createParam  barrel.CreateBarrelParam
-			createRes    *barrel.CreateBarrelResult
+			barrelClient *mock_service.MockBarrel
+			createParam  service.CreateBarrelParam
+			createRes    *service.CreateBarrelResult
 		)
 
 		BeforeEach(func() {
@@ -50,18 +49,18 @@ var _ = Describe("Barrel Handler", func() {
 
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
-			barrelClient = mock_barrel.NewMockBarrel(ctrl)
+			barrelClient = mock_service.NewMockBarrel(ctrl)
 			barrelHandler := resthandler.NewBarrel(resthandler.BarrelParam{
 				Barrel: barrelClient,
 			})
 			h = barrelHandler.CreateBarrel
-			createParam = barrel.CreateBarrelParam{
+			createParam = service.CreateBarrelParam{
 				Code:     reqBody.Code,
 				Name:     reqBody.Name,
 				Provider: string(reqBody.Provider),
 				Status:   string(reqBody.Status),
 			}
-			createRes = &barrel.CreateBarrelResult{
+			createRes = &service.CreateBarrelResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success create barrel",
@@ -184,9 +183,9 @@ var _ = Describe("Barrel Handler", func() {
 			ctx          echo.Context
 			h            func(ctx echo.Context) error
 			rec          *httptest.ResponseRecorder
-			barrelClient *mock_barrel.MockBarrel
-			findParam    barrel.FindBarrelByIdParam
-			findRes      *barrel.FindBarrelByIdResult
+			barrelClient *mock_service.MockBarrel
+			findParam    service.FindBarrelByIdParam
+			findRes      *service.FindBarrelByIdResult
 		)
 
 		BeforeEach(func() {
@@ -203,15 +202,15 @@ var _ = Describe("Barrel Handler", func() {
 
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
-			barrelClient = mock_barrel.NewMockBarrel(ctrl)
+			barrelClient = mock_service.NewMockBarrel(ctrl)
 			barrelHandler := resthandler.NewBarrel(resthandler.BarrelParam{
 				Barrel: barrelClient,
 			})
 			h = barrelHandler.GetBarrelById
-			findParam = barrel.FindBarrelByIdParam{
+			findParam = service.FindBarrelByIdParam{
 				Id: "mock-id",
 			}
-			findRes = &barrel.FindBarrelByIdResult{
+			findRes = &service.FindBarrelByIdResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success find barrel",
@@ -333,9 +332,9 @@ var _ = Describe("Barrel Handler", func() {
 			ctx          echo.Context
 			h            func(ctx echo.Context) error
 			rec          *httptest.ResponseRecorder
-			barrelClient *mock_barrel.MockBarrel
-			updateParam  barrel.UpdateBarrelByIdParam
-			updateRes    *barrel.UpdateBarrelByIdResult
+			barrelClient *mock_service.MockBarrel
+			updateParam  service.UpdateBarrelByIdParam
+			updateRes    *service.UpdateBarrelByIdResult
 		)
 
 		BeforeEach(func() {
@@ -359,19 +358,19 @@ var _ = Describe("Barrel Handler", func() {
 
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
-			barrelClient = mock_barrel.NewMockBarrel(ctrl)
+			barrelClient = mock_service.NewMockBarrel(ctrl)
 			barrelHandler := resthandler.NewBarrel(resthandler.BarrelParam{
 				Barrel: barrelClient,
 			})
 			h = barrelHandler.UpdateBarrelById
-			updateParam = barrel.UpdateBarrelByIdParam{
+			updateParam = service.UpdateBarrelByIdParam{
 				Id:       "mock-id",
 				Code:     reqBody.Code,
 				Name:     reqBody.Name,
 				Provider: string(reqBody.Provider),
 				Status:   string(reqBody.Status),
 			}
-			updateRes = &barrel.UpdateBarrelByIdResult{
+			updateRes = &service.UpdateBarrelByIdResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success update barrel",
@@ -519,9 +518,9 @@ var _ = Describe("Barrel Handler", func() {
 			ctx          echo.Context
 			h            func(ctx echo.Context) error
 			rec          *httptest.ResponseRecorder
-			barrelClient *mock_barrel.MockBarrel
-			searchParam  barrel.SearchBarrelParam
-			searchRes    *barrel.SearchBarrelResult
+			barrelClient *mock_service.MockBarrel
+			searchParam  service.SearchBarrelParam
+			searchRes    *service.SearchBarrelResult
 		)
 
 		BeforeEach(func() {
@@ -549,24 +548,24 @@ var _ = Describe("Barrel Handler", func() {
 
 			t := GinkgoT()
 			ctrl := gomock.NewController(t)
-			barrelClient = mock_barrel.NewMockBarrel(ctrl)
+			barrelClient = mock_service.NewMockBarrel(ctrl)
 			barrelHandler := resthandler.NewBarrel(resthandler.BarrelParam{
 				Barrel: barrelClient,
 			})
 			h = barrelHandler.SearchBarrel
-			searchParam = barrel.SearchBarrelParam{
+			searchParam = service.SearchBarrelParam{
 				Keyword:    "goseidon",
 				TotalItems: 24,
 				Page:       2,
 				Statuses:   []string{"active"},
 				Providers:  []string{"goseidon_hippo"},
 			}
-			searchRes = &barrel.SearchBarrelResult{
+			searchRes = &service.SearchBarrelResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success search barrel",
 				},
-				Items: []barrel.SearchBarrelItem{
+				Items: []service.SearchBarrelItem{
 					{
 						Id:        "id-1",
 						Code:      "code-1",
@@ -586,7 +585,7 @@ var _ = Describe("Barrel Handler", func() {
 						UpdatedAt: &currentTs,
 					},
 				},
-				Summary: barrel.SearchBarrelSummary{
+				Summary: service.SearchBarrelSummary{
 					TotalItems: 2,
 					Page:       2,
 				},
@@ -669,13 +668,13 @@ var _ = Describe("Barrel Handler", func() {
 
 		When("there is no barrel", func() {
 			It("should return empty result", func() {
-				searchRes := &barrel.SearchBarrelResult{
+				searchRes := &service.SearchBarrelResult{
 					Success: system.Success{
 						Code:    1000,
 						Message: "success search barrel",
 					},
-					Items: []barrel.SearchBarrelItem{},
-					Summary: barrel.SearchBarrelSummary{
+					Items: []service.SearchBarrelItem{},
+					Summary: service.SearchBarrelSummary{
 						TotalItems: 0,
 						Page:       2,
 					},
@@ -705,12 +704,12 @@ var _ = Describe("Barrel Handler", func() {
 
 		When("there is one barrel", func() {
 			It("should return result", func() {
-				searchRes := &barrel.SearchBarrelResult{
+				searchRes := &service.SearchBarrelResult{
 					Success: system.Success{
 						Code:    1000,
 						Message: "success search barrel",
 					},
-					Items: []barrel.SearchBarrelItem{
+					Items: []service.SearchBarrelItem{
 						{
 							Id:        "id-1",
 							Code:      "code-1",
@@ -721,7 +720,7 @@ var _ = Describe("Barrel Handler", func() {
 							UpdatedAt: nil,
 						},
 					},
-					Summary: barrel.SearchBarrelSummary{
+					Summary: service.SearchBarrelSummary{
 						TotalItems: 1,
 						Page:       2,
 					},

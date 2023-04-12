@@ -1,14 +1,13 @@
-package barrel_test
+package service_test
 
 import (
 	"context"
 	"fmt"
-	"testing"
 	"time"
 
-	"github.com/go-seidon/chariot/internal/barrel"
 	"github.com/go-seidon/chariot/internal/repository"
 	mock_repository "github.com/go-seidon/chariot/internal/repository/mock"
+	"github.com/go-seidon/chariot/internal/service"
 	mock_datetime "github.com/go-seidon/provider/datetime/mock"
 	mock_identifier "github.com/go-seidon/provider/identity/mock"
 	"github.com/go-seidon/provider/system"
@@ -19,20 +18,13 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestBarrel(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Barrel Package")
-}
-
 var _ = Describe("Barrel Package", func() {
-
 	Context("CreateBarrel function", Label("unit"), func() {
-
 		var (
 			ctx           context.Context
 			currentTs     time.Time
-			barrelService barrel.Barrel
-			p             barrel.CreateBarrelParam
+			barrelService service.Barrel
+			p             service.CreateBarrelParam
 			validator     *mock_validation.MockValidator
 			identifier    *mock_identifier.MockIdentifier
 			clock         *mock_datetime.MockClock
@@ -50,13 +42,13 @@ var _ = Describe("Barrel Package", func() {
 			identifier = mock_identifier.NewMockIdentifier(ctrl)
 			clock = mock_datetime.NewMockClock(ctrl)
 			barrelRepo = mock_repository.NewMockBarrel(ctrl)
-			barrelService = barrel.NewBarrel(barrel.BarrelParam{
+			barrelService = service.NewBarrel(service.BarrelParam{
 				Validator:  validator,
 				Identifier: identifier,
 				Clock:      clock,
 				BarrelRepo: barrelRepo,
 			})
-			p = barrel.CreateBarrelParam{
+			p = service.CreateBarrelParam{
 				Code:     "code",
 				Name:     "name",
 				Provider: "goseidon_hippo",
@@ -232,9 +224,9 @@ var _ = Describe("Barrel Package", func() {
 		var (
 			ctx           context.Context
 			currentTs     time.Time
-			barrelService barrel.Barrel
-			param         barrel.FindBarrelByIdParam
-			result        *barrel.FindBarrelByIdResult
+			barrelService service.Barrel
+			param         service.FindBarrelByIdParam
+			result        *service.FindBarrelByIdResult
 			validator     *mock_validation.MockValidator
 			identifier    *mock_identifier.MockIdentifier
 			clock         *mock_datetime.MockClock
@@ -252,14 +244,14 @@ var _ = Describe("Barrel Package", func() {
 			identifier = mock_identifier.NewMockIdentifier(ctrl)
 			clock = mock_datetime.NewMockClock(ctrl)
 			barrelRepo = mock_repository.NewMockBarrel(ctrl)
-			barrelService = barrel.NewBarrel(barrel.BarrelParam{
+			barrelService = service.NewBarrel(service.BarrelParam{
 				Validator:  validator,
 				Identifier: identifier,
 				Clock:      clock,
 				BarrelRepo: barrelRepo,
 			})
 
-			param = barrel.FindBarrelByIdParam{
+			param = service.FindBarrelByIdParam{
 				Id: "id",
 			}
 			findParam = repository.FindBarrelParam{
@@ -273,7 +265,7 @@ var _ = Describe("Barrel Package", func() {
 				Status:    "active",
 				CreatedAt: currentTs,
 			}
-			result = &barrel.FindBarrelByIdResult{
+			result = &service.FindBarrelByIdResult{
 				Success: system.Success{
 					Code:    1000,
 					Message: "success find barrel",
@@ -371,12 +363,11 @@ var _ = Describe("Barrel Package", func() {
 	})
 
 	Context("UpdateBarrelById function", Label("unit"), func() {
-
 		var (
 			ctx          context.Context
 			currentTs    time.Time
-			barrelClient barrel.Barrel
-			p            barrel.UpdateBarrelByIdParam
+			barrelClient service.Barrel
+			p            service.UpdateBarrelByIdParam
 			validator    *mock_validation.MockValidator
 			identifier   *mock_identifier.MockIdentifier
 			clock        *mock_datetime.MockClock
@@ -394,13 +385,13 @@ var _ = Describe("Barrel Package", func() {
 			identifier = mock_identifier.NewMockIdentifier(ctrl)
 			clock = mock_datetime.NewMockClock(ctrl)
 			barrelRepo = mock_repository.NewMockBarrel(ctrl)
-			barrelClient = barrel.NewBarrel(barrel.BarrelParam{
+			barrelClient = service.NewBarrel(service.BarrelParam{
 				Validator:  validator,
 				Identifier: identifier,
 				Clock:      clock,
 				BarrelRepo: barrelRepo,
 			})
-			p = barrel.UpdateBarrelByIdParam{
+			p = service.UpdateBarrelByIdParam{
 				Id:       "id",
 				Code:     "code",
 				Name:     "name",
@@ -533,12 +524,11 @@ var _ = Describe("Barrel Package", func() {
 	})
 
 	Context("SearchBarrel function", Label("unit"), func() {
-
 		var (
 			ctx          context.Context
 			currentTs    time.Time
-			barrelClient barrel.Barrel
-			p            barrel.SearchBarrelParam
+			barrelClient service.Barrel
+			p            service.SearchBarrelParam
 			validator    *mock_validation.MockValidator
 			identifier   *mock_identifier.MockIdentifier
 			clock        *mock_datetime.MockClock
@@ -556,13 +546,13 @@ var _ = Describe("Barrel Package", func() {
 			identifier = mock_identifier.NewMockIdentifier(ctrl)
 			clock = mock_datetime.NewMockClock(ctrl)
 			barrelRepo = mock_repository.NewMockBarrel(ctrl)
-			barrelClient = barrel.NewBarrel(barrel.BarrelParam{
+			barrelClient = service.NewBarrel(service.BarrelParam{
 				Validator:  validator,
 				Identifier: identifier,
 				Clock:      clock,
 				BarrelRepo: barrelRepo,
 			})
-			p = barrel.SearchBarrelParam{
+			p = service.SearchBarrelParam{
 				Keyword:    "goseidon",
 				TotalItems: 24,
 				Page:       2,

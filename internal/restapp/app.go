@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-seidon/chariot/internal/app"
 	"github.com/go-seidon/chariot/internal/auth"
-	"github.com/go-seidon/chariot/internal/barrel"
 	"github.com/go-seidon/chariot/internal/file"
 	"github.com/go-seidon/chariot/internal/healthcheck"
 	"github.com/go-seidon/chariot/internal/queue"
@@ -231,7 +230,7 @@ func NewRestApp(opts ...RestAppOption) (*restApp, error) {
 			AuthClient: authClient,
 		})
 
-		barrelClient := barrel.NewBarrel(barrel.BarrelParam{
+		barrelClient := service.NewBarrel(service.BarrelParam{
 			Validator:  goValidator,
 			Identifier: ksuidIdentifier,
 			Clock:      clock,
